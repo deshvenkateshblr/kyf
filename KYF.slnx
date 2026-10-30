@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/admin/">
+    <File Path="admin/eod-generator.html" />
+    <File Path="admin/sync_market_data.py" />
+  </Folder>
+  <Folder Name="/data/">
+    <File Path="data/market-holidays.js" />
+    <File Path="data/market-pulse.js" />
+  </Folder>
+</Solution>

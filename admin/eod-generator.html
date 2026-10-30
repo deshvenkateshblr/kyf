@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KYF Admin — Auto-Ingest EOD Generator</title>
+  <script src="../data/market-holidays.js"></script>
+  <script src="../data/market-pulse.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --amber: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 24px; max-width: 1260px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 18px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    h1 { font-size: 1.35rem; color: var(--accent); }
+    .status-pill { background: rgba(34,197,94,0.12); border: 1px solid var(--green); color: var(--green); padding: 6px 14px; border-radius: 99px; font-size: 0.82rem; font-weight: 600; }
+
+    /* Auto-Watch Banner */
+    .watch-bar { display: flex; justify-content: space-between; align-items: center; background: rgba(56,189,248,0.08); border: 1px solid var(--accent); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .watch-bar.watching { background: rgba(34,197,94,0.1); border-color: var(--green); }
+    .watch-title { font-weight: 700; font-size: 0.92rem; color: var(--text); }
+    .watch-sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab-btn { background: var(--panel); border: 1px solid var(--border); color: var(--muted); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+    .tab-btn.active { border-color: var(--accent); color: var(--text); background: rgba(56,189,248,0.12); }
+    .module-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: none; }
+    .module-card.active { display: block; }
+    .section-title { font-size: 1rem; font-weight: 700; margin: 18px 0 12px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 0.78rem; color: var(--muted); }
+    .field input { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: 6px; font-size: 0.9rem; }
+
+    /* Batch Drop Zone */
+    .batch-drop { border: 2px dashed var(--accent); background: rgba(56,189,248,0.05); border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 16px; cursor: pointer; transition: 0.2s; }
+    .batch-drop:hover, .batch-drop.dragover { background: rgba(56,189,248,0.15); border-color: var(--green); }
+
+    /* Horizon Matrix Table */
+    .horizon-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 0.85rem; }
+    .horizon-table th, .horizon-table td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; vertical-align: middle; }
+    .horizon-table th { background: rgba(15,23,42,0.7); color: var(--muted); font-weight: 600; }
+    .dl-link { color: var(--accent); text-decoration: none; font-weight: 600; margin-right: 10px; display: inline-block; cursor: pointer; }
+    .dl-link:hover { text-decoration: underline; }
+    .slot-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; background: rgba(148,163,184,0.15); color: var(--muted); }
+    .slot-badge.loaded { background: rgba(34,197,94,0.18); color: var(--green); }
+    .file-btn { background: var(--bg); border: 1px solid var(--accent); color: var(--accent); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; display: inline-block; }
+    .adj-note { display: block; font-size: 0.72rem; color: var(--amber); margin-top: 3px; }
+
+    .custom-date-bar { display: flex; gap: 12px; align-items: center; background: rgba(15,23,42,0.6); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 18px; font-size: 0.85rem; flex-wrap: wrap; }
+    .btn-row { display: flex; gap: 12px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+    .btn { background: var(--accent); color: #0f172a; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.88rem; }
+    .btn-green { background: var(--green); color: #052e16; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.88rem; }
+    .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 9px 15px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+    textarea.code-preview { width: 100%; height: 240px; background: #090d16; color: #a5f3fc; border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: monospace; font-size: 0.8rem; margin-top: 14px; }
+    .stats-bar { display: flex; gap: 18px; font-size: 0.85rem; color: var(--amber); margin-top: 8px; }
+    .hint { font-size: 0.82rem; color: var(--muted); line-height: 1.5; margin-bottom: 14px; }
+    code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Know Your Finance (KYF) — Auto-Ingest Multi-Horizon EOD Generator</h1>
+    <p class="hint" style="margin:4px 0 0;">Click Download -> Auto-Watch Folder detects & processes `.zip` / `.txt` automatically</p>
+  </div>
+  <div class="status-pill" id="calendarBadge">Resolving trading calendar...</div>
+</header>
+
+<!-- AUTO-WATCH DIRECTORY BAR -->
+<div class="watch-bar" id="watchBar">
+  <div>
+    <div class="watch-title" id="watchTitle">⚡ Zero-Click Auto-Processor: Link Your Downloads Folder</div>
+    <div class="watch-sub" id="watchSub">
+      Grant read access to your Downloads folder once. As soon as you click any NSE or AMFI download link below, this page will automatically detect, unzip, and process the file within 1.5 seconds!
+    </div>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <button class="btn" id="watchBtn" onclick="connectWatchFolder()">📂 Link Downloads Folder for Auto-Ingest</button>
+    <button class="btn-secondary" onclick="scanWatchedFolderNow()" id="rescanBtn" style="display:none;">🔄 Scan Now</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('mod3', this)">Module 3: market-pulse.js</button>
+  <button class="tab-btn" onclick="switchTab('mod4', this)">Module 4: market-equities.js (Auto-Ingest .ZIP)</button>
+  <button class="tab-btn" onclick="switchTab('mod5', this)">Module 5: market-mf.js (Auto-Ingest AMFI)</button>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODULE 3: MARKET PULSE                                                 -->
+<!-- ====================================================================== -->
+<div id="mod3" class="module-card active">
+  <p class="hint">Pre-populated with 28 October 2026 India Gold rates (24K: ₹14,395/g, 22K: ₹13,195/g, 18K: ₹10,796/g), macro rates, and NSE Index benchmarks.</p>
+  <div class="section-title">1. Snapshot Date & Inflation / Policy Rates (%)</div>
+  <div class="grid-4" id="macroFields"></div>
+
+  <div class="section-title">2. Precious Metals (INR — 24K / 22K / 18K / Silver)</div>
+  <div class="grid-4" id="metalFields"></div>
+
+  <div class="section-title">3. Core NSE Index Benchmarks (Level, P/E & Trailing CAGR %)</div>
+  <div id="indexFields"></div>
+
+  <div class="btn-row">
+    <button class="btn" onclick="generatePulseJS(true)">⬇ Generate & Download market-pulse.js</button>
+    <button class="btn-secondary" onclick="generatePulseJS(false)">Preview Code Only</button>
+    <button class="btn-secondary" onclick="copyPreview('pulsePreview')">Copy to Clipboard</button>
+  </div>
+  <textarea id="pulsePreview" class="code-preview" readonly></textarea>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODULE 4: MULTI-DATE NSE EQUITIES                                      -->
+<!-- ====================================================================== -->
+<div id="mod4" class="module-card">
+  <!-- Batch Drag & Drop or Multi-Select -->
+  <div class="batch-drop" id="nseBatchDrop" onclick="document.getElementById('nseBatchInput').click()">
+    <strong>📥 Batch Auto-Router: Drop all 5 NSE `.csv.zip` files here at once (or click to multi-select)</strong>
+    <div class="hint" style="margin:4px 0 0;">Automatically matches `YYYYMMDD` inside each filename to Latest, 1M, 3M, 6M, and 1Y slots!</div>
+    <input type="file" id="nseBatchInput" accept=".zip,.csv" multiple style="display:none" onchange="handleBatchNseFiles(this.files)" />
+  </div>
+
+  <div class="custom-date-bar">
+    <button class="btn-green" onclick="triggerAllNseDownloads()">⬇ Download All 5 Horizon `.zip` Files at Once</button>
+    <span><strong>🔗 Custom Date Finder:</strong></span>
+    <input type="date" id="customBhavDate" onchange="updateCustomBhavLink()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:5px 8px;border-radius:6px;" />
+    <span id="customBhavLinks"></span>
+  </div>
+
+  <table class="horizon-table">
+    <thead>
+      <tr>
+        <th>Horizon Slot</th>
+        <th>Holiday-Adjusted Trading Date</th>
+        <th>Expected Filename (Auto-Detected in Watch Folder)</th>
+        <th>1-Click Download</th>
+        <th>Manual Override</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="nseHorizonRows"></tbody>
+  </table>
+
+  <div class="stats-bar" id="equityStats">Waiting for Latest (T) `.zip` file...</div>
+
+  <div class="btn-row">
+    <button class="btn" onclick="buildEquitiesJS(true)">⬇ Generate & Download market-equities.js</button>
+    <button class="btn-secondary" onclick="buildEquitiesJS(false)">Refresh Preview</button>
+    <button class="btn-secondary" onclick="copyPreview('equityPreview')">Copy to Clipboard</button>
+  </div>
+  <textarea id="equityPreview" class="code-preview" readonly placeholder="Tuple schema: [symbol, companyName, closePrice, ret1m%, ret3m%, ret6m%, ret1y%]"></textarea>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODULE 5: MULTI-DATE AMFI MUTUAL FUND NAVS                             -->
+<!-- ====================================================================== -->
+<div id="mod5" class="module-card">
+  <div class="batch-drop" onclick="document.getElementById('amfiBatchInput').click()">
+    <strong>📥 Batch AMFI Loader: Drop `NAVAll.txt` and historical NAV files here (or click to select)</strong>
+    <div class="hint" style="margin:4px 0 0;">Automatically detects the NAV date inside the file content and routes it to Latest, 1M, 3M, 6M, or 1Y!</div>
+    <input type="file" id="amfiBatchInput" accept=".txt,.csv,.zip" multiple style="display:none" onchange="handleBatchAmfiFiles(this.files)" />
+  </div>
+
+  <div class="custom-date-bar">
+    <strong>🔗 Custom Date AMFI Helper:</strong>
+    <input type="date" id="customAmfiDate" onchange="updateCustomAmfiLink()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:5px 8px;border-radius:6px;" />
+    <span id="customAmfiLinks"></span>
+  </div>
+
+  <table class="horizon-table">
+    <thead>
+      <tr>
+        <th>Horizon Slot</th>
+        <th>Holiday-Adjusted NAV Date</th>
+        <th>Official AMFI Download / Date Query</th>
+        <th>Manual Override</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="amfiHorizonRows"></tbody>
+  </table>
+
+  <div class="stats-bar" id="mfStats">Waiting for Latest (T) `NAVAll.txt`...</div>
+
+  <div class="btn-row">
+    <button class="btn" onclick="buildMfJS(true)">⬇ Generate & Download market-mf.js</button>
+    <button class="btn-secondary" onclick="buildMfJS(false)">Refresh Preview</button>
+    <button class="btn-secondary" onclick="copyPreview('mfPreview')">Copy to Clipboard</button>
+  </div>
+  <textarea id="mfPreview" class="code-preview" readonly placeholder="Tuple schema: [directCode, fundName, category, directNav, regularNav, ret1m%, ret3m%, ret6m%, ret1y%]"></textarea>
+</div>
+
+<script>
+// ============================================================================
+// 0. NATIVE ZERO-DEPENDENCY IN-BROWSER .ZIP EXTRACTOR
+// ============================================================================
+async function readFileAsTextOrUnzip(file) {
+  const isZip = file.name.toLowerCase().endsWith(".zip") || file.type.includes("zip");
+  if (!isZip) return await file.text();
+
+  const buffer = await file.arrayBuffer();
+  const view = new DataView(buffer);
+  if (view.getUint32(0, true) !== 0x04034b50) throw new Error("Invalid ZIP header");
+
+  const compressionMethod = view.getUint16(8, true);
+  const fileNameLen = view.getUint16(26, true);
+  const extraFieldLen = view.getUint16(28, true);
+  const dataStartOffset = 30 + fileNameLen + extraFieldLen;
+
+  let compressedSize = view.getUint32(18, true);
+  if (compressedSize === 0 || compressedSize === 0xffffffff) {
+    for (let pos = buffer.byteLength - 22; pos >= 0; pos--) {
+      if (view.getUint32(pos, true) === 0x06054b50) {
+        const cdOffset = view.getUint32(pos + 16, true);
+        if (view.getUint32(cdOffset, true) === 0x02014b50) {
+          compressedSize = view.getUint32(cdOffset + 20, true);
+        }
+        break;
+      }
+    }
+  }
+
+  const compressedSlice = compressedSize > 0
+    ? buffer.slice(dataStartOffset, dataStartOffset + compressedSize)
+    : buffer.slice(dataStartOffset);
+
+  if (compressionMethod === 0) {
+    return new TextDecoder("utf-8").decode(compressedSlice);
+  } else if (compressionMethod === 8) {
+    const ds = new DecompressionStream("deflate-raw");
+    const writer = ds.writable.getWriter();
+    writer.write(new Uint8Array(compressedSlice));
+    writer.close();
+    return await new Response(ds.readable).text();
+  }
+  throw new Error(`Unsupported ZIP method: ${compressionMethod}`);
+}
+
+// ============================================================================
+// 1. HOLIDAY-AWARE TRADING DATE RESOLVER
+// ============================================================================
+const cal = window.KYF_MARKET_CALENDAR;
+const MONTHS_SHORT = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const MONTHS_TITLE = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+const EXTRA_HOLIDAYS = {
+  "2025-10-02": "Gandhi Jayanti / Dussehra",
+  "2025-10-21": "Diwali Laxmi Pujan",
+  "2025-10-22": "Diwali-Balipratipada",
+  "2025-11-05": "Guru Nanak Jayanti",
+  "2025-12-25": "Christmas"
+};
+
+function getHolidayName(isoDate) {
+  return (cal && cal.weekdayHolidays && cal.weekdayHolidays[isoDate]) || EXTRA_HOLIDAYS[isoDate] || null;
+}
+
+function isValidTradingDay(isoDate) {
+  if (cal && cal.specialTradingSessions && cal.specialTradingSessions[isoDate]) return true;
+  if (getHolidayName(isoDate)) return false;
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const dow = new Date(y, m - 1, d).getDay();
+  return dow !== 0 && dow !== 6;
+}
+
+function resolveNearestTradingDateWithReason(rawIso) {
+  let [y, m, d] = rawIso.split("-").map(Number);
+  let cursor = new Date(y, m - 1, d);
+  let skippedReasons = [];
+
+  for (let i = 0; i < 12; i++) {
+    const cy = cursor.getFullYear();
+    const cm = String(cursor.getMonth() + 1).padStart(2, "0");
+    const cd = String(cursor.getDate()).padStart(2, "0");
+    const candidate = `${cy}-${cm}-${cd}`;
+    const dow = cursor.getDay();
+
+    if (isValidTradingDay(candidate)) {
+      return {
+        iso: candidate,
+        compact: `${cy}${cm}${cd}`,
+        dayLabel: DAY_NAMES[dow],
+        rawIso,
+        adjustmentNote: skippedReasons.length > 0 ? `Rolled back from ${rawIso} (${skippedReasons.join(", ")})` : null
+      };
+    } else {
+      const hName = getHolidayName(candidate);
+      skippedReasons.push(hName ? `${candidate}: ${hName}` : `${DAY_NAMES[dow]}`);
+      cursor.setDate(cursor.getDate() - 1);
+    }
+  }
+  return { iso: rawIso, compact: rawIso.replace(/-/g, ""), dayLabel: "", rawIso, adjustmentNote: null };
+}
+
+function subtractMonthsWithHolidayCheck(baseIso, monthsBack) {
+  if (monthsBack === 0) return resolveNearestTradingDateWithReason(baseIso);
+  const [y, m, d] = baseIso.split("-").map(Number);
+  const targetMonthDate = new Date(y, m - 1 - monthsBack, 1);
+  const maxDays = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth() + 1, 0).getDate();
+  const dt = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth(), Math.min(d, maxDays));
+  const ry = dt.getFullYear();
+  const rm = String(dt.getMonth() + 1).padStart(2, "0");
+  const rd = String(dt.getDate()).padStart(2, "0");
+  return resolveNearestTradingDateWithReason(`${ry}-${rm}-${rd}`);
+}
+
+const latestTradeObj = cal ? cal.getLastCompletedTradingDay() : { isoDate: "2026-10-28" };
+const baseISO = latestTradeObj.isoDate;
+
+const HORIZONS = [
+  { key: "latest", label: "Latest (T)",   ...subtractMonthsWithHolidayCheck(baseISO, 0) },
+  { key: "m1",     label: "1 Month Ago",  ...subtractMonthsWithHolidayCheck(baseISO, 1) },
+  { key: "m3",     label: "3 Months Ago", ...subtractMonthsWithHolidayCheck(baseISO, 3) },
+  { key: "m6",     label: "6 Months Ago", ...subtractMonthsWithHolidayCheck(baseISO, 6) },
+  { key: "y1",     label: "1 Year Ago",   ...subtractMonthsWithHolidayCheck(baseISO, 12) }
+];
+
+document.getElementById("calendarBadge").textContent =
+  `Latest Trading Session: ${baseISO} • 5 Horizons Ready`;
+
+function getNseUrls(isoDate) {
+  const [y, m, d] = isoDate.split("-");
+  const compact = `${y}${m}${d}`;
+  const mmm = MONTHS_SHORT[parseInt(m, 10) - 1];
+  return {
+    expectedFile: `BhavCopy_NSE_CM_0_0_0_${compact}_F_0000.csv.zip`,
+    udiffZip: `https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_${compact}_F_0000.csv.zip`,
+    classicZip: `https://nsearchives.nseindia.com/content/historical/EQUITIES/${y}/${mmm}/cm${d}${mmm}${y}bhav.csv.zip`
+  };
+}
+
+function getAmfiInfo(isoDate, isLatest) {
+  const [y, m, d] = isoDate.split("-");
+  const mmm = MONTHS_TITLE[parseInt(m, 10) - 1];
+  const amfiDateStr = `${d}-${mmm}-${y}`;
+  return {
+    amfiDateStr,
+    directUrl: isLatest
+      ? "https://www.amfiindia.com/spages/NAVAll.txt"
+      : `https://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?frmdt=${amfiDateStr}`
+  };
+}
+
+// ============================================================================
+// 2. AUTO-WATCH DIRECTORY PIPELINE (File System Access API)
+// ============================================================================
+let watchedDirHandle = null;
+let watchTimer = null;
+const processedFileSignatures = new Set();
+
+async function connectWatchFolder() {
+  if (!window.showDirectoryPicker) {
+    alert("Your browser does not support folder watching. Use Chrome or Edge on Desktop, or drag-and-drop all files into the Batch Drop bar!");
+    return;
+  }
+  try {
+    watchedDirHandle = await window.showDirectoryPicker({ mode: "read" });
+    document.getElementById("watchBar").classList.add("watching");
+    document.getElementById("watchTitle").textContent = `🟢 Auto-Watching Folder: "${watchedDirHandle.name}/" (Scanning every 1.5s)`;
+    document.getElementById("watchSub").textContent = `Click any "⬇ Download" button below — as soon as the download finishes in "${watchedDirHandle.name}/", it will auto-unpack and populate its slot!`;
+    document.getElementById("watchBtn").textContent = "📂 Change Watched Folder";
+    document.getElementById("rescanBtn").style.display = "inline-block";
+
+    await scanWatchedFolderNow();
+    if (watchTimer) clearInterval(watchTimer);
+    watchTimer = setInterval(scanWatchedFolderNow, 1500);
+  } catch (err) {
+    console.warn("Folder watch cancelled:", err);
+  }
+}
+
+async function scanWatchedFolderNow() {
+  if (!watchedDirHandle) return;
+  try {
+    for await (const entry of watchedDirHandle.values()) {
+      if (entry.kind !== "file") continue;
+      const name = entry.name;
+      // Ignore partial Chrome downloads (.crdownload)
+      if (name.endsWith(".crdownload") || name.endsWith(".tmp")) continue;
+
+      // Check if file matches NSE Bhavcopy pattern or AMFI NAV pattern
+      const matchedHorizon = matchFilenameToHorizon(name);
+      const isAmfi = /^navall/i.test(name) || /DownloadNAVHistoryReport/i.test(name);
+
+      if (!matchedHorizon && !isAmfi) continue;
+
+      const file = await entry.getFile();
+      const sig = `${file.name}_${file.size}_${file.lastModified}`;
+      if (processedFileSignatures.has(sig)) continue;
+      processedFileSignatures.add(sig);
+
+      if (matchedHorizon) {
+        await loadNseSlot(matchedHorizon.key, file);
+      } else if (isAmfi) {
+        await autoRouteAmfiFile(file);
+      }
+    }
+  } catch (err) {
+    console.warn("Folder scan error:", err);
+  }
+}
+
+// Match YYYYMMDD or DDMMMYYYY inside any filename to our 5 HORIZONS
+function matchFilenameToHorizon(filename) {
+  const upper = filename.toUpperCase();
+  for (const h of HORIZONS) {
+    const [y, m, d] = h.iso.split("-");
+    const mmm = MONTHS_SHORT[parseInt(m, 10) - 1];
+    if (upper.includes(h.compact) || upper.includes(`${d}${mmm}${y}`)) {
+      return h;
+    }
+  }
+  return null;
+}
+
+// Trigger all 5 NSE Horizon downloads sequentially with a small delay
+function triggerAllNseDownloads() {
+  HORIZONS.forEach((h, idx) => {
+    setTimeout(() => {
+      const urls = getNseUrls(h.iso);
+      const a = document.createElement("a");
+      a.href = urls.udiffZip;
+      a.target = "_blank";
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }, idx * 450);
+  });
+}
+
+// Handle Multi-File Batch Drop / Select for NSE
+async function handleBatchNseFiles(fileList) {
+  for (const file of fileList) {
+    const matched = matchFilenameToHorizon(file.name);
+    if (matched) {
+      await loadNseSlot(matched.key, file);
+    } else {
+      // Fallback: if only 1 file dropped and date doesn't match, load into Latest
+      if (fileList.length === 1) await loadNseSlot("latest", file);
+    }
+  }
+}
+
+// Handle Multi-File Batch Drop / Auto-Routing for AMFI by inspecting internal date column
+async function handleBatchAmfiFiles(fileList) {
+  for (const file of fileList) {
+    await autoRouteAmfiFile(file);
+  }
+}
+
+async function autoRouteAmfiFile(file) {
+  const text = await readFileAsTextOrUnzip(file);
+  // Find first semicolon line to inspect its date (column index 5 or 7 in AMFI files: DD-MMM-YYYY)
+  const sampleLine = text.split(/\r?\n/).find(l => l.includes(";") && /\d{2}-[A-Za-z]{3}-\d{4}/.test(l));
+  if (sampleLine) {
+    const dateMatch = sampleLine.match(/(\d{2}-[A-Za-z]{3}-\d{4})/);
+    if (dateMatch) {
+      const fileDateStr = dateMatch[1].toLowerCase();
+      for (const h of HORIZONS) {
+        const info = getAmfiInfo(h.iso, false);
+        if (info.amfiDateStr.toLowerCase() === fileDateStr) {
+          await loadAmfiSlot(h.key, file, text);
+          return;
+        }
+      }
+    }
+  }
+  // Default to Latest if filename is NAVAll.txt
+  await loadAmfiSlot("latest", file, text);
+}
+
+// ============================================================================
+// 3. RENDER TABLES
+// ============================================================================
+const equitySnapshots = { latest: new Map(), m1: new Map(), m3: new Map(), m6: new Map(), y1: new Map() };
+const mfSnapshots = { latest: new Map(), m1: new Map(), m3: new Map(), m6: new Map(), y1: new Map() };
+
+function renderHorizonTables() {
+  const nseTbody = document.getElementById("nseHorizonRows");
+  nseTbody.innerHTML = HORIZONS.map(h => {
+    const urls = getNseUrls(h.iso);
+    return `
+      <tr>
+        <td><strong>${h.label}</strong></td>
+        <td>
+          <code>${h.iso}</code> <span style="color:var(--muted);font-size:0.78rem;">(${h.dayLabel})</span>
+          ${h.adjustmentNote ? `<span class="adj-note">⚡ ${h.adjustmentNote}</span>` : ""}
+        </td>
+        <td><code style="font-size:0.74rem;color:var(--muted);">${urls.expectedFile}</code></td>
+        <td>
+          <a class="dl-link" href="${urls.udiffZip}" target="_blank" rel="noopener">⬇ Download .zip</a>
+          <a class="dl-link" href="${urls.classicZip}" target="_blank" rel="noopener" style="color:var(--muted);font-size:0.75rem;">Classic</a>
+        </td>
+        <td>
+          <label class="file-btn">
+            📦 Select File
+            <input type="file" accept=".zip,.csv" style="display:none" onchange="loadNseSlot('${h.key}', this.files[0])" />
+          </label>
+        </td>
+        <td><span id="nse_status_${h.key}" class="slot-badge">Waiting...</span></td>
+      </tr>
+    `;
+  }).join("");
+
+  const amfiTbody = document.getElementById("amfiHorizonRows");
+  amfiTbody.innerHTML = HORIZONS.map((h, idx) => {
+    const info = getAmfiInfo(h.iso, idx === 0);
+    return `
+      <tr>
+        <td><strong>${h.label}</strong></td>
+        <td>
+          <code>${h.iso}</code> <span style="color:var(--muted);font-size:0.78rem;">(${info.amfiDateStr})</span>
+          ${h.adjustmentNote ? `<span class="adj-note">⚡ ${h.adjustmentNote}</span>` : ""}
+        </td>
+        <td>
+          <a class="dl-link" href="${info.directUrl}" target="_blank" rel="noopener">
+            ⬇ ${idx === 0 ? "Download NAVAll.txt" : `Download ${info.amfiDateStr} NAV`}
+          </a>
+        </td>
+        <td>
+          <label class="file-btn">
+            📂 Select File
+            <input type="file" accept=".txt,.csv,.zip" style="display:none" onchange="loadAmfiSlot('${h.key}', this.files[0])" />
+          </label>
+        </td>
+        <td><span id="amfi_status_${h.key}" class="slot-badge">Waiting...</span></td>
+      </tr>
+    `;
+  }).join("");
+
+  document.getElementById("customBhavDate").value = baseISO;
+  document.getElementById("customAmfiDate").value = baseISO;
+  updateCustomBhavLink();
+  updateCustomAmfiLink();
+}
+
+function updateCustomBhavLink() {
+  const val = document.getElementById("customBhavDate").value;
+  if (!val) return;
+  const res = resolveNearestTradingDateWithReason(val);
+  const urls = getNseUrls(res.iso);
+  const note = res.adjustmentNote ? ` <span style="color:var(--amber)">(⚡ ${res.adjustmentNote})</span>` : "";
+  document.getElementById("customBhavLinks").innerHTML = `
+    <a class="dl-link" href="${urls.udiffZip}" target="_blank">⬇ UDiFF .zip (${res.iso})</a>
+    ${note}
+  `;
+}
+
+function updateCustomAmfiLink() {
+  const val = document.getElementById("customAmfiDate").value;
+  if (!val) return;
+  const res = resolveNearestTradingDateWithReason(val);
+  const info = getAmfiInfo(res.iso, false);
+  const note = res.adjustmentNote ? ` <span style="color:var(--amber)">(⚡ ${res.adjustmentNote})</span>` : "";
+  document.getElementById("customAmfiLinks").innerHTML = `
+    <code>${info.amfiDateStr}</code> &nbsp;
+    <a class="dl-link" href="${info.directUrl}" target="_blank">⬇ Download ${info.amfiDateStr} NAV</a>
+    ${note}
+  `;
+}
+
+// ============================================================================
+// 4. PARSE NSE & AMFI SLOTS
+// ============================================================================
+async function loadNseSlot(slotKey, file) {
+  if (!file) return;
+  const badge = document.getElementById(`nse_status_${slotKey}`);
+  badge.textContent = "Unpacking...";
+  try {
+    const csvText = await readFileAsTextOrUnzip(file);
+    const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+    const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+
+    const iSym = headers.indexOf("TckrSymb") !== -1 ? headers.indexOf("TckrSymb") : headers.indexOf("SYMBOL");
+    const iSrs = headers.indexOf("SctySrs") !== -1 ? headers.indexOf("SctySrs") : headers.indexOf("SERIES");
+    const iName = headers.indexOf("FinInstrmNm");
+    const iClose = headers.indexOf("ClsPric") !== -1 ? headers.indexOf("ClsPric") : headers.indexOf("CLOSE");
+
+    const map = new Map();
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+      if (cols[iSrs] !== "EQ") continue;
+      const sym = cols[iSym];
+      const name = iName !== -1 && cols[iName] ? cols[iName] : sym;
+      const close = parseFloat(cols[iClose]);
+      if (sym && !isNaN(close) && close > 0) map.set(sym, { name, close });
+    }
+
+    equitySnapshots[slotKey] = map;
+    badge.textContent = `✓ Auto-Loaded (${map.size})`;
+    badge.classList.add("loaded");
+    buildEquitiesJS(false);
+  } catch (err) {
+    badge.textContent = "Error";
+    console.error(err);
+  }
+}
+
+function calcPctGrowth(currentVal, pastVal) {
+  if (!pastVal || pastVal <= 0 || !currentVal) return null;
+  return Number((((currentVal - pastVal) / pastVal) * 100).toFixed(2));
+}
+
+function buildEquitiesJS(triggerDownload) {
+  const latestMap = equitySnapshots.latest;
+  if (latestMap.size === 0) {
+    if (triggerDownload) alert("Load at least the Latest (T) NSE Bhavcopy first.");
+    return;
+  }
+
+  const tuples = [];
+  for (const [sym, latestObj] of latestMap.entries()) {
+    const c = latestObj.close;
+    tuples.push([
+      sym,
+      latestObj.name,
+      c,
+      calcPctGrowth(c, equitySnapshots.m1.get(sym)?.close),
+      calcPctGrowth(c, equitySnapshots.m3.get(sym)?.close),
+      calcPctGrowth(c, equitySnapshots.m6.get(sym)?.close),
+      calcPctGrowth(c, equitySnapshots.y1.get(sym)?.close)
+    ]);
+  }
+  tuples.sort((a, b) => a[0].localeCompare(b[0]));
+
+  const bodyLines = tuples.map(t => `  ${JSON.stringify(t)}`).join(",\n");
+  const jsCode =
+    `// Auto-generated by KYF Multi-Horizon EOD Admin\n` +
+    `window.KYF_MARKET_EQUITIES = {\n` +
+    `  asOf: "${baseISO}",\n` +
+    `  horizons: ${JSON.stringify(Object.fromEntries(HORIZONS.map(h => [h.key, h.iso])))},\n` +
+    `  columns: ["symbol", "companyName", "closePrice", "ret1m", "ret3m", "ret6m", "ret1y"],\n` +
+    `  stocks: [\n${bodyLines}\n  ]\n};\n`;
+
+  document.getElementById("equityPreview").value = jsCode;
+  document.getElementById("equityStats").textContent =
+    `✓ Built ${tuples.length} EQ stocks • Output size: ${(jsCode.length / 1024).toFixed(1)} KB`;
+  if (triggerDownload) downloadFile("market-equities.js", jsCode);
+}
+
+async function loadAmfiSlot(slotKey, file, preReadText = null) {
+  if (!file && !preReadText) return;
+  const badge = document.getElementById(`amfi_status_${slotKey}`);
+  badge.textContent = "Parsing...";
+  try {
+    const rawText = preReadText || (await readFileAsTextOrUnzip(file));
+    const lines = rawText.split(/\r?\n/);
+    let currentCategory = "Other";
+    let isOpenEnded = true;
+    const grouped = new Map();
+    const byCode = new Map();
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      if (!line.includes(";")) {
+        if (line.startsWith("Open Ended Schemes")) {
+          isOpenEnded = true;
+          const m = line.match(/\(([^)]+)\)/);
+          currentCategory = m ? m[1].replace(/Scheme - /i, "").trim() : "Open Ended";
+        } else if (line.startsWith("Close Ended") || line.startsWith("Interval Fund")) {
+          isOpenEnded = false;
+        }
+        continue;
+      }
+      if (!isOpenEnded) continue;
+      const parts = line.split(";");
+      if (parts.length < 5) continue;
+
+      const code = parseInt(parts[0], 10);
+      const rawName = parts[3].trim();
+      const nav = parseFloat(parts[4]);
+      if (isNaN(code) || isNaN(nav) || nav <= 0) continue;
+
+      byCode.set(code, nav);
+
+      if (slotKey === "latest") {
+        if (/idcw|dividend|bonus|payout|reinvestment|weekly|daily|monthly|quarterly/i.test(rawName)) continue;
+        if (!/growth/i.test(rawName)) continue;
+        const isDirect = /\bdirect\b/i.test(rawName);
+        const baseKey = rawName.toLowerCase().replace(/\b(direct|regular|plan|option|growth)\b/g, "").replace(/[^a-z0-9]/g, "");
+
+        if (!grouped.has(baseKey)) {
+          const cleanDisplay = rawName.replace(/\s*-\s*(Direct|Regular)\s*(Plan)?/gi, "").replace(/\s*-\s*Growth\s*(Option)?/gi, "").trim();
+          grouped.set(baseKey, { directCode: null, cleanName: cleanDisplay, category: currentCategory, directNav: null, regularNav: null });
+        }
+        const entry = grouped.get(baseKey);
+        if (isDirect) { entry.directCode = code; entry.directNav = nav; }
+        else { entry.regularNav = nav; }
+      }
+    }
+
+    mfSnapshots[slotKey] = slotKey === "latest" ? grouped : byCode;
+    const count = slotKey === "latest" ? grouped.size : byCode.size;
+    badge.textContent = `✓ Auto-Loaded (${count})`;
+    badge.classList.add("loaded");
+    buildMfJS(false);
+  } catch (err) {
+    badge.textContent = "Error";
+  }
+}
+
+function buildMfJS(triggerDownload) {
+  const latestGrouped = mfSnapshots.latest;
+  if (!latestGrouped || latestGrouped.size === 0) {
+    if (triggerDownload) alert("Load at least the Latest (T) AMFI NAVAll.txt first.");
+    return;
+  }
+
+  const tuples = [];
+  for (const item of latestGrouped.values()) {
+    if (!item.directCode || item.directNav === null) continue;
+    const code = item.directCode;
+    const nav = item.directNav;
+    tuples.push([
+      code, item.cleanName, item.category, nav, item.regularNav,
+      calcPctGrowth(nav, mfSnapshots.m1.get(code)),
+      calcPctGrowth(nav, mfSnapshots.m3.get(code)),
+      calcPctGrowth(nav, mfSnapshots.m6.get(code)),
+      calcPctGrowth(nav, mfSnapshots.y1.get(code))
+    ]);
+  }
+  tuples.sort((a, b) => a[0] - b[0]);
+
+  const bodyLines = tuples.map(t => `  ${JSON.stringify(t)}`).join(",\n");
+  const jsCode =
+    `// Auto-generated by KYF Multi-Horizon EOD Admin\n` +
+    `window.KYF_MARKET_MF = {\n` +
+    `  asOf: "${baseISO}",\n` +
+    `  horizons: ${JSON.stringify(Object.fromEntries(HORIZONS.map(h => [h.key, h.iso])))},\n` +
+    `  columns: ["directCode", "fundName", "category", "directNav", "regularNav", "ret1m", "ret3m", "ret6m", "ret1y"],\n` +
+    `  schemes: [\n${bodyLines}\n  ]\n};\n`;
+
+  document.getElementById("mfPreview").value = jsCode;
+  document.getElementById("mfStats").textContent =
+    `✓ Built ${tuples.length} Direct/Regular Growth Funds • Size: ${(jsCode.length / 1024).toFixed(1)} KB`;
+  if (triggerDownload) downloadFile("market-mf.js", jsCode);
+}
+
+// ============================================================================
+// 5. MODULE 3 INITIALIZER & DRAG-AND-DROP BINDINGS
+// ============================================================================
+const pulseData = window.KYF_MARKET_PULSE || {
+  asOf: baseISO, lastTradingDay: baseISO,
+  macro: { cpiInflation: 5.4, medicalInflation: 11.5, educationInflation: 9.0, rbiRepo: 6.25, epfRate: 8.25, ppfRate: 7.1, ssyRate: 8.2, scssRate: 8.2, sbiFd1Yr: 6.8, sbiFd5Yr: 6.5, liquidFundAvg: 6.95, arbitrageFundAvg: 7.2, homeLoanAvg: 8.65, personalLoanAvg: 14.5, creditCardApr: 39.0 },
+  preciousMetals: { gold24kPerGram: 14395, gold22kPerGram: 13195, gold18kPerGram: 10796, silverPerGram: 175, silverPerKg: 175000, gold10YrCagr: 14.8 },
+  indices: {
+    NIFTY50: { name: "Nifty 50", role: "Large-Cap Core Engine", level: 24480.5, pe: 22.1, pb: 3.55, divYield: 1.25, cagr1y: 13.8, cagr5y: 14.9, cagr10y: 13.4 },
+    NIFTYNEXT50: { name: "Nifty Next 50", role: "Future Large-Cap Incubator", level: 69850, pe: 24.8, pb: 4.1, divYield: 1.05, cagr1y: 19.4, cagr5y: 17.8, cagr10y: 15.1 },
+    NIFTYMID150: { name: "Nifty Midcap 150", role: "High-Growth Mid-Sized", level: 20890, pe: 33.4, pb: 4.85, divYield: 0.75, cagr1y: 22.1, cagr5y: 23.4, cagr10y: 18.2 },
+    NIFTYSMALL250: { name: "Nifty Smallcap 250", role: "Aggressive Emerging", level: 17420, pe: 29.8, pb: 3.9, divYield: 0.65, cagr1y: 24.5, cagr5y: 25.1, cagr10y: 16.8 }
+  }
+};
+
+function initMod3Form() {
+  const macroEl = document.getElementById("macroFields");
+  let html = `<div class="field"><label>Snapshot Date (YYYY-MM-DD)</label><input id="f_asOf" value="${baseISO}" /></div>`;
+  for (const [k, v] of Object.entries(pulseData.macro)) {
+    html += `<div class="field"><label>${k}</label><input type="number" step="0.01" id="m_${k}" value="${v}" /></div>`;
+  }
+  macroEl.innerHTML = html;
+
+  document.getElementById("metalFields").innerHTML = Object.entries(pulseData.preciousMetals).map(([k, v]) =>
+    `<div class="field"><label>${k}</label><input type="number" step="1" id="pm_${k}" value="${v}" /></div>`
+  ).join("");
+
+  document.getElementById("indexFields").innerHTML = Object.entries(pulseData.indices).map(([key, obj]) => `
+    <div style="margin-bottom:14px;">
+      <div style="font-size:0.85rem;font-weight:700;margin-bottom:6px;color:#e2e8f0;">${obj.name} (${key})</div>
+      <div class="grid-4">
+        <div class="field"><label>Closing Level</label><input type="number" step="0.05" id="idx_${key}_level" value="${obj.level}" /></div>
+        <div class="field"><label>P/E Ratio</label><input type="number" step="0.01" id="idx_${key}_pe" value="${obj.pe}" /></div>
+        <div class="field"><label>1Y CAGR (%)</label><input type="number" step="0.1" id="idx_${key}_cagr1y" value="${obj.cagr1y}" /></div>
+        <div class="field"><label>5Y CAGR (%)</label><input type="number" step="0.1" id="idx_${key}_cagr5y" value="${obj.cagr5y}" /></div>
+        <div class="field"><label>10Y CAGR (%)</label><input type="number" step="0.1" id="idx_${key}_cagr10y" value="${obj.cagr10y}" /></div>
+      </div>
+    </div>
+  `).join("");
+  generatePulseJS(false);
+}
+
+function generatePulseJS(triggerDownload) {
+  const out = { asOf: document.getElementById("f_asOf").value.trim(), lastTradingDay: baseISO, macro: {}, preciousMetals: {}, indices: {} };
+  for (const k of Object.keys(pulseData.macro)) out.macro[k] = parseFloat(document.getElementById(`m_${k}`).value);
+  for (const k of Object.keys(pulseData.preciousMetals)) out.preciousMetals[k] = parseFloat(document.getElementById(`pm_${k}`).value);
+  for (const [key, orig] of Object.entries(pulseData.indices)) {
+    out.indices[key] = {
+      name: orig.name, role: orig.role,
+      level: parseFloat(document.getElementById(`idx_${key}_level`).value),
+      pe: parseFloat(document.getElementById(`idx_${key}_pe`).value),
+      pb: orig.pb, divYield: orig.divYield,
+      cagr1y: parseFloat(document.getElementById(`idx_${key}_cagr1y`).value),
+      cagr5y: parseFloat(document.getElementById(`idx_${key}_cagr5y`).value),
+      cagr10y: parseFloat(document.getElementById(`idx_${key}_cagr10y`).value)
+    };
+  }
+  const jsCode = `// Auto-generated by KYF EOD Admin on ${new Date().toISOString()}\nwindow.KYF_MARKET_PULSE = ${JSON.stringify(out, null, 2)};\n`;
+  document.getElementById("pulsePreview").value = jsCode;
+  if (triggerDownload) downloadFile("market-pulse.js", jsCode);
+}
+
+// Drag-and-Drop event listeners for Batch Drop Zone
+const dropZone = document.getElementById("nseBatchDrop");
+dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+dropZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dropZone.classList.remove("dragover");
+  if (e.dataTransfer.files.length) handleBatchNseFiles(e.dataTransfer.files);
+});
+
+function switchTab(id, btn) {
+  document.querySelectorAll(".module-card").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  btn.classList.add("active");
+}
+
+function downloadFile(filename, content) {
+  if (!content) return alert("Generate or parse data first!");
+  const blob = new Blob([content], { type: "application/javascript" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function copyPreview(id) {
+  const el = document.getElementById(id);
+  el.select();
+  document.execCommand("copy");
+}
+
+renderHorizonTables();
+initMod3Form();
+</script>
+</body>
+</html>

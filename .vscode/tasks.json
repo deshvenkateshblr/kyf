@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "KYF: Sync EOD Market Data (NSE & AMFI)",
+      "type": "shell",
+      "command": "py",
+      "windows": {
+        "command": "py"
+      },
+      "osx": {
+        "command": "python3"
+      },
+      "linux": {
+        "command": "python3"
+      },
+      "args": ["admin/sync_market_data.py"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "clear": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}

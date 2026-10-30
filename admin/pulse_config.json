@@ -1,0 +1,77 @@
+{
+  "macro": {
+    "cpiInflation": 5.4,
+    "medicalInflation": 11.5,
+    "educationInflation": 9.0,
+    "rbiRepo": 6.25,
+    "epfRate": 8.25,
+    "ppfRate": 7.1,
+    "ssyRate": 8.2,
+    "scssRate": 8.2,
+    "sbiFd1Yr": 6.8,
+    "sbiFd5Yr": 6.5,
+    "liquidFundAvg": 6.95,
+    "arbitrageFundAvg": 7.2,
+    "homeLoanAvg": 8.65,
+    "personalLoanAvg": 14.5,
+    "creditCardApr": 39.0
+  },
+  "preciousMetals": {
+    "gold24kPerGram": 14395,
+    "gold22kPerGram": 13195,
+    "gold18kPerGram": 10796,
+    "silverPerGram": 175,
+    "silverPerKg": 175000,
+    "gold10YrCagr": 14.8
+  },
+  "indicesBaseline": {
+    "NIFTY50": {
+      "nseCsvName": "Nifty 50",
+      "name": "Nifty 50",
+      "role": "Large-Cap Core Engine (Top 50 Indian Companies)",
+      "level": 24480.5,
+      "pe": 22.1,
+      "pb": 3.55,
+      "divYield": 1.25,
+      "cagr1y": 13.8,
+      "cagr5y": 14.9,
+      "cagr10y": 13.4
+    },
+    "NIFTYNEXT50": {
+      "nseCsvName": "Nifty Next 50",
+      "name": "Nifty Next 50",
+      "role": "Future Large-Cap Incubator (Rank 51\u2013100)",
+      "level": 69850.0,
+      "pe": 24.8,
+      "pb": 4.1,
+      "divYield": 1.05,
+      "cagr1y": 19.4,
+      "cagr5y": 17.8,
+      "cagr10y": 15.1
+    },
+    "NIFTYMID150": {
+      "nseCsvName": "Nifty Midcap 150",
+      "name": "Nifty Midcap 150",
+      "role": "High-Growth Mid-Sized Businesses (Rank 101\u2013250)",
+      "level": 20890.0,
+      "pe": 33.4,
+      "pb": 4.85,
+      "divYield": 0.75,
+      "cagr1y": 22.1,
+      "cagr5y": 23.4,
+      "cagr10y": 18.2
+    },
+    "NIFTYSMALL250": {
+      "nseCsvName": "Nifty Smallcap 250",
+      "name": "Nifty Smallcap 250",
+      "role": "Aggressive Emerging Companies (High Volatility)",
+      "level": 17420.0,
+      "pe": 29.8,
+      "pb": 3.9,
+      "divYield": 0.65,
+      "cagr1y": 24.5,
+      "cagr5y": 25.1,
+      "cagr10y": 16.8
+    }
+  }
+}

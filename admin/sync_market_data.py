@@ -1,0 +1,621 @@
+#!/usr/bin/env python3
+"""
+Know Your Finance (KYF) — Unified EOD Market Data Build Script (Modules 3, 4 & 5)
+Run via VS Code Build Task (Ctrl+Shift+B) or `python admin/sync_market_data.py`
+Outputs:
+  - ../data/market-pulse.js    (Module 3: Macro, Gold & Live NSE Index Multiples/Returns)
+  - ../data/market-equities.js (Module 4: NSE Stocks with Latest, 1M, 3M, 6M, 1Y Growth %)
+  - ../data/market-mf.js       (Module 5: AMFI Direct/Regular NAVs with 1M, 3M, 6M, 1Y Growth %)
+"""
+
+import csv
+import datetime
+import http.cookiejar
+import io
+import json
+import os
+import re
+import urllib.error
+import urllib.request
+import zipfile
+
+# ============================================================================
+# 1. PATHS & TRADING CALENDAR SETUP
+# ============================================================================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data"))
+CACHE_DIR = os.path.join(BASE_DIR, ".cache")
+PULSE_CONFIG_PATH = os.path.join(BASE_DIR, "pulse_config.json")
+
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+MONTHS_SHORT = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+MONTHS_TITLE = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+NSE_HOLIDAYS = {
+    "2025-10-02": "Gandhi Jayanti / Dussehra",
+    "2025-10-21": "Diwali Laxmi Pujan",
+    "2025-10-22": "Diwali-Balipratipada",
+    "2025-11-05": "Guru Nanak Jayanti",
+    "2025-12-25": "Christmas",
+    "2026-01-26": "Republic Day",
+    "2026-03-03": "Holi",
+    "2026-03-26": "Shri Ram Navami",
+    "2026-03-31": "Shri Mahavir Jayanti",
+    "2026-04-03": "Good Friday",
+    "2026-04-14": "Ambedkar Jayanti",
+    "2026-05-01": "Maharashtra Day",
+    "2026-05-28": "Bakri Id",
+    "2026-06-26": "Muharram",
+    "2026-09-14": "Ganesh Chaturthi",
+    "2026-10-02": "Mahatma Gandhi Jayanti",
+    "2026-10-20": "Dussehra",
+    "2026-11-10": "Diwali-Balipratipada",
+    "2026-11-24": "Guru Nanak Jayanti",
+    "2026-12-25": "Christmas",
+}
+
+SPECIAL_SESSIONS = {"2026-11-08"}  # Sunday Diwali Muhurat Trading
+
+
+def is_trading_day(dt: datetime.date) -> bool:
+    iso = dt.strftime("%Y-%m-%d")
+    if iso in SPECIAL_SESSIONS:
+        return True
+    if iso in NSE_HOLIDAYS:
+        return False
+    return dt.weekday() < 5
+
+
+def resolve_trading_date_on_or_before(dt: datetime.date) -> datetime.date:
+    cursor = dt
+    for _ in range(12):
+        if is_trading_day(cursor):
+            return cursor
+        cursor -= datetime.timedelta(days=1)
+    return dt
+
+
+def subtract_months(dt: datetime.date, months_back: int) -> datetime.date:
+    if months_back == 0:
+        return resolve_trading_date_on_or_before(dt)
+    year = dt.year
+    month = dt.month - months_back
+    while month <= 0:
+        month += 12
+        year -= 1
+    next_month = datetime.date(year + (month // 12), (month % 12) + 1, 1)
+    max_day = (next_month - datetime.timedelta(days=1)).day
+    clamped_dt = datetime.date(year, month, min(dt.day, max_day))
+    return resolve_trading_date_on_or_before(clamped_dt)
+
+
+def get_horizons(reference_date: datetime.date = None):
+    if reference_date is None:
+        ist_now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
+        base_dt = ist_now.date()
+        if ist_now.hour < 16 and is_trading_day(base_dt):
+            base_dt -= datetime.timedelta(days=1)
+    else:
+        base_dt = reference_date
+
+    latest_dt = resolve_trading_date_on_or_before(base_dt)
+    return {
+        "latest": latest_dt,
+        "m1": subtract_months(latest_dt, 1),
+        "m3": subtract_months(latest_dt, 3),
+        "m6": subtract_months(latest_dt, 6),
+        "y1": subtract_months(latest_dt, 12),
+    }
+
+
+def calc_pct(curr, past):
+    if not curr or not past or past <= 0:
+        return None
+    return round(((curr - past) / past) * 100.0, 2)
+
+
+# ============================================================================
+# 2. HTTP SESSION & CACHED DOWNLOADERS
+# ============================================================================
+def create_http_opener():
+    cj = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+    opener.addheaders = [
+        ("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"),
+        ("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+        ("Accept-Language", "en-US,en;q=0.5"),
+        ("Referer", "https://www.nseindia.com/all-reports"),
+    ]
+    try:
+        opener.open("https://www.nseindia.com", timeout=10).read()
+    except Exception:
+        pass
+    return opener
+
+
+def fetch_nse_index_csv(opener, dt: datetime.date) -> str:
+    """Fetches NSE Daily Index snapshot: ind_close_all_DDMMYYYY.csv"""
+    ddmmyyyy = dt.strftime("%d%m%Y")
+    cache_file = os.path.join(CACHE_DIR, f"nse_idx_{dt.strftime('%Y%m%d')}.csv")
+    if os.path.exists(cache_file):
+        with open(cache_file, "r", encoding="utf-8") as f:
+            return f.read()
+
+    url = f"https://nsearchives.nseindia.com/content/indices/ind_close_all_{ddmmyyyy}.csv"
+    try:
+        print(f"  [Downloading Index CSV] {url} ...")
+        resp = opener.open(url, timeout=15)
+        csv_text = resp.read().decode("utf-8", errors="replace")
+        if "Index Name" in csv_text:
+            with open(cache_file, "w", encoding="utf-8") as f:
+                f.write(csv_text)
+            return csv_text
+    except Exception as e:
+        print(f"  [Info] NSE Index CSV unavailable for {dt.isoformat()} ({e})")
+    return ""
+
+
+def fetch_nse_bhavcopy_csv(opener, dt: datetime.date) -> str:
+    compact = dt.strftime("%Y%m%d")
+    cache_file = os.path.join(CACHE_DIR, f"nse_{compact}.csv")
+    if os.path.exists(cache_file):
+        print(f"  [Cache Hit] NSE Bhavcopy for {dt.isoformat()}")
+        with open(cache_file, "r", encoding="utf-8") as f:
+            return f.read()
+
+    mmm = MONTHS_SHORT[dt.month - 1]
+    urls = [
+        f"https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_{compact}_F_0000.csv.zip",
+        f"https://nsearchives.nseindia.com/content/historical/EQUITIES/{dt.year}/{mmm}/cm{dt.strftime('%d')}{mmm}{dt.year}bhav.csv.zip",
+    ]
+
+    for url in urls:
+        try:
+            print(f"  [Downloading] {url} ...")
+            resp = opener.open(url, timeout=20)
+            raw_bytes = resp.read()
+            with zipfile.ZipFile(io.BytesIO(raw_bytes)) as zf:
+                csv_name = zf.namelist()[0]
+                csv_text = zf.read(csv_name).decode("utf-8", errors="replace")
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    f.write(csv_text)
+                return csv_text
+        except Exception as e:
+            print(f"  [Warn] Failed {url}: {e}")
+    return ""
+
+
+def fetch_amfi_nav_txt(opener, dt: datetime.date, is_latest: bool) -> str:
+    compact = dt.strftime("%Y%m%d")
+    cache_file = os.path.join(CACHE_DIR, f"amfi_{compact}.txt")
+    if os.path.exists(cache_file):
+        print(f"  [Cache Hit] AMFI NAV for {dt.isoformat()}")
+        with open(cache_file, "r", encoding="utf-8") as f:
+            return f.read()
+
+    mmm = MONTHS_TITLE[dt.month - 1]
+    amfi_date = f"{dt.strftime('%d')}-{mmm}-{dt.year}"
+    url = (
+        "https://www.amfiindia.com/spages/NAVAll.txt"
+        if is_latest
+        else f"https://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?frmdt={amfi_date}"
+    )
+
+    try:
+        print(f"  [Downloading] {url} ...")
+        resp = opener.open(url, timeout=25)
+        txt = resp.read().decode("utf-8", errors="replace")
+        if ";" in txt:
+            with open(cache_file, "w", encoding="utf-8") as f:
+                f.write(txt)
+            return txt
+    except Exception as e:
+        print(f"  [Warn] Failed AMFI fetch for {amfi_date}: {e}")
+    return ""
+
+
+# ============================================================================
+# 3. BUILD MODULE 3 (`data/market-pulse.js`)
+# ============================================================================
+DEFAULT_PULSE_CONFIG = {
+    "macro": {
+        "cpiInflation": 5.40,
+        "medicalInflation": 11.50,
+        "educationInflation": 9.00,
+        "rbiRepo": 6.25,
+        "epfRate": 8.25,
+        "ppfRate": 7.10,
+        "ssyRate": 8.20,
+        "scssRate": 8.20,
+        "sbiFd1Yr": 6.80,
+        "sbiFd5Yr": 6.50,
+        "liquidFundAvg": 6.95,
+        "arbitrageFundAvg": 7.20,
+        "homeLoanAvg": 8.65,
+        "personalLoanAvg": 14.50,
+        "creditCardApr": 39.00,
+    },
+    "preciousMetals": {
+        "gold24kPerGram": 14395,
+        "gold22kPerGram": 13195,
+        "gold18kPerGram": 10796,
+        "silverPerGram": 175,
+        "silverPerKg": 175000,
+        "gold10YrCagr": 14.80,
+    },
+    "indicesBaseline": {
+        "NIFTY50": {
+            "nseCsvName": "Nifty 50",
+            "name": "Nifty 50",
+            "role": "Large-Cap Core Engine (Top 50 Indian Companies)",
+            "level": 24480.50,
+            "pe": 22.10,
+            "pb": 3.55,
+            "divYield": 1.25,
+            "cagr1y": 13.80,
+            "cagr5y": 14.90,
+            "cagr10y": 13.40,
+        },
+        "NIFTYNEXT50": {
+            "nseCsvName": "Nifty Next 50",
+            "name": "Nifty Next 50",
+            "role": "Future Large-Cap Incubator (Rank 51–100)",
+            "level": 69850.00,
+            "pe": 24.80,
+            "pb": 4.10,
+            "divYield": 1.05,
+            "cagr1y": 19.40,
+            "cagr5y": 17.80,
+            "cagr10y": 15.10,
+        },
+        "NIFTYMID150": {
+            "nseCsvName": "Nifty Midcap 150",
+            "name": "Nifty Midcap 150",
+            "role": "High-Growth Mid-Sized Businesses (Rank 101–250)",
+            "level": 20890.00,
+            "pe": 33.40,
+            "pb": 4.85,
+            "divYield": 0.75,
+            "cagr1y": 22.10,
+            "cagr5y": 23.40,
+            "cagr10y": 18.20,
+        },
+        "NIFTYSMALL250": {
+            "nseCsvName": "Nifty Smallcap 250",
+            "name": "Nifty Smallcap 250",
+            "role": "Aggressive Emerging Companies (High Volatility)",
+            "level": 17420.00,
+            "pe": 29.80,
+            "pb": 3.90,
+            "divYield": 0.65,
+            "cagr1y": 24.50,
+            "cagr5y": 25.10,
+            "cagr10y": 16.80,
+        },
+    },
+}
+
+
+def parse_nse_index_csv(csv_text: str) -> dict:
+    """Parses ind_close_all_DDMMYYYY.csv into a map keyed by lowercase Index Name."""
+    if not csv_text:
+        return {}
+    reader = csv.reader(io.StringIO(csv_text))
+    headers = [h.strip() for h in next(reader, [])]
+
+    def col_idx(name):
+        for i, h in enumerate(headers):
+            if h.lower() == name.lower():
+                return i
+        return -1
+
+    i_name = col_idx("Index Name")
+    i_close = col_idx("Closing Index Value")
+    i_pe = col_idx("P/E")
+    i_pb = col_idx("P/B")
+    i_div = col_idx("Div Yield")
+
+    if i_name == -1 or i_close == -1:
+        return {}
+
+    def safe_float(val):
+        try:
+            return round(float(val.strip()), 2)
+        except Exception:
+            return None
+
+    out = {}
+    for row in reader:
+        if len(row) <= max(i_name, i_close):
+            continue
+        name_key = row[i_name].strip().lower()
+        close_val = safe_float(row[i_close])
+        if name_key and close_val:
+            out[name_key] = {
+                "level": close_val,
+                "pe": safe_float(row[i_pe]) if i_pe != -1 and i_pe < len(row) else None,
+                "pb": safe_float(row[i_pb]) if i_pb != -1 and i_pb < len(row) else None,
+                "divYield": safe_float(row[i_div]) if i_div != -1 and i_div < len(row) else None,
+            }
+    return out
+
+
+def build_pulse_js(opener, horizons: dict):
+    print("\n--- Building Module 3: data/market-pulse.js ---")
+    if not os.path.exists(PULSE_CONFIG_PATH):
+        with open(PULSE_CONFIG_PATH, "w", encoding="utf-8") as f:
+            json.dump(DEFAULT_PULSE_CONFIG, f, indent=2)
+        print(f"  [Created Default Config] {PULSE_CONFIG_PATH}")
+
+    with open(PULSE_CONFIG_PATH, "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+
+    # Fetch NSE Index CSV across all 5 horizons to compute live index 1M, 3M, 6M, 1Y returns
+    idx_snapshots = {}
+    for key, dt in horizons.items():
+        csv_txt = fetch_nse_index_csv(opener, dt)
+        idx_snapshots[key] = parse_nse_index_csv(csv_txt)
+
+    indices_out = {}
+    for key, base_obj in cfg["indicesBaseline"].items():
+        lookup_name = base_obj.get("nseCsvName", base_obj["name"]).lower()
+        latest_live = idx_snapshots.get("latest", {}).get(lookup_name, {})
+
+        level = latest_live.get("level") or base_obj["level"]
+        pe = latest_live.get("pe") or base_obj["pe"]
+        pb = latest_live.get("pb") or base_obj["pb"]
+        div_yield = latest_live.get("divYield") or base_obj["divYield"]
+
+        r1m = calc_pct(level, idx_snapshots.get("m1", {}).get(lookup_name, {}).get("level"))
+        r3m = calc_pct(level, idx_snapshots.get("m3", {}).get(lookup_name, {}).get("level"))
+        r6m = calc_pct(level, idx_snapshots.get("m6", {}).get(lookup_name, {}).get("level"))
+        r1y = calc_pct(level, idx_snapshots.get("y1", {}).get(lookup_name, {}).get("level"))
+
+        indices_out[key] = {
+            "name": base_obj["name"],
+            "role": base_obj["role"],
+            "level": level,
+            "pe": pe,
+            "pb": pb,
+            "divYield": div_yield,
+            "ret1m": r1m,
+            "ret3m": r3m,
+            "ret6m": r6m,
+            "cagr1y": r1y if r1y is not None else base_obj["cagr1y"],
+            "cagr5y": base_obj["cagr5y"],
+            "cagr10y": base_obj["cagr10y"],
+        }
+
+    pulse_payload = {
+        "asOf": horizons["latest"].isoformat(),
+        "lastTradingDay": horizons["latest"].isoformat(),
+        "horizons": {k: v.isoformat() for k, v in horizons.items()},
+        "macro": cfg["macro"],
+        "preciousMetals": cfg["preciousMetals"],
+        "indices": indices_out,
+    }
+
+    js_content = (
+        f"// Auto-generated by admin/sync_market_data.py on {datetime.datetime.now().isoformat()}\n"
+        f"window.KYF_MARKET_PULSE = {json.dumps(pulse_payload, indent=2)};\n"
+    )
+
+    out_path = os.path.join(DATA_DIR, "market-pulse.js")
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(js_content)
+    print(f"  [Success] Wrote Module 3 to {out_path} ({len(js_content)/1024:.1f} KB)")
+
+
+# ============================================================================
+# 4. BUILD MODULE 4 (`data/market-equities.js`)
+# ============================================================================
+def parse_nse_csv(csv_text: str) -> dict:
+    if not csv_text:
+        return {}
+    reader = csv.reader(io.StringIO(csv_text))
+    headers = [h.strip() for h in next(reader, [])]
+
+    def idx(cols):
+        for c in cols:
+            if c in headers:
+                return headers.index(c)
+        return -1
+
+    i_sym = idx(["TckrSymb", "SYMBOL"])
+    i_srs = idx(["SctySrs", "SERIES"])
+    i_name = idx(["FinInstrmNm"])
+    i_close = idx(["ClsPric", "CLOSE"])
+
+    result = {}
+    for row in reader:
+        if len(row) <= max(i_sym, i_srs, i_close):
+            continue
+        if row[i_srs].strip() != "EQ":
+            continue
+        sym = row[i_sym].strip()
+        name = row[i_name].strip() if (i_name != -1 and i_name < len(row) and row[i_name].strip()) else sym
+        try:
+            close_val = float(row[i_close].strip())
+            if sym and close_val > 0:
+                result[sym] = {"name": name, "close": close_val}
+        except ValueError:
+            continue
+    return result
+
+
+def build_equities_js(opener, horizons: dict):
+    print("\n--- Building Module 4: data/market-equities.js ---")
+    snapshots = {}
+    for key, dt in horizons.items():
+        csv_text = fetch_nse_bhavcopy_csv(opener, dt)
+        snapshots[key] = parse_nse_csv(csv_text)
+
+    latest_map = snapshots.get("latest", {})
+    if not latest_map:
+        print("  [Skip] No Latest NSE data available.")
+        return
+
+    tuples = []
+    for sym in sorted(latest_map.keys()):
+        c = latest_map[sym]["close"]
+        name = latest_map[sym]["name"]
+        tuples.append([
+            sym,
+            name,
+            c,
+            calc_pct(c, snapshots["m1"].get(sym, {}).get("close")),
+            calc_pct(c, snapshots["m3"].get(sym, {}).get("close")),
+            calc_pct(c, snapshots["m6"].get(sym, {}).get("close")),
+            calc_pct(c, snapshots["y1"].get(sym, {}).get("close")),
+        ])
+
+    horizon_iso = {k: v.isoformat() for k, v in horizons.items()}
+    body_lines = ",\n".join(f"  {json.dumps(t)}" for t in tuples)
+    js_content = (
+        f"// Auto-generated by admin/sync_market_data.py\n"
+        f"window.KYF_MARKET_EQUITIES = {{\n"
+        f'  asOf: "{horizons["latest"].isoformat()}",\n'
+        f"  horizons: {json.dumps(horizon_iso)},\n"
+        f'  columns: ["symbol", "companyName", "closePrice", "ret1m", "ret3m", "ret6m", "ret1y"],\n'
+        f"  stocks: [\n{body_lines}\n  ]\n"
+        f"}};\n"
+    )
+
+    out_path = os.path.join(DATA_DIR, "market-equities.js")
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(js_content)
+    print(f"  [Success] Wrote {len(tuples)} stocks to {out_path} ({len(js_content)/1024:.1f} KB)")
+
+
+# ============================================================================
+# 5. BUILD MODULE 5 (`data/market-mf.js`)
+# ============================================================================
+def parse_amfi_txt(raw_text: str, is_latest: bool):
+    grouped = {}
+    by_code = {}
+    if not raw_text:
+        return grouped if is_latest else by_code
+
+    current_cat = "Open Ended"
+    is_open_ended = True
+
+    for raw_line in raw_text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if ";" not in line:
+            if line.startswith("Open Ended Schemes"):
+                is_open_ended = True
+                m = re.search(r"\(([^)]+)\)", line)
+                current_cat = re.sub(r"(?i)scheme\s*-\s*", "", m.group(1)).strip() if m else "Open Ended"
+            elif line.startswith("Close Ended") or line.startswith("Interval Fund"):
+                is_open_ended = False
+            continue
+
+        if not is_open_ended:
+            continue
+        parts = line.split(";");
+        if len(parts) < 5:
+            continue
+        try:
+            code = int(parts[0].strip())
+            raw_name = parts[3].strip()
+            nav = float(parts[4].strip())
+        except ValueError:
+            continue
+
+        if nav <= 0:
+            continue
+        by_code[code] = nav
+
+        if is_latest:
+            if re.search(r"(?i)idcw|dividend|bonus|payout|reinvestment|weekly|daily|monthly|quarterly", raw_name):
+                continue
+            if not re.search(r"(?i)growth", raw_name):
+                continue
+
+            is_direct = bool(re.search(r"(?i)\bdirect\b", raw_name))
+            base_key = re.sub(r"(?i)\b(direct|regular|plan|option|growth)\b", "", raw_name)
+            base_key = re.sub(r"[^a-zA-Z0-9]", "", base_key).lower()
+
+            if base_key not in grouped:
+                clean_display = re.sub(r"(?i)\s*-\s*(direct|regular)\s*(plan)?", "", raw_name)
+                clean_display = re.sub(r"(?i)\s*-\s*growth\s*(option)?", "", clean_display).strip()
+                grouped[base_key] = {
+                    "directCode": None,
+                    "cleanName": clean_display,
+                    "category": current_cat,
+                    "directNav": None,
+                    "regularNav": None,
+                }
+            if is_direct:
+                grouped[base_key]["directCode"] = code
+                grouped[base_key]["directNav"] = nav
+            else:
+                grouped[base_key]["regularNav"] = nav
+
+    return grouped if is_latest else by_code
+
+
+def build_mf_js(opener, horizons: dict):
+    print("\n--- Building Module 5: data/market-mf.js ---")
+    snapshots = {}
+    for idx, (key, dt) in enumerate(horizons.items()):
+        txt = fetch_amfi_nav_txt(opener, dt, is_latest=(idx == 0))
+        snapshots[key] = parse_amfi_txt(txt, is_latest=(idx == 0))
+
+    latest_grouped = snapshots.get("latest", {})
+    if not latest_grouped:
+        print("  [Skip] No Latest AMFI NAV data available.")
+        return
+
+    tuples = []
+    for item in latest_grouped.values():
+        code = item["directCode"]
+        nav = item["directNav"]
+        if not code or nav is None:
+            continue
+        tuples.append([
+            code,
+            item["cleanName"],
+            item["category"],
+            nav,
+            item["regularNav"],
+            calc_pct(nav, snapshots["m1"].get(code)),
+            calc_pct(nav, snapshots["m3"].get(code)),
+            calc_pct(nav, snapshots["m6"].get(code)),
+            calc_pct(nav, snapshots["y1"].get(code)),
+        ])
+
+    tuples.sort(key=lambda x: x[0])
+    horizon_iso = {k: v.isoformat() for k, v in horizons.items()}
+    body_lines = ",\n".join(f"  {json.dumps(t)}" for t in tuples)
+    js_content = (
+        f"// Auto-generated by admin/sync_market_data.py\n"
+        f"window.KYF_MARKET_MF = {{\n"
+        f'  asOf: "{horizons["latest"].isoformat()}",\n'
+        f"  horizons: {json.dumps(horizon_iso)},\n"
+        f'  columns: ["directCode", "fundName", "category", "directNav", "regularNav", "ret1m", "ret3m", "ret6m", "ret1y"],\n'
+        f"  schemes: [\n{body_lines}\n  ]\n"
+        f"}};\n"
+    )
+
+    out_path = os.path.join(DATA_DIR, "market-mf.js")
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(js_content)
+    print(f"  [Success] Wrote {len(tuples)} MF schemes to {out_path} ({len(js_content)/1024:.1f} KB)")
+
+
+if __name__ == "__main__":
+    print("=== KYF Unified EOD Market Sync (Modules 3, 4 & 5) ===")
+    target_horizons = get_horizons()
+    for k, d in target_horizons.items():
+        print(f"  Horizon [{k.upper():6s}] -> {d.isoformat()} ({d.strftime('%a')})")
+
+    http_opener = create_http_opener()
+    build_pulse_js(http_opener, target_horizons)
+    build_equities_js(http_opener, target_horizons)
+    build_mf_js(http_opener, target_horizons)
+    print("\n=== All 3 Market Bundles (pulse, equities, mf) Updated in /data/ ===")
