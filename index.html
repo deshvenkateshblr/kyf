@@ -37,6 +37,7 @@
       font-family: var(--sans);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      padding-bottom: 48px;
     }
     a { color: inherit; }
     img { max-width: 100%; display: block; }
@@ -267,6 +268,38 @@
       .chip { display: none; }
       .sheet { transform: none; }
     }
+    /* Sticky Feedback Footer */
+    .sticky-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(24, 38, 32, 0.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #eef1ea;
+      text-align: center;
+      padding: 10px 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .sticky-footer a {
+      color: #8fe0cd;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+    .sticky-footer a:hover {
+      color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -278,8 +311,9 @@
         <a href="#dimensions">3 Dimensions</a>
         <a href="#journey">How it works</a>
         <a href="#outputs">What you get</a>
+        <a href="cadence.html">Cadence</a>
         <a href="#trust">Privacy</a>
-        <a class="btn" href="about.html">Start</a>
+        <a class="btn" href="cadence.html">Start</a>
       </nav>
     </div>
   </header>
@@ -295,7 +329,7 @@
           </h1>
           <p class="lede">Welcome to your personal, privacy-first financial field guide and pocket-calculator app that empowers you to do exactly that.</p>
           <div class="cta-row">
-            <a class="btn" href="about.html" aria-label="Start Finance reflection">Start the journey &rarr;</a>
+            <a class="btn" href="cadence.html" aria-label="Start Finance Cadence">Start the journey &rarr;</a>
             <a class="btn secondary" href="#journey">See how it works</a>
           </div>
           <p class="micro"><span>No sign-up</span><span>Runs locally</span><span>CFP-style Money Brief</span></p>
@@ -483,12 +517,12 @@
     </section>
 
     <!-- VIDEO -->
-    <section id="video">
+    <section id="video" style="display:none;">
       <div class="wrap video-box reveal">
         <p class="eyebrow">Quick walkthrough</p>
         <h2 style="margin-bottom:32px;">See KYF in action</h2>
         <div class="video-poster" id="videoPoster">
-          <img class="logo" src="styles/kyf_logo.png" alt="">
+          <img class="logo" src="css/kyf_logo.png" alt="">
           <button type="button" class="play" id="playBtn" aria-label="Play the walkthrough video"><span aria-hidden="true">&#9654;</span> Watch walkthrough</button>
         </div>
       </div>
@@ -522,25 +556,20 @@
         </div>
       </div>
     </section>
-
-    <!-- FINAL CTA -->
-    <section class="final">
-      <div class="wrap reveal">
-        <p class="eyebrow" style="color:#bfe6dd;">Clarity compounds</p>
-        <h2>Take three quiet minutes for your financial future today.</h2>
-        <p>Three conversational questions now. A lifetime of clearer money decisions ahead.</p>
-        <a class="btn light" href="about.html">Start the 3-Question Journey &rarr;</a>
-      </div>
-    </section>
   </main>
 
   <footer>
     <div class="wrap foot">
       <span>KYF — Know Your Finance. Build Money Power at Your Own Pace. Runs entirely in your browser.</span>
-      <span class="links"><a href="about.html">Start</a><a href="#dimensions">3 Dimensions</a><a href="#trust">Privacy</a></span>
+      <span class="links"><a href="cadence.html">Start</a><a href="#dimensions">3 Dimensions</a><a href="cadence.html">Cadence</a><a href="#trust">Privacy</a></span>
       <span>100% Educational Simulator &middot; Not Financial Advice.</span>
     </div>
   </footer>
+
+  <!-- STICKY FEEDBACK FOOTER -->
+  <aside class="sticky-footer" aria-label="Feedback and contact">
+    <span>Comments, questions, feedback? Write to <a href="mailto:info@vividnova.com">info@vividnova.com</a></span>
+  </aside>
 
   <script>
     // Walkthrough video: load only on click so no third-party request is made until the visitor asks.

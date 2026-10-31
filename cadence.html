@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Know Your Finance (KYF) Action Cadence — Organize and track your financial milestones, life goals, and recurring housekeeping activities. 100% private, runs locally.">
+  <meta name="theme-color" content="#1f7a6c">
+  <title>Action Cadence — Know Your Finance (KYF)</title>
+  <link rel="icon" href="css/kyf_logo.png">
+  <style>
+    :root {
+      --ink: #182620;
+      --ink-soft: #3d4a44;
+      --paper: #eef1ea;
+      --panel: #ffffff;
+      --line: #d7ddd2;
+      --muted: #6d786f;
+      --teal: #1f7a6c;
+      --teal-deep: #145a4f;
+      --teal-soft: #e3f0ec;
+      --amber: #c97a2b;
+      --amber-soft: #f7e9d8;
+      --rose: #a8503f;
+      --rose-soft: #faebe8;
+      --green: #2e7d32;
+      --green-soft: #e8f5e9;
+      --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+      --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, serif;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+      --wrap: 1140px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 48px;
+    }
+    a { color: inherit; }
+    img { max-width: 100%; display: block; }
+    ::selection { background: var(--teal); color: #fff; }
+    :focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
+
+    .wrap { width: min(var(--wrap), 100% - clamp(24px, 5vw, 64px)); margin-inline: auto; }
+
+    /* ---------- Nav ---------- */
+    .nav {
+      position: sticky; top: 0; z-index: 30;
+      background: rgba(238,241,234,.92);
+      backdrop-filter: saturate(1.4) blur(10px);
+      -webkit-backdrop-filter: saturate(1.4) blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 0; }
+    .nav img { height: 40px; width: auto; }
+    .nav-links { display: flex; align-items: center; gap: 16px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    .nav-links a { text-decoration: none; color: var(--ink-soft); transition: color .15s ease; }
+    .nav-links a:hover, .nav-links a.active { color: var(--teal); font-weight: 700; }
+    
+    .nav-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase;
+      text-decoration: none; cursor: pointer; padding: 8px 16px; border-radius: 999px;
+      font-weight: 700; transition: all .18s ease; outline: none; border: 2px solid transparent;
+      line-height: 1.2;
+    }
+    .nav-btn.primary {
+      background: var(--teal); color: #ffffff !important; border-color: var(--teal);
+      box-shadow: 0 2px 8px rgba(31,122,108,.3);
+    }
+    .nav-btn.primary:hover {
+      background: var(--teal-deep); border-color: var(--teal-deep); color: #ffffff !important;
+      transform: translateY(-1px);
+    }
+    .nav-btn.secondary {
+      background: var(--panel); color: var(--ink) !important; border-color: var(--line);
+    }
+    .nav-btn.secondary:hover {
+      background: var(--paper); border-color: var(--teal); color: var(--teal) !important;
+      transform: translateY(-1px);
+    }
+
+    /* Toast Notification */
+    .toast-notice {
+      position: fixed; bottom: 62px; right: 24px; z-index: 110;
+      background: var(--ink); color: #fff; padding: 12px 20px;
+      border-radius: 8px; font-family: var(--mono); font-size: 12px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.25); border-left: 4px solid var(--teal);
+      transform: translateY(140%); opacity: 0; pointer-events: none;
+      transition: transform .25s cubic-bezier(.2,.8,.2,1), opacity .25s ease;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast-notice.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+
+    /* ---------- Eyebrows & Headings ---------- */
+    .eyebrow {
+      font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--teal); margin: 0 0 10px;
+    }
+    h1, h2, h3 { font-family: var(--serif); font-weight: 100; letter-spacing: -0.015em; margin: 0; }
+
+    /* ---------- Hero & Overview ---------- */
+    .cadence-hero {
+      padding: clamp(32px, 5vh, 48px) 0 clamp(24px, 4vh, 36px);
+      background:
+        radial-gradient(ellipse 650px 380px at 5% 0%, rgba(31,122,108,.12), transparent 60%),
+        radial-gradient(ellipse 550px 380px at 95% 100%, rgba(201,122,43,.14), transparent 60%),
+        var(--paper);
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 20px; }
+    .cadence-hero h1 { font-size: clamp(30px, 4vw, 44px); line-height: 1.15; margin-bottom: 12px; }
+    .cadence-hero .lede { font-size: clamp(15px, 1.3vw, 17px); color: var(--ink-soft); max-width: 660px; margin: 0; }
+    
+    .privacy-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+      padding: 6px 14px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft); margin-bottom: 18px;
+    }
+    .privacy-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
+
+    /* Summary Metric Strip */
+    .metric-strip {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px; margin-top: 24px;
+    }
+    .metric-card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      padding: 14px 18px; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .metric-card:hover { transform: translateY(-2px); border-color: var(--teal); box-shadow: 0 6px 16px rgba(0,0,0,.04); }
+    .metric-card.active-metric { border-color: var(--teal); background: var(--teal-soft); }
+    .metric-card .val { font-size: 26px; font-weight: 700; font-family: var(--mono); color: var(--ink); line-height: 1; }
+    .metric-card .lbl { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-top: 6px; }
+
+    /* ---------- Search & Filters Toolbar ---------- */
+    .controls-bar {
+      position: sticky; top: 65px; z-index: 25;
+      background: rgba(238,241,234,.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 18px 0; border-bottom: 1px solid var(--line);
+    }
+    .controls-inner {
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .search-row {
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+    }
+    .search-box {
+      flex: 1 1 320px; position: relative; display: flex; align-items: center;
+    }
+    .search-box svg {
+      position: absolute; left: 14px; color: var(--muted); pointer-events: none;
+    }
+    .search-input {
+      width: 100%; height: 44px; padding: 0 40px 0 42px;
+      font-family: var(--sans); font-size: 14.5px;
+      background: var(--panel); color: var(--ink);
+      border: 1px solid var(--line); border-radius: 999px;
+      transition: all .2s ease;
+    }
+    .search-input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
+    .search-clear {
+      position: absolute; right: 12px; background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 16px; padding: 4px; display: none;
+    }
+    .search-clear.visible { display: block; }
+
+    .action-buttons {
+      display: flex; gap: 10px; align-items: center;
+    }
+    .btn-action {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: 999px;
+      font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+      background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+      cursor: pointer; transition: all .18s ease; text-decoration: none;
+    }
+    .btn-action:hover { background: var(--teal); border-color: var(--teal); color: #fff; }
+    .btn-action.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+    .btn-action.primary:hover { background: var(--teal-deep); }
+
+    /* Filters Row */
+    .filter-pills-row {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+    .filter-label {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); margin-right: 4px;
+    }
+    .filter-pill {
+      font-family: var(--mono); font-size: 11.5px; padding: 5px 12px; border-radius: 999px;
+      background: var(--panel); border: 1px solid var(--line); color: var(--ink-soft);
+      cursor: pointer; transition: all .15s ease;
+    }
+    .filter-pill:hover { border-color: var(--teal); color: var(--teal); }
+    .filter-pill.active {
+      background: var(--ink); border-color: var(--ink); color: #fff;
+    }
+
+    /* ---------- Section Headers & Containers ---------- */
+    .activities-section {
+      padding: 36px 0 54px;
+    }
+    .section-title-wrap {
+      display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+      gap: 12px; margin-bottom: 22px; padding-bottom: 12px; border-bottom: 2px solid var(--line);
+    }
+    .section-title-wrap h2 { font-size: 26px; display: flex; align-items: center; gap: 10px; }
+    .section-badge {
+      font-family: var(--mono); font-size: 12px; padding: 4px 10px; border-radius: 999px;
+      background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    /* Activity Card */
+    .act-card {
+      position: relative;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 22px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .act-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(24,38,32,.08);
+      border-color: var(--teal);
+    }
+    .act-card::before {
+      content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px;
+      border-radius: 14px 14px 0 0; background: var(--card-accent, var(--teal));
+    }
+    .act-card.status-done { opacity: .78; background: #fafcfa; border-color: #c8e6c9; }
+    .act-card.status-done::before { background: var(--green); }
+    .act-card.status-scheduled::before { background: var(--amber); }
+    .act-card.status-not_applicable { opacity: .55; background: #fbfbfb; }
+    .act-card.status-not_applicable::before { background: var(--muted); }
+
+    .card-head {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+      margin-bottom: 12px;
+    }
+    .card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .tag-cat {
+      font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 4px; font-weight: 600;
+    }
+    .tag-cat.goals { background: #e8f5e9; color: #2e7d32; }
+    .tag-cat.housekeeping { background: #e0f2f1; color: #00695c; }
+    .tag-freq {
+      font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+      background: var(--paper); padding: 3px 8px; border-radius: 4px;
+    }
+
+    .card-icon {
+      font-size: 24px; line-height: 1; flex-shrink: 0;
+    }
+
+    .act-card h3 {
+      font-size: 19px; line-height: 1.28; margin: 4px 0 8px;
+    }
+    .act-card.status-done h3 { text-decoration: line-through; color: var(--muted); }
+
+    .card-desc {
+      font-size: 14px; color: var(--ink-soft); margin: 0 0 16px; line-height: 1.5; flex-grow: 1;
+    }
+
+    /* Tags */
+    .card-tags {
+      display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 16px;
+    }
+    .card-tag {
+      font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+      background: var(--paper); padding: 2px 6px; border-radius: 3px;
+    }
+
+    /* Card Footer & Interactive Status */
+    .card-footer {
+      border-top: 1px dashed var(--line);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .status-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .status-selector {
+      font-family: var(--mono); font-size: 12px; padding: 6px 10px;
+      border: 1px solid var(--line); border-radius: 6px;
+      background: var(--panel); color: var(--ink); cursor: pointer;
+      outline: none; transition: border-color .15s ease;
+      flex: 1;
+    }
+    .status-selector:focus { border-color: var(--teal); }
+
+    .date-row {
+      display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11.5px;
+    }
+    .date-label { color: var(--muted); white-space: nowrap; }
+    .date-input {
+      font-family: var(--mono); font-size: 11.5px; padding: 4px 8px;
+      border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--ink);
+      flex: 1; outline: none;
+    }
+    .date-input:focus { border-color: var(--teal); }
+
+    .quick-done-btn {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid var(--line); background: var(--panel);
+      display: grid; place-items: center; cursor: pointer;
+      transition: all .15s ease; color: var(--muted);
+      flex-shrink: 0;
+    }
+    .quick-done-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-soft); }
+    .quick-done-btn.done { border-color: var(--green); color: #fff; background: var(--green); }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 48px 24px; background: var(--panel);
+      border: 1px dashed var(--line); border-radius: 12px; margin: 16px 0;
+    }
+    .empty-state p { color: var(--muted); margin: 0 0 12px; }
+
+    /* ---------- Modal for Custom Activity ---------- */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(24,38,32,.5); backdrop-filter: blur(4px);
+      display: none; place-items: center; padding: 20px;
+    }
+    .modal-overlay.open { display: grid; }
+    .modal-card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+      width: min(520px, 100%); max-height: 90vh; overflow-y: auto; padding: 28px 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.15);
+    }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block; font-family: var(--mono); font-size: 11.5px; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--muted); margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%; padding: 10px 12px; font-family: var(--sans); font-size: 14px;
+      border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink);
+    }
+    .form-control:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+    /* ---------- Footer ---------- */
+    footer {
+      border-top: 1px solid var(--line); background: var(--panel); padding: 36px 0; margin-top: 48px;
+    }
+    .foot {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 16px; font-size: 13px; color: var(--muted);
+    }
+    .foot .links { display: flex; gap: 18px; font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; }
+    .foot a { text-decoration: none; }
+    .foot a:hover { color: var(--teal); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .cards-grid { grid-template-columns: 1fr; }
+      .nav-links a { display: none; }
+      .nav-links .nav-btn { display: inline-flex; padding: 6px 12px; font-size: 11px; }
+      .controls-bar { top: 60px; }
+    }
+    /* Sticky Feedback Footer */
+    .sticky-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(24, 38, 32, 0.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #eef1ea;
+      text-align: center;
+      padding: 10px 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .sticky-footer a {
+      color: #8fe0cd;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+    .sticky-footer a:hover {
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a href="index.html" aria-label="KYF home"><img src="css/kyf_logo.png" alt="KYF — Know Your Finance"></a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="index.html#dimensions">3 Dimensions</a>
+        <a href="index.html#journey">How it works</a>
+        <a href="index.html#outputs">What you get</a>
+        <a href="cadence.html" class="active">Cadence</a>
+        <a href="index.html#trust">Privacy</a>
+        <input type="file" id="kyfFileInput" accept=".kyf,.json" style="display:none;">
+        <button type="button" class="nav-btn secondary" id="navOpenFileBtn" title="Open saved .kyf data file">📂 Open</button>
+        <button type="button" class="nav-btn primary" id="navSaveDataBtn" title="Save data as .kyf file">💾 Save Data</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO / OVERVIEW -->
+    <section class="cadence-hero">
+      <div class="wrap">
+        <div class="hero-top">
+          <div>
+            <p class="eyebrow">Personal Finance Cadence</p>
+            <h1>Action Cadence &amp; Rituals</h1>
+            <p class="lede">Manage the complete spectrum of your personal wealth journey: from high-conviction life milestone targets to regular housekeeping health checks. Track progress, schedule target dates, and review at your own calm pace.</p>
+          </div>
+          <div class="action-buttons">
+            <button class="btn-action primary" id="openAddModalBtn">+ Add Activity</button>
+            <button class="btn-action" id="exportCadenceBtn" title="Save & export .kyf file">💾 Save .kyf</button>
+            <button class="btn-action" id="openFileHeroBtn" title="Open .kyf file">📂 Open .kyf</button>
+            <button class="btn-action" id="resetCadenceBtn" title="Reset all activities to clean slate">Reset</button>
+          </div>
+        </div>
+
+        <!-- METRIC SUMMARY STRIP -->
+        <div class="metric-strip">
+          <div class="metric-card active-metric" data-status-filter="all">
+            <div class="val" id="metricTotal">0</div>
+            <div class="lbl">Total Items</div>
+          </div>
+          <div class="metric-card" data-status-filter="active">
+            <div class="val" id="metricActive" style="color:var(--teal)">0</div>
+            <div class="lbl">Active</div>
+          </div>
+          <div class="metric-card" data-status-filter="scheduled">
+            <div class="val" id="metricScheduled" style="color:var(--amber)">0</div>
+            <div class="lbl">Work on Date</div>
+          </div>
+          <div class="metric-card" data-status-filter="done">
+            <div class="val" id="metricDone" style="color:var(--green)">0</div>
+            <div class="lbl">Completed</div>
+          </div>
+          <div class="metric-card" data-status-filter="not_applicable">
+            <div class="val" id="metricNA" style="color:var(--muted)">0</div>
+            <div class="lbl">Not Applicable</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEARCH & FILTERS TOOLBAR -->
+    <section class="controls-bar">
+      <div class="wrap controls-inner">
+        <div class="search-row">
+          <div class="search-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search activities by keyword, goal, vehicle, or topic (e.g., home, car, mutual fund, CIBIL, tax)..." aria-label="Search activities">
+            <button id="searchClearBtn" class="search-clear" aria-label="Clear search">&times;</button>
+          </div>
+        </div>
+
+        <div class="filter-pills-row">
+          <span class="filter-label">View:</span>
+          <button class="filter-pill active" data-category="all">All Activities</button>
+          <button class="filter-pill" data-category="goals">🎯 Life Milestones</button>
+          <button class="filter-pill" data-category="housekeeping">🧹 Housekeeping</button>
+
+          <span class="filter-label" style="margin-left:12px;">Status:</span>
+          <button class="filter-pill active" data-status="all">All</button>
+          <button class="filter-pill" data-status="active">Active</button>
+          <button class="filter-pill" data-status="scheduled">Work on Date</button>
+          <button class="filter-pill" data-status="done">Done</button>
+          <button class="filter-pill" data-status="not_applicable">N/A</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 1: LIFE MILESTONES & GOALS -->
+    <section class="activities-section" id="goalsSection">
+      <div class="wrap">
+        <div class="section-title-wrap">
+          <h2>🎯 Life Milestones &amp; Major Goals</h2>
+          <span class="section-badge" id="goalsCountBadge">0 activities</span>
+        </div>
+        <div class="cards-grid" id="goalsGrid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: FINANCIAL HYGIENE & HOUSEKEEPING -->
+    <section class="activities-section" id="housekeepingSection" style="background:rgba(255,255,255,.45); border-top:1px solid var(--line);">
+      <div class="wrap">
+        <div class="section-title-wrap">
+          <h2>🧹 Housekeeping &amp; Financial Hygiene</h2>
+          <span class="section-badge" id="housekeepingCountBadge">0 activities</span>
+        </div>
+        <div class="cards-grid" id="housekeepingGrid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ADD CUSTOM ACTIVITY MODAL -->
+  <div class="modal-overlay" id="addModalOverlay">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 style="font-size:22px;">Add Custom Action Activity</h3>
+        <button class="modal-close" id="closeAddModalBtn" aria-label="Close modal">&times;</button>
+      </div>
+      <form id="addActivityForm">
+        <div class="form-group">
+          <label for="actSection">Section Category</label>
+          <select id="actSection" class="form-control" required>
+            <option value="goals">🎯 Life Milestones &amp; Major Goals</option>
+            <option value="housekeeping">🧹 Housekeeping &amp; Financial Hygiene</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="actTitle">Title</label>
+          <input type="text" id="actTitle" class="form-control" placeholder="e.g. Save for Sister's Wedding, Review Crypto..." required>
+        </div>
+        <div class="form-group">
+          <label for="actFrequency">Frequency / Horizon</label>
+          <input type="text" id="actFrequency" class="form-control" placeholder="e.g. Monthly, Annual, 3-Year Target..." value="Annual">
+        </div>
+        <div class="form-group">
+          <label for="actDesc">Brief Description</label>
+          <textarea id="actDesc" class="form-control" rows="3" placeholder="What needs to be done and key numbers or checklist items..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="actTags">Tags (comma separated)</label>
+          <input type="text" id="actTags" class="form-control" placeholder="e.g. Savings, Downpayment, Gold, Tax">
+        </div>
+        <div class="form-group">
+          <label for="actStatus">Initial Status</label>
+          <select id="actStatus" class="form-control">
+            <option value="active">🟢 Active</option>
+            <option value="scheduled">📅 Work on this date</option>
+            <option value="done">✅ Done</option>
+            <option value="not_applicable">⚪ Not Applicable</option>
+          </select>
+        </div>
+        <div class="form-group" id="actDateGroup">
+          <label for="actDueDate">Target Work Date (Optional)</label>
+          <input type="date" id="actDueDate" class="form-control">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-action" id="cancelAddBtn">Cancel</button>
+          <button type="submit" class="btn-action primary">Save Activity</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="wrap foot">
+      <span>KYF — Know Your Finance. Action Cadence. Runs 100% locally in your browser storage.</span>
+      <div class="links">
+        <a href="index.html">Home</a>
+        <a href="index.html#dimensions">3 Dimensions</a>
+        <a href="index.html#journey">How it works</a>
+        <a href="cadence.html">Cadence</a>
+        <a href="index.html#trust">Privacy</a>
+      </div>
+      <span>100% Educational Simulator &middot; Not Financial Advice.</span>
+    </div>
+  </footer>
+
+  <!-- STICKY FEEDBACK FOOTER -->
+  <aside class="sticky-footer" aria-label="Feedback and contact">
+    <span>Comments, questions, feedback? Write to <a href="mailto:info@vividnova.com">info@vividnova.com</a></span>
+  </aside>
+
+  <!-- SCRIPT -->
+  <script>
+    (function () {
+      const STORAGE_KEY = "kyf_cadence_v2";
+
+      const DEFAULT_ACTIVITIES = [
+        // --- Section 1: Life Milestones & Goals ---
+        {
+          id: "goal-home",
+          section: "goals",
+          category: "Milestone",
+          frequency: "Multi-Year",
+          icon: "🏠",
+          title: "Buy My First Home",
+          description: "Calculate 20% down-payment target, stamp duty/registration buffer (6-8%), and stress-test home loan EMI against monthly surplus without touching the peace buffer.",
+          status: "active",
+          dueDate: "",
+          tags: ["Real Estate", "Down Payment", "Home Loan", "EMI"]
+        },
+        {
+          id: "goal-car",
+          section: "goals",
+          category: "Milestone",
+          frequency: "Short-to-Medium",
+          icon: "🚗",
+          title: "Buy a Car",
+          description: "Determine purchase budget, compare cash down-payment vs auto loan interest drag, and budget for recurring annual insurance and depreciation.",
+          status: "active",
+          dueDate: "",
+          tags: ["Vehicle", "Auto Loan", "Depreciating Asset"]
+        },
+        {
+          id: "goal-wedding",
+          section: "goals",
+          category: "Milestone",
+          frequency: "Short-Term",
+          icon: "💍",
+          title: "Save for Wedding",
+          description: "Establish a realistic ceremony budget with family, park savings in capital-preservation containers (Sweep FDs, Arbitrage/Liquid funds), and avoid personal loans.",
+          status: "active",
+          dueDate: "",
+          tags: ["Wedding", "Family", "Short-term Savings"]
+        },
+        {
+          id: "goal-child",
+          section: "goals",
+          category: "Milestone",
+          frequency: "Medium-Term",
+          icon: "👶",
+          title: "Plan for a Child",
+          description: "Build a maternity/hospitalization healthcare buffer, enhance term insurance cover for dependants, and budget for new recurring monthly family expenses.",
+          status: "active",
+          dueDate: "",
+          tags: ["Family", "Healthcare", "Term Insurance"]
+        },
+        {
+          id: "goal-college",
+          section: "goals",
+          category: "Milestone",
+          frequency: "Long-Term",
+          icon: "🎓",
+          title: "Save for College & Higher Education",
+          description: "Factor in 9% annual education inflation, establish a 10-15 year equity-heavy SIP roadmap, and protect the goal with dedicated pure term coverage.",
+          status: "active",
+          dueDate: "",
+          tags: ["Education", "Inflation (9%)", "Equity SIP", "Long-term"]
+        },
+        {
+          id: "goal-emergency-fund",
+          section: "goals",
+          category: "Milestone",
+          frequency: "Immediate Foundation",
+          icon: "🛡️",
+          title: "Build 6-to-9 Month Peace Buffer",
+          description: "Calculate your true essential household burn rate and lock 6-9 months of survival expenses in ultra-liquid, risk-free Sweep FDs or liquid funds.",
+          status: "active",
+          dueDate: "",
+          tags: ["Emergency Fund", "Safety", "Liquid Funds", "FD"]
+        },
+        {
+          id: "goal-retirement",
+          section: "goals",
+          category: "Milestone",
+          frequency: "Long-Term Freedom",
+          icon: "🏖️",
+          title: "Plan for Financial Independence (Retirement)",
+          description: "Compute your annual living cost multiplier (25x-30x corpus), automate monthly step-up SIPs, and map out a 3-bucket post-work withdrawal strategy.",
+          status: "active",
+          dueDate: "",
+          tags: ["Freedom", "FIRE", "3-Bucket Plan", "Corpus"]
+        },
+        {
+          id: "goal-sabbatical",
+          section: "goals",
+          category: "Milestone",
+          frequency: "Medium-Term",
+          icon: "✈️",
+          title: "Plan Sabbatical or World Travel",
+          description: "Ring-fence living expenses for 6-12 career-break months, hedge against foreign exchange volatility, and maintain continuous health coverage during time off.",
+          status: "active",
+          dueDate: "",
+          tags: ["Travel", "Career Break", "Sabbatical"]
+        },
+        {
+          id: "goal-venture",
+          section: "goals",
+          category: "Milestone",
+          frequency: "Strategic",
+          icon: "🚀",
+          title: "Start a Business or Angel Seed Fund",
+          description: "Earmark an independent risk-capital pool without touching household essentials, separate personal liabilities from business debt, and establish startup runways.",
+          status: "active",
+          dueDate: "",
+          tags: ["Startup", "Angel Investing", "Risk Capital"]
+        },
+        {
+          id: "goal-debt-freedom",
+          section: "goals",
+          category: "Milestone",
+          frequency: "High Priority",
+          icon: "⚡",
+          title: "Prepay High-APR Debt & Home Loan",
+          description: "Deploy bonus or surplus cash towards high-rate loans (credit cards, personal loans, or home loan principal) to guarantee risk-free post-tax interest savings.",
+          status: "active",
+          dueDate: "",
+          tags: ["Debt Free", "Home Loan Prepayment", "APR"]
+        },
+
+        // --- Section 2: Financial Hygiene & Housekeeping ---
+        {
+          id: "house-networth",
+          section: "housekeeping",
+          category: "Housekeeping",
+          frequency: "Quarterly",
+          icon: "📊",
+          title: "Compute Net Worth Statement",
+          description: "Consolidate all assets (bank balances, FDs, EPF, PPF, mutual funds, direct stocks, gold, real estate) and subtract all debts (mortgages, car loans, card balances).",
+          status: "active",
+          dueDate: "",
+          tags: ["Net Worth", "Quarterly", "Asset Ledger"]
+        },
+        {
+          id: "house-savings-audit",
+          section: "housekeeping",
+          category: "Housekeeping",
+          frequency: "Monthly",
+          icon: "🏦",
+          title: "Track Savings & Operating Accounts",
+          description: "Audit bank statements for idle balances earning sub-3% returns, activate auto sweep-in fixed deposits, and verify no unexpected bank charges or fee leakages.",
+          status: "active",
+          dueDate: "",
+          tags: ["Savings Account", "Sweep FD", "Bank Fees"]
+        },
+        {
+          id: "house-mf-xray",
+          section: "housekeeping",
+          category: "Housekeeping",
+          frequency: "Half-Yearly",
+          icon: "🔍",
+          title: "Audit Mutual Funds & Direct Plans",
+          description: "Scan your portfolio for regular plans paying 0.5%-1.2% distributor commission drag. Eliminate overlapping funds and align fund categories with goal horizons.",
+          status: "active",
+          dueDate: "",
+          tags: ["Mutual Funds", "Direct vs Regular", "Expense Ratio", "AMFI"]
+        },
+        {
+          id: "house-equity-check",
+          section: "housekeeping",
+          category: "Housekeeping",
+          frequency: "Quarterly",
+          icon: "📈",
+          title: "Review Equity & Demat Accounts",
+          description: "Inspect direct stock holdings for concentration risk (no single stock > 10% of total wealth), review company quarterly earnings, and verify dividend payouts.",
+          status: "active",
+          dueDate: "",
+          tags: ["Equities", "Demat", "Concentration Risk", "Dividends"]
+        },
+        {
+          id: "house-epf-ppf-nps",
+          section: "housekeeping",
+          category: "Housekeeping",
+          frequency: "Annual / March",
+          icon: "📜",
+          title: "Verify EPF, PPF & NPS Passbooks",
+          description: "Download annual EPFO passbook to verify employer contribution credits, deposit the annual ₹1.5L PPF ceiling before April 5th, and check NPS tier 1 asset mix.",
+          status: "active",
+          dueDate: "",
+          tags: ["EPF", "PPF (₹1.5L)", "NPS", "Fixed Income"]
+        },
+        {
+          id: "house-credit-card-debt",
+          section: "housekeeping",
+          category: "Housekeeping",
+          frequency: "Monthly",
+          icon: "💳",
+          title: "Audit Credit Cards & Check CIBIL Score",
+          description: "Ensure cards are set to auto-pay Total Amount Due (never minimum due), cancel recurring subscription traps, and download quarterly free credit bureau reports (750+ score).",
+          status: "active",
+          dueDate: "",
+          tags: ["Credit Card", "CIBIL", "Auto-pay", "Subscriptions"]
+        },
+        {
+          id: "house-insurance-audit",
+          section: "housekeeping",
+          category: "Housekeeping",
+          frequency: "Annual",
+          icon: "🛡️",
+          title: "Annual Term & Health Insurance Review",
+          description: "Confirm term insurance is pure protection (no investment mix) covering 10x-15x income. Review health floater restoration clauses and Super Top-up deductibles.",
+          status: "active",
+          dueDate: "",
+          tags: ["Term Insurance", "Health Cover", "Super Top-up"]
+        },
+        {
+          id: "house-rebalance",
+          section: "housekeeping",
+          category: "Housekeeping",
+          frequency: "Annual / March",
+          icon: "⚖️",
+          title: "Annual Portfolio Rebalancing",
+          description: "Compare your current Equity : Debt : Gold weights against your target asset allocation. Systematically trim overperforming assets to buy underperforming buckets calmly.",
+          status: "active",
+          dueDate: "",
+          tags: ["Asset Allocation", "Rebalancing", "Risk Control"]
+        },
+        {
+          id: "house-tax-harvesting",
+          section: "housekeeping",
+          category: "Housekeeping",
+          frequency: "Quarterly & March",
+          icon: "🧾",
+          title: "Tax Optimization & LTCG Harvesting",
+          description: "Evaluate Old vs New Tax Regime deductions, harvest up to ₹1.25 Lakh tax-free equity long-term capital gains (LTCG) annually, and remit quarterly advance taxes.",
+          status: "active",
+          dueDate: "",
+          tags: ["Tax Filing", "Advance Tax", "LTCG Harvesting", "80C"]
+        },
+        {
+          id: "house-nominees-will",
+          section: "housekeeping",
+          category: "Housekeeping",
+          frequency: "Annual",
+          icon: "🔐",
+          title: "Update Nominees & Emergency Digital Vault",
+          description: "Ensure active, verified nominees across all bank accounts, demat accounts, EPF, and insurance policies. Maintain a secure emergency family access ledger.",
+          status: "active",
+          dueDate: "",
+          tags: ["Nomination", "Estate Planning", "Digital Vault", "Family"]
+        },
+        {
+          id: "house-market-performance",
+          section: "housekeeping",
+          category: "Housekeeping",
+          frequency: "Monthly / Quarterly",
+          icon: "📈",
+          title: "Review Market Performance & Benchmarks",
+          description: "Review broad market returns across Nifty 50, Nifty Midcap, Gold, Fixed Income yields, and global indices to keep long-term return expectations realistic without reacting to daily noise.",
+          status: "active",
+          dueDate: "",
+          pageUrl: "market-performance.html",
+          tags: ["Market Review", "Nifty 50", "Macro Benchmarks", "Asset Performance"]
+        }
+      ];
+
+      // State
+      let activities = [];
+      let currentCategory = "all";
+      let currentStatus = "all";
+      let searchQuery = "";
+
+      // Load activities
+      function loadActivities() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            activities = JSON.parse(raw);
+          } else {
+            activities = JSON.parse(JSON.stringify(DEFAULT_ACTIVITIES));
+            saveActivities();
+          }
+        } catch (e) {
+          activities = JSON.parse(JSON.stringify(DEFAULT_ACTIVITIES));
+        }
+      }
+
+      function saveActivities() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(activities));
+        } catch (e) {
+          console.error("Storage error:", e);
+        }
+      }
+
+      // Render Cards
+      function render() {
+        const goalsGrid = document.getElementById("goalsGrid");
+        const housekeepingGrid = document.getElementById("housekeepingGrid");
+        const goalsSection = document.getElementById("goalsSection");
+        const housekeepingSection = document.getElementById("housekeepingSection");
+
+        const q = searchQuery.trim().toLowerCase();
+
+        // Filter items
+        const filtered = activities.filter(item => {
+          // Category filter
+          if (currentCategory !== "all" && item.section !== currentCategory) return false;
+
+          // Status filter
+          if (currentStatus !== "all" && item.status !== currentStatus) return false;
+
+          // Search query
+          if (q) {
+            const inTitle = item.title.toLowerCase().includes(q);
+            const inDesc = item.description.toLowerCase().includes(q);
+            const inTags = item.tags && item.tags.some(t => t.toLowerCase().includes(q));
+            const inFreq = item.frequency && item.frequency.toLowerCase().includes(q);
+            if (!inTitle && !inDesc && !inTags && !inFreq) return false;
+          }
+          return true;
+        });
+
+        // Separate sections
+        const goalsItems = filtered.filter(i => i.section === "goals");
+        const houseItems = filtered.filter(i => i.section === "housekeeping");
+
+        // Update counts
+        document.getElementById("goalsCountBadge").textContent = `${goalsItems.length} activities`;
+        document.getElementById("housekeepingCountBadge").textContent = `${houseItems.length} activities`;
+
+        // Section visibility
+        goalsSection.style.display = (currentCategory === "all" || currentCategory === "goals") ? "block" : "none";
+        housekeepingSection.style.display = (currentCategory === "all" || currentCategory === "housekeeping") ? "block" : "none";
+
+        // Render grids
+        goalsGrid.innerHTML = goalsItems.length
+          ? goalsItems.map(createCardHTML).join("")
+          : `<div class="empty-state" style="grid-column: 1 / -1;"><p>No matching milestone goals found.</p><button class="btn-action" onclick="window.clearCadenceSearch()">Clear search filter</button></div>`;
+
+        housekeepingGrid.innerHTML = houseItems.length
+          ? houseItems.map(createCardHTML).join("")
+          : `<div class="empty-state" style="grid-column: 1 / -1;"><p>No matching housekeeping activities found.</p><button class="btn-action" onclick="window.clearCadenceSearch()">Clear search filter</button></div>`;
+
+        // Update top metrics
+        updateMetrics();
+      }
+
+      function createCardHTML(item) {
+        const isDone = item.status === "done";
+        const isScheduled = item.status === "scheduled";
+        const isNA = item.status === "not_applicable";
+
+        return `
+          <div class="act-card status-${item.status}" id="card-${item.id}" data-id="${item.id}">
+            <div class="card-head">
+              <div class="card-meta">
+                <span class="tag-cat ${item.section}">${item.category || (item.section === 'goals' ? 'Milestone' : 'Housekeeping')}</span>
+                <span class="tag-freq">${escapeHtml(item.frequency || '')}</span>
+              </div>
+              <div class="card-icon" aria-hidden="true">${item.icon || '📌'}</div>
+            </div>
+
+            <h3>${escapeHtml(item.title)}</h3>
+            <p class="card-desc">${escapeHtml(item.description)}</p>
+
+            ${item.tags && item.tags.length ? `
+              <div class="card-tags">
+                ${item.tags.map(t => `<span class="card-tag">#${escapeHtml(t)}</span>`).join('')}
+              </div>
+            ` : ''}
+
+            ${item.pageUrl ? `
+              <div style="margin-bottom: 14px;">
+                <a href="${item.pageUrl}" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;color:var(--teal);text-decoration:none;font-weight:700;padding:4px 10px;background:var(--teal-soft);border-radius:4px;transition:all .15s ease;">
+                  <span>Open Tool</span> &rarr;
+                </a>
+              </div>
+            ` : ''}
+
+            <div class="card-footer">
+              <div class="status-row">
+                <select class="status-selector" data-action="status-change" aria-label="Update status for ${escapeHtml(item.title)}">
+                  <option value="active" ${item.status === 'active' ? 'selected' : ''}>🟢 Active</option>
+                  <option value="scheduled" ${item.status === 'scheduled' ? 'selected' : ''}>📅 Work on this date</option>
+                  <option value="done" ${item.status === 'done' ? 'selected' : ''}>✅ Done</option>
+                  <option value="not_applicable" ${item.status === 'not_applicable' ? 'selected' : ''}>⚪ Not Applicable</option>
+                </select>
+
+                <button class="quick-done-btn ${isDone ? 'done' : ''}" data-action="toggle-done" title="${isDone ? 'Mark as Active' : 'Mark as Done'}" aria-label="Toggle completion">
+                  ${isDone ? '✓' : '○'}
+                </button>
+              </div>
+
+              <div class="date-row" style="${isScheduled || item.dueDate ? 'display:flex;' : 'display:none;'}">
+                <span class="date-label">📅 Target date:</span>
+                <input type="date" class="date-input" value="${escapeHtml(item.dueDate || '')}" data-action="date-change" aria-label="Work on date for ${escapeHtml(item.title)}">
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function updateMetrics() {
+        const total = activities.length;
+        const active = activities.filter(i => i.status === "active").length;
+        const scheduled = activities.filter(i => i.status === "scheduled").length;
+        const done = activities.filter(i => i.status === "done").length;
+        const na = activities.filter(i => i.status === "not_applicable").length;
+
+        document.getElementById("metricTotal").textContent = total;
+        document.getElementById("metricActive").textContent = active;
+        document.getElementById("metricScheduled").textContent = scheduled;
+        document.getElementById("metricDone").textContent = done;
+        document.getElementById("metricNA").textContent = na;
+      }
+
+      function escapeHtml(str) {
+        if (!str) return "";
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      window.clearCadenceSearch = function () {
+        document.getElementById("searchInput").value = "";
+        searchQuery = "";
+        document.getElementById("searchClearBtn").classList.remove("visible");
+        render();
+      };
+
+      // Event Listeners
+      function bindEvents() {
+        // Search input
+        const searchInput = document.getElementById("searchInput");
+        const clearBtn = document.getElementById("searchClearBtn");
+
+        searchInput.addEventListener("input", function (e) {
+          searchQuery = e.target.value;
+          if (searchQuery.length > 0) {
+            clearBtn.classList.add("visible");
+          } else {
+            clearBtn.classList.remove("visible");
+          }
+          render();
+        });
+
+        clearBtn.addEventListener("click", window.clearCadenceSearch);
+
+        // Category filter pills
+        document.querySelectorAll(".filter-pill[data-category]").forEach(btn => {
+          btn.addEventListener("click", function () {
+            document.querySelectorAll(".filter-pill[data-category]").forEach(b => b.classList.remove("active"));
+            this.classList.add("active");
+            currentCategory = this.dataset.category;
+            render();
+          });
+        });
+
+        // Status filter pills
+        document.querySelectorAll(".filter-pill[data-status]").forEach(btn => {
+          btn.addEventListener("click", function () {
+            document.querySelectorAll(".filter-pill[data-status]").forEach(b => b.classList.remove("active"));
+            this.classList.add("active");
+            currentStatus = this.dataset.status;
+
+            // Sync metric strip highlight
+            document.querySelectorAll(".metric-card").forEach(c => c.classList.remove("active-metric"));
+            const matchCard = document.querySelector(`.metric-card[data-status-filter="${currentStatus}"]`);
+            if (matchCard) matchCard.classList.add("active-metric");
+
+            render();
+          });
+        });
+
+        // Metric strip clicks
+        document.querySelectorAll(".metric-card").forEach(card => {
+          card.addEventListener("click", function () {
+            const st = this.dataset.statusFilter;
+            document.querySelectorAll(".filter-pill[data-status]").forEach(b => {
+              b.classList.toggle("active", b.dataset.status === st);
+            });
+            document.querySelectorAll(".metric-card").forEach(c => c.classList.remove("active-metric"));
+            this.classList.add("active-metric");
+            currentStatus = st;
+            render();
+          });
+        });
+
+        // Delegated events for Cards
+        document.addEventListener("change", function (e) {
+          const cardEl = e.target.closest(".act-card");
+          if (!cardEl) return;
+          const itemId = cardEl.dataset.id;
+          const item = activities.find(i => i.id === itemId);
+          if (!item) return;
+
+          if (e.target.dataset.action === "status-change") {
+            item.status = e.target.value;
+            saveActivities();
+            render();
+          }
+
+          if (e.target.dataset.action === "date-change") {
+            item.dueDate = e.target.value;
+            if (item.dueDate && item.status !== "scheduled" && item.status !== "done") {
+              item.status = "scheduled";
+            }
+            saveActivities();
+            render();
+          }
+        });
+
+        document.addEventListener("click", function (e) {
+          const btn = e.target.closest("button[data-action='toggle-done']");
+          if (!btn) return;
+          const cardEl = btn.closest(".act-card");
+          if (!cardEl) return;
+          const itemId = cardEl.dataset.id;
+          const item = activities.find(i => i.id === itemId);
+          if (!item) return;
+
+          item.status = (item.status === "done") ? "active" : "done";
+          saveActivities();
+          render();
+        });
+
+        // Add Custom Activity Modal
+        const modal = document.getElementById("addModalOverlay");
+        const openModalBtn = document.getElementById("openAddModalBtn");
+        const closeModalBtn = document.getElementById("closeAddModalBtn");
+        const cancelAddBtn = document.getElementById("cancelAddBtn");
+        const addForm = document.getElementById("addActivityForm");
+
+        openModalBtn.addEventListener("click", () => modal.classList.add("open"));
+        closeModalBtn.addEventListener("click", () => modal.classList.remove("open"));
+        cancelAddBtn.addEventListener("click", () => modal.classList.remove("open"));
+
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) modal.classList.remove("open");
+        });
+
+        addForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          const sec = document.getElementById("actSection").value;
+          const title = document.getElementById("actTitle").value.trim();
+          const freq = document.getElementById("actFrequency").value.trim() || "Regular";
+          const desc = document.getElementById("actDesc").value.trim();
+          const tagsStr = document.getElementById("actTags").value.trim();
+          const status = document.getElementById("actStatus").value;
+          const dueDate = document.getElementById("actDueDate").value;
+
+          const tags = tagsStr ? tagsStr.split(",").map(t => t.trim()).filter(Boolean) : [];
+
+          const newActivity = {
+            id: "custom-" + Date.now(),
+            section: sec,
+            category: sec === "goals" ? "Milestone" : "Housekeeping",
+            frequency: freq,
+            icon: sec === "goals" ? "🎯" : "🧹",
+            title: title,
+            description: desc,
+            status: status,
+            dueDate: dueDate,
+            tags: tags
+          };
+
+          activities.unshift(newActivity);
+          saveActivities();
+          modal.classList.remove("open");
+          addForm.reset();
+          render();
+        });
+
+        // Toast Helper
+        function showToast(msg) {
+          let toast = document.getElementById("toastNotification");
+          if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "toastNotification";
+            toast.className = "toast-notice";
+            document.body.appendChild(toast);
+          }
+          toast.textContent = msg;
+          toast.classList.add("show");
+          clearTimeout(toast._timer);
+          toast._timer = setTimeout(() => {
+            toast.classList.remove("show");
+          }, 3200);
+        }
+
+        // Save & Export to .kyf file
+        function saveAndExportKYF() {
+          saveActivities();
+          const payload = {
+            app: "Know Your Finance",
+            version: "1.0",
+            fileType: "kyf-vault",
+            encrypted: false,
+            savedAt: new Date().toISOString(),
+            data: {
+              cadence: activities
+            }
+          };
+
+          const jsonStr = JSON.stringify(payload, null, 2);
+          const blob = new Blob([jsonStr], { type: "application/octet-stream" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          const dateStr = new Date().toISOString().slice(0, 10);
+          a.href = url;
+          a.download = `my-cadence-${dateStr}.kyf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          showToast(`✓ Data saved & exported to my-cadence-${dateStr}.kyf`);
+        }
+
+        // Open & Load .kyf file
+        function handleOpenKYFFile(file) {
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            try {
+              const parsed = JSON.parse(e.target.result);
+              let importedActivities = null;
+
+              if (parsed && parsed.data && Array.isArray(parsed.data.cadence)) {
+                importedActivities = parsed.data.cadence;
+              } else if (Array.isArray(parsed)) {
+                importedActivities = parsed;
+              } else if (parsed && Array.isArray(parsed.cadence)) {
+                importedActivities = parsed.cadence;
+              }
+
+              if (!importedActivities || !importedActivities.length) {
+                alert("Unable to load file: could not find valid KYF activities.");
+                return;
+              }
+
+              activities = importedActivities;
+              saveActivities();
+              render();
+              showToast(`✓ Loaded ${file.name} (${activities.length} activities)`);
+            } catch (err) {
+              alert("Error parsing .kyf file: " + err.message);
+            }
+          };
+          reader.readAsText(file);
+        }
+
+        // File input and Open buttons
+        const kyfFileInput = document.getElementById("kyfFileInput");
+        const navOpenFileBtn = document.getElementById("navOpenFileBtn");
+        const openFileHeroBtn = document.getElementById("openFileHeroBtn");
+
+        if (navOpenFileBtn && kyfFileInput) {
+          navOpenFileBtn.addEventListener("click", () => kyfFileInput.click());
+        }
+        if (openFileHeroBtn && kyfFileInput) {
+          openFileHeroBtn.addEventListener("click", () => kyfFileInput.click());
+        }
+        if (kyfFileInput) {
+          kyfFileInput.addEventListener("change", function (e) {
+            if (e.target.files && e.target.files.length) {
+              handleOpenKYFFile(e.target.files[0]);
+              e.target.value = "";
+            }
+          });
+        }
+
+        // Save Data buttons
+        const navSaveBtn = document.getElementById("navSaveDataBtn");
+        const exportCadenceBtn = document.getElementById("exportCadenceBtn");
+        if (navSaveBtn) navSaveBtn.addEventListener("click", saveAndExportKYF);
+        if (exportCadenceBtn) exportCadenceBtn.addEventListener("click", saveAndExportKYF);
+
+        // Reset data
+        const resetBtn = document.getElementById("resetCadenceBtn");
+        if (resetBtn) {
+          resetBtn.addEventListener("click", function () {
+            if (confirm("Reset all activities and dates back to a fresh starting clean slate? This cannot be undone.")) {
+              localStorage.removeItem(STORAGE_KEY);
+              loadActivities();
+              render();
+              showToast("✓ Reset to fresh clean slate");
+            }
+          });
+        }
+      }
+
+      // Initialize
+      loadActivities();
+      bindEvents();
+      render();
+    })();
+  </script>
+</body>
+</html>
+

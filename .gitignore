@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Admin market data downloader cache
+.cache/
+FodyWeavers.xsd
