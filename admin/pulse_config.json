@@ -2,7 +2,7 @@
   "macro": {
     "cpiInflation": 5.4,
     "medicalInflation": 11.5,
-    "educationInflation": 9.0,
+    "educationInflation": 9,
     "rbiRepo": 6.25,
     "epfRate": 8.25,
     "ppfRate": 7.1,
@@ -14,15 +14,27 @@
     "arbitrageFundAvg": 7.2,
     "homeLoanAvg": 8.65,
     "personalLoanAvg": 14.5,
-    "creditCardApr": 39.0
+    "creditCardApr": 39
   },
   "preciousMetals": {
-    "gold24kPerGram": 14395,
-    "gold22kPerGram": 13195,
-    "gold18kPerGram": 10796,
-    "silverPerGram": 175,
-    "silverPerKg": 175000,
-    "gold10YrCagr": 14.8
+    "gold24kPerGram": 7920,
+    "gold22kPerGram": 7260,
+    "gold18kPerGram": 5940,
+    "silverPerGram": 200,
+    "silverPerKg": 200000,
+    "gold10YrCagr": 11.4,
+    "goldRet1d": 0.18,
+    "goldRet5d": 0.65,
+    "goldRet1m": 2.15,
+    "goldRet3m": 4.1,
+    "goldRet6m": 7.2,
+    "goldRet1y": 18.4,
+    "silverRet1d": 0.32,
+    "silverRet5d": 1.1,
+    "silverRet1m": 3.4,
+    "silverRet3m": 6.2,
+    "silverRet6m": 11.8,
+    "silverRet1y": 22.1
   },
   "indicesBaseline": {
     "NIFTY50": {
@@ -40,8 +52,8 @@
     "NIFTYNEXT50": {
       "nseCsvName": "Nifty Next 50",
       "name": "Nifty Next 50",
-      "role": "Future Large-Cap Incubator (Rank 51\u2013100)",
-      "level": 69850.0,
+      "role": "Future Large-Cap Incubator (Rank 51–100)",
+      "level": 69850,
       "pe": 24.8,
       "pb": 4.1,
       "divYield": 1.05,
@@ -52,8 +64,8 @@
     "NIFTYMID150": {
       "nseCsvName": "Nifty Midcap 150",
       "name": "Nifty Midcap 150",
-      "role": "High-Growth Mid-Sized Businesses (Rank 101\u2013250)",
-      "level": 20890.0,
+      "role": "High-Growth Mid-Sized Businesses (Rank 101–250)",
+      "level": 20890,
       "pe": 33.4,
       "pb": 4.85,
       "divYield": 0.75,
@@ -65,7 +77,7 @@
       "nseCsvName": "Nifty Smallcap 250",
       "name": "Nifty Smallcap 250",
       "role": "Aggressive Emerging Companies (High Volatility)",
-      "level": 17420.0,
+      "level": 17420,
       "pe": 29.8,
       "pb": 3.9,
       "divYield": 0.65,

@@ -24,7 +24,7 @@ window.KYF_DICTIONARY = {
       fdRate: 6.8,
       postTaxFdRate: 5.4,
       inflation: 5.4,
-      gold24k: "14,395",
+      gold24k: "7,920",
       niftyCagr: 13.4,
       sipMonthly: "10,000"
     };

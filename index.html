@@ -86,10 +86,28 @@
     .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 0; }
     .nav img { height: 40px; width: auto; }
     .nav-links { display: flex; align-items: center; gap: 28px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
-    .nav-links a { text-decoration: none; color: var(--ink-soft); }
+    .nav-links a { text-decoration: none; color: var(--ink-soft); transition: color .15s ease; }
     .nav-links a:hover { color: var(--teal); }
-    .nav .btn { padding: 10px 20px; font-size: 11.5px; color: #fff; }
-    .nav .btn:hover { color: #fff; }
+    .nav-links a.btn,
+    .nav .btn {
+      padding: 9px 20px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff !important;
+      background: var(--teal);
+      border: 2px solid var(--teal);
+      border-radius: 999px;
+      text-decoration: none;
+      box-shadow: 0 2px 8px rgba(31,122,108,.3);
+    }
+    .nav-links a.btn:hover,
+    .nav .btn:hover {
+      background: var(--teal-deep);
+      border-color: var(--teal-deep);
+      color: #ffffff !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20,90,79,.4);
+    }
 
     /* ---------- Hero ---------- */
     .hero {
@@ -313,7 +331,7 @@
         <a href="#outputs">What you get</a>
         <a href="cadence.html">Cadence</a>
         <a href="#trust">Privacy</a>
-        <a class="btn" href="cadence.html">Start</a>
+        <a class="btn" href="cadence.html" style="color: #ffffff !important; background: var(--teal); border-color: var(--teal); padding: 8px 18px; font-size: 12px; font-weight: 700; text-decoration: none;">Start &rarr;</a>
       </nav>
     </div>
   </header>

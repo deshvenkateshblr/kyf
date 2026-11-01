@@ -110,10 +110,15 @@ def get_horizons(reference_date: datetime.date = None):
     }
 
 
-def calc_pct(curr, past):
+def calc_pct(curr, past, isin_curr="", isin_past="", max_pct=None):
     if not curr or not past or past <= 0:
         return None
-    return round(((curr - past) / past) * 100.0, 2)
+    if isin_curr and isin_past and isin_curr != isin_past:
+        return None
+    pct = round(((curr - past) / past) * 100.0, 2)
+    if max_pct is not None and abs(pct) > max_pct:
+        return None
+    return pct
 
 
 # ============================================================================
@@ -187,6 +192,180 @@ def fetch_nse_bhavcopy_csv(opener, dt: datetime.date) -> str:
     return ""
 
 
+
+def fetch_nse_corporate_actions(opener) -> str:
+    """Fetches NSE Corporate Actions master file: https://nsearchives.nseindia.com/content/equities/actions.csv"""
+    cache_file = os.path.join(CACHE_DIR, "nse_corporate_actions.csv")
+    if os.path.exists(cache_file):
+        try:
+            mtime = datetime.datetime.fromtimestamp(os.path.getmtime(cache_file))
+            if datetime.datetime.now() - mtime < datetime.timedelta(hours=24):
+                print("  [Cache Hit] NSE Corporate Actions CSV (fresh within 24h)")
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    return f.read()
+        except Exception:
+            pass
+
+    urls = [
+        "https://nsearchives.nseindia.com/content/equities/actions.csv",
+        "https://www.nseindia.com/api/corporates-corporateActions?index=equities",
+    ]
+    for url in urls:
+        try:
+            print(f"  [Downloading Corporate Actions] {url} ...")
+            resp = opener.open(url, timeout=20)
+            raw = resp.read().decode("utf-8", errors="replace")
+            if "SYMBOL" in raw or "symbol" in raw or "Series" in raw:
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    f.write(raw)
+                print(f"  [Saved] Updated {cache_file} ({len(raw)/1024:.1f} KB)")
+                return raw
+        except Exception as e:
+            print(f"  [Warn] Failed {url}: {e}")
+
+    if os.path.exists(cache_file):
+        with open(cache_file, "r", encoding="utf-8") as f:
+            return f.read()
+    return ""
+
+
+def parse_corporate_actions_csv(csv_text: str) -> dict:
+    if not csv_text:
+        return {"by_symbol": {}, "list": []}
+
+    reader = csv.reader(io.StringIO(csv_text))
+    headers = [h.strip().upper() for h in next(reader, [])]
+
+    def col(names):
+        for n in names:
+            if n in headers:
+                return headers.index(n)
+        return -1
+
+    i_sym = col(["SYMBOL", "SECURITY CODE", "TCKRSYMB"])
+    i_srs = col(["SERIES", "SCTYSRS"])
+    i_name = col(["SECURITY", "COMPANY NAME", "NAME", "FININSTRMNM"])
+    i_purpose = col(["PURPOSE", "SUBJECT"])
+    i_ex = col(["EX_DATE", "EX-DATE", "EXDATE"])
+    i_rec = col(["RECORD_DATE", "RECORD-DATE", "RECORDDATE"])
+
+    by_symbol = {}
+    action_list = []
+
+    for row in reader:
+        if len(row) <= max(i_sym, i_purpose):
+            continue
+        if i_srs != -1 and i_srs < len(row) and row[i_srs].strip() and row[i_srs].strip() != "EQ":
+            continue
+
+        sym = row[i_sym].strip()
+        purpose = row[i_purpose].strip()
+        name = row[i_name].strip() if i_name != -1 and i_name < len(row) else sym
+        ex_str = row[i_ex].strip() if i_ex != -1 and i_ex < len(row) else ""
+        rec_str = row[i_rec].strip() if i_rec != -1 and i_rec < len(row) else ""
+
+        ex_date = None
+        for fmt in ("%d-%b-%Y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y", "%d-%B-%Y"):
+            try:
+                ex_date = datetime.datetime.strptime(ex_str, fmt).date()
+                break
+            except ValueError:
+                pass
+
+        action_type = "OTHER"
+        multiplier = 1.0
+        factor = 1.0
+
+        split_m = re.search(r'(?:Split|Sub-?Division|Sub\s+Division).*?(?:From|Rs\.?|Re\.?)\s*(\d+(?:\.\d+)?).*?(?:To|Rs\.?|Re\.?)\s*(\d+(?:\.\d+)?)', purpose, re.I)
+        if split_m:
+            from_v = float(split_m.group(1))
+            to_v = float(split_m.group(2))
+            if from_v > to_v and to_v > 0:
+                action_type = "SPLIT"
+                multiplier = to_v / from_v
+                factor = from_v / to_v
+
+        if action_type == "OTHER":
+            bonus_m = re.search(r'Bonus.*?(\d+)\s*:\s*(\d+)', purpose, re.I)
+            if bonus_m:
+                b_for = float(bonus_m.group(1))
+                b_held = float(bonus_m.group(2))
+                if b_held > 0 and b_for > 0:
+                    action_type = "BONUS"
+                    multiplier = b_held / (b_held + b_for)
+                    factor = (b_held + b_for) / b_held
+
+        if action_type == "OTHER":
+            consol_m = re.search(r'Consolidation.*?(?:From|Rs\.?|Re\.?)\s*(\d+(?:\.\d+)?).*?(?:To|Rs\.?|Re\.?)\s*(\d+(?:\.\d+)?)', purpose, re.I)
+            if consol_m:
+                from_v = float(consol_m.group(1))
+                to_v = float(consol_m.group(2))
+                if to_v > from_v and from_v > 0:
+                    action_type = "CONSOLIDATION"
+                    multiplier = to_v / from_v
+                    factor = from_v / to_v
+
+        if action_type == "OTHER" and re.search(r'Demerger|Spin-?off|Scheme of Arrangement', purpose, re.I):
+            action_type = "DEMERGER"
+
+        if action_type == "OTHER" and re.search(r'Dividend', purpose, re.I):
+            action_type = "DIVIDEND"
+
+        record = {
+            "symbol": sym,
+            "name": name,
+            "purpose": purpose,
+            "exDate": ex_date.isoformat() if ex_date else ex_str,
+            "recordDate": rec_str,
+            "type": action_type,
+            "multiplier": round(multiplier, 6),
+            "factor": round(factor, 4)
+        }
+
+        action_list.append(record)
+        if sym not in by_symbol:
+            by_symbol[sym] = []
+        by_symbol[sym].append(record)
+
+    return {"by_symbol": by_symbol, "list": action_list}
+
+
+def build_corporate_actions_js(opener) -> dict:
+    print("\n--- Building Module: data/market-corporate-actions.js ---")
+    raw_csv = fetch_nse_corporate_actions(opener)
+    ca_data = parse_corporate_actions_csv(raw_csv)
+    
+    tuples = []
+    for item in ca_data["list"]:
+        tuples.append([
+            item["symbol"],
+            item["name"],
+            "EQ",
+            item["purpose"],
+            item["exDate"],
+            item["type"],
+            item["multiplier"],
+            item["factor"]
+        ])
+
+    as_of = datetime.date.today().isoformat()
+    body_lines = ",\n".join(f"    {json.dumps(t)}" for t in tuples)
+    js_content = (
+        f"// Auto-generated by admin/sync_market_data.py on {datetime.datetime.now().isoformat()}\n"
+        f"window.KYF_CORPORATE_ACTIONS = {{\n"
+        f'  asOf: "{as_of}",\n'
+        f'  source: "NSE actions.csv",\n'
+        f'  columns: ["symbol", "companyName", "series", "purpose", "exDate", "type", "multiplier", "factor"],\n'
+        f"  actions: [\n{body_lines}\n  ]\n"
+        f"}};\n"
+    )
+
+    out_path = os.path.join(DATA_DIR, "market-corporate-actions.js")
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(js_content)
+    print(f"  [Success] Wrote {len(tuples)} corporate actions to {out_path} ({len(js_content)/1024:.1f} KB)")
+    return ca_data
+
 def fetch_amfi_nav_txt(opener, dt: datetime.date, is_latest: bool) -> str:
     compact = dt.strftime("%Y%m%d")
     cache_file = os.path.join(CACHE_DIR, f"amfi_{compact}.txt")
@@ -238,12 +417,24 @@ DEFAULT_PULSE_CONFIG = {
         "creditCardApr": 39.00,
     },
     "preciousMetals": {
-        "gold24kPerGram": 14395,
-        "gold22kPerGram": 13195,
-        "gold18kPerGram": 10796,
-        "silverPerGram": 175,
-        "silverPerKg": 175000,
-        "gold10YrCagr": 14.80,
+        "gold24kPerGram": 7920,
+        "gold22kPerGram": 7260,
+        "gold18kPerGram": 5940,
+        "silverPerGram": 200,
+        "silverPerKg": 200000,
+        "gold10YrCagr": 11.40,
+        "goldRet1d": 0.18,
+        "goldRet5d": 0.65,
+        "goldRet1m": 2.15,
+        "goldRet3m": 4.10,
+        "goldRet6m": 7.20,
+        "goldRet1y": 18.40,
+        "silverRet1d": 0.32,
+        "silverRet5d": 1.10,
+        "silverRet1m": 3.40,
+        "silverRet3m": 6.20,
+        "silverRet6m": 11.80,
+        "silverRet1y": 22.10,
     },
     "indicesBaseline": {
         "NIFTY50": {
@@ -427,6 +618,7 @@ def parse_nse_csv(csv_text: str) -> dict:
     i_srs = idx(["SctySrs", "SERIES"])
     i_name = idx(["FinInstrmNm"])
     i_close = idx(["ClsPric", "CLOSE"])
+    i_isin = idx(["ISIN", "FinInstrmId"])
 
     result = {}
     for row in reader:
@@ -438,15 +630,46 @@ def parse_nse_csv(csv_text: str) -> dict:
         name = row[i_name].strip() if (i_name != -1 and i_name < len(row) and row[i_name].strip()) else sym
         try:
             close_val = float(row[i_close].strip())
+            isin = row[i_isin].strip() if (i_isin != -1 and i_isin < len(row)) else ""
             if sym and close_val > 0:
-                result[sym] = {"name": name, "close": close_val}
+                result[sym] = {"name": name, "close": close_val, "isin": isin}
         except ValueError:
             continue
     return result
 
 
-def build_equities_js(opener, horizons: dict):
+def load_nifty500_symbols(opener) -> set:
+    n500_path = os.path.join(CACHE_DIR, "ind_nifty500list.csv")
+    if not os.path.exists(n500_path):
+        url = "https://nsearchives.nseindia.com/content/indices/ind_nifty500list.csv"
+        try:
+            resp = opener.open(url, timeout=15)
+            content = resp.read()
+            with open(n500_path, "wb") as f:
+                f.write(content)
+        except Exception as e:
+            print(f"  [Info] Unable to download Nifty 500 list ({e})")
+    syms = set()
+    if os.path.exists(n500_path):
+        with open(n500_path, "r", encoding="utf-8", errors="replace") as f:
+            reader = csv.reader(f)
+            header = next(reader, None)
+            sym_idx = 2
+            if header:
+                for i, h in enumerate(header):
+                    if "SYMBOL" in h.upper():
+                        sym_idx = i
+                        break
+            for row in reader:
+                if len(row) > sym_idx and row[sym_idx].strip():
+                    syms.add(row[sym_idx].strip().upper())
+    print(f"  [Loaded Nifty 500 Symbols] {len(syms)} constituents.")
+    return syms
+
+
+def build_equities_js(opener, horizons: dict, ca_data: dict = None):
     print("\n--- Building Module 4: data/market-equities.js ---")
+    n500_symbols = load_nifty500_symbols(opener)
     snapshots = {}
     for key, dt in horizons.items():
         csv_text = fetch_nse_bhavcopy_csv(opener, dt)
@@ -457,18 +680,58 @@ def build_equities_js(opener, horizons: dict):
         print("  [Skip] No Latest NSE data available.")
         return
 
+    ca_by_symbol = ca_data.get("by_symbol", {}) if ca_data else {}
+    latest_dt = horizons["latest"]
+
+    def adjust_for_ca(sym, past_c, horizon_key):
+        if not past_c or past_c <= 0:
+            return past_c, False
+        actions = ca_by_symbol.get(sym, [])
+        if not actions:
+            return past_c, False
+        h_dt = horizons[horizon_key]
+        adj_p = past_c
+        adjusted = False
+        for act in actions:
+            ex_str = act.get("exDate")
+            if not ex_str:
+                continue
+            try:
+                ex_dt = datetime.date.fromisoformat(ex_str)
+            except ValueError:
+                continue
+            if h_dt < ex_dt <= latest_dt:
+                mult = act.get("multiplier", 1.0)
+                if act.get("type") in ("SPLIT", "BONUS", "CONSOLIDATION") and mult > 0:
+                    adj_p = adj_p * mult
+                    adjusted = True
+                elif act.get("type") == "DEMERGER":
+                    return None, True
+        return adj_p, adjusted
+
     tuples = []
     for sym in sorted(latest_map.keys()):
         c = latest_map[sym]["close"]
         name = latest_map[sym]["name"]
+        cur_isin = latest_map[sym].get("isin", "")
+
+        def calc_h(key, max_limit):
+            past = snapshots.get(key, {}).get(sym, {})
+            raw_past_c = past.get("close")
+            adj_past_c, was_adj = adjust_for_ca(sym, raw_past_c, key)
+            if adj_past_c is None:
+                return None
+            return calc_pct(c, adj_past_c, cur_isin, past.get("isin", ""), max_limit)
+
         tuples.append([
             sym,
             name,
             c,
-            calc_pct(c, snapshots["m1"].get(sym, {}).get("close")),
-            calc_pct(c, snapshots["m3"].get(sym, {}).get("close")),
-            calc_pct(c, snapshots["m6"].get(sym, {}).get("close")),
-            calc_pct(c, snapshots["y1"].get(sym, {}).get("close")),
+            calc_h("m1", 70.0),
+            calc_h("m3", 130.0),
+            calc_h("m6", 220.0),
+            calc_h("y1", 320.0),
+            1 if sym in n500_symbols else 0,
         ])
 
     horizon_iso = {k: v.isoformat() for k, v in horizons.items()}
@@ -478,7 +741,8 @@ def build_equities_js(opener, horizons: dict):
         f"window.KYF_MARKET_EQUITIES = {{\n"
         f'  asOf: "{horizons["latest"].isoformat()}",\n'
         f"  horizons: {json.dumps(horizon_iso)},\n"
-        f'  columns: ["symbol", "companyName", "closePrice", "ret1m", "ret3m", "ret6m", "ret1y"],\n'
+        f'  columns: ["symbol", "companyName", "closePrice", "ret1m", "ret3m", "ret6m", "ret1y", "isN500"],\n'
+        f"  nifty500Count: {len(n500_symbols)},\n"
         f"  stocks: [\n{body_lines}\n  ]\n"
         f"}};\n"
     )
@@ -616,6 +880,7 @@ if __name__ == "__main__":
 
     http_opener = create_http_opener()
     build_pulse_js(http_opener, target_horizons)
-    build_equities_js(http_opener, target_horizons)
+    ca_data = build_corporate_actions_js(http_opener)
+    build_equities_js(http_opener, target_horizons, ca_data)
     build_mf_js(http_opener, target_horizons)
-    print("\n=== All 3 Market Bundles (pulse, equities, mf) Updated in /data/ ===")
+    print("\n=== All Market Bundles (pulse, corporate-actions, equities, mf) Updated in /data/ ===")

@@ -94,13 +94,14 @@
   <button class="tab-btn active" onclick="switchTab('mod3', this)">Module 3: market-pulse.js</button>
   <button class="tab-btn" onclick="switchTab('mod4', this)">Module 4: market-equities.js (Auto-Ingest .ZIP)</button>
   <button class="tab-btn" onclick="switchTab('mod5', this)">Module 5: market-mf.js (Auto-Ingest AMFI)</button>
+  <button class="tab-btn" onclick="switchTab('mod6', this)">Module 6: Corporate Actions (NSE actions.csv)</button>
 </div>
 
 <!-- ====================================================================== -->
 <!-- MODULE 3: MARKET PULSE                                                 -->
 <!-- ====================================================================== -->
 <div id="mod3" class="module-card active">
-  <p class="hint">Pre-populated with 28 October 2026 India Gold rates (24K: ₹14,395/g, 22K: ₹13,195/g, 18K: ₹10,796/g), macro rates, and NSE Index benchmarks.</p>
+  <p class="hint">Pre-populated with India Gold rates (24K: ₹7,920/g, 22K: ₹7,260/g, 18K: ₹5,940/g, Silver: ₹96/g), macro rates, and NSE Index benchmarks.</p>
   <div class="section-title">1. Snapshot Date & Inflation / Policy Rates (%)</div>
   <div class="grid-4" id="macroFields"></div>
 
@@ -161,6 +162,58 @@
 </div>
 
 <!-- ====================================================================== -->
+
+<!-- ====================================================================== -->
+<!-- MODULE 6: CORPORATE ACTIONS (NSE actions.csv)                         -->
+<!-- ====================================================================== -->
+<div id="mod6" class="module-card">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+    <div>
+      <h3 style="margin:0; font-size:1.1rem; color:var(--accent);">Corporate Actions & Share Capital Adjustments</h3>
+      <p class="hint" style="margin:4px 0 0;">Ingest NSE official actions.csv to automatically adjust historical prices for stock splits, reverse splits (consolidations), bonuses, and demergers.</p>
+    </div>
+    <a href="https://nsearchives.nseindia.com/content/equities/actions.csv" target="_blank" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+      ⬇ Download Official NSE actions.csv
+    </a>
+  </div>
+
+  <div class="batch-drop" id="caBatchDrop" onclick="document.getElementById('caBatchInput').click()">
+    <strong>📥 Drop `actions.csv` here (or click to select)</strong>
+    <div class="hint" style="margin:4px 0 0;">Automatically parses Splits, Bonuses, Consolidations, Demergers & Dividends with adjustment multipliers!</div>
+    <input type="file" id="caBatchInput" accept=".csv" style="display:none" onchange="handleCorporateActionsFile(this.files[0])" />
+  </div>
+
+  <div class="section-title">
+    <span>Parsed Corporate Actions (<span id="caCountBadge">0</span> records)</span>
+    <span style="font-size:12px; font-weight:normal; color:var(--muted);">Ex-Date chronologically sorted</span>
+  </div>
+
+  <div style="max-height:360px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; margin-bottom:18px;">
+    <table class="grid-table" style="width:100%; border-collapse:collapse; font-size:12px;">
+      <thead>
+        <tr style="background:rgba(255,255,255,0.04); text-align:left;">
+          <th style="padding:8px 12px;">Symbol</th>
+          <th style="padding:8px 12px;">Company Name</th>
+          <th style="padding:8px 12px;">Ex-Date</th>
+          <th style="padding:8px 12px;">Action Type</th>
+          <th style="padding:8px 12px; text-align:right;">Multiplier</th>
+          <th style="padding:8px 12px;">Purpose / Ratio</th>
+        </tr>
+      </thead>
+      <tbody id="caTableBody">
+        <tr><td colspan="6" style="padding:24px; text-align:center; color:var(--muted);">No actions loaded yet. Drop actions.csv above.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn" onclick="generateCorporateActionsJS(true)">⬇ Generate &amp; Download market-corporate-actions.js</button>
+    <button class="btn-secondary" onclick="generateCorporateActionsJS(false)">Preview Code Only</button>
+    <button class="btn-secondary" onclick="copyPreview('caPreview')">Copy to Clipboard</button>
+  </div>
+  <textarea id="caPreview" class="code-preview" readonly></textarea>
+</div>
+
 <!-- MODULE 5: MULTI-DATE AMFI MUTUAL FUND NAVS                             -->
 <!-- ====================================================================== -->
 <div id="mod5" class="module-card">
@@ -754,7 +807,7 @@ function buildMfJS(triggerDownload) {
 const pulseData = window.KYF_MARKET_PULSE || {
   asOf: baseISO, lastTradingDay: baseISO,
   macro: { cpiInflation: 5.4, medicalInflation: 11.5, educationInflation: 9.0, rbiRepo: 6.25, epfRate: 8.25, ppfRate: 7.1, ssyRate: 8.2, scssRate: 8.2, sbiFd1Yr: 6.8, sbiFd5Yr: 6.5, liquidFundAvg: 6.95, arbitrageFundAvg: 7.2, homeLoanAvg: 8.65, personalLoanAvg: 14.5, creditCardApr: 39.0 },
-  preciousMetals: { gold24kPerGram: 14395, gold22kPerGram: 13195, gold18kPerGram: 10796, silverPerGram: 175, silverPerKg: 175000, gold10YrCagr: 14.8 },
+  preciousMetals: { gold24kPerGram: 7920, gold22kPerGram: 7260, gold18kPerGram: 5940, silverPerGram: 200, silverPerKg: 200000, gold10YrCagr: 11.4 },
   indices: {
     NIFTY50: { name: "Nifty 50", role: "Large-Cap Core Engine", level: 24480.5, pe: 22.1, pb: 3.55, divYield: 1.25, cagr1y: 13.8, cagr5y: 14.9, cagr10y: 13.4 },
     NIFTYNEXT50: { name: "Nifty Next 50", role: "Future Large-Cap Incubator", level: 69850, pe: 24.8, pb: 4.1, divYield: 1.05, cagr1y: 19.4, cagr5y: 17.8, cagr10y: 15.1 },
@@ -840,6 +893,118 @@ function copyPreview(id) {
   const el = document.getElementById(id);
   el.select();
   document.execCommand("copy");
+}
+
+
+let parsedActions = [];
+
+function handleCorporateActionsFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    parseCorporateActionsText(text);
+  };
+  reader.readAsText(file);
+}
+
+function parseCorporateActionsText(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return alert("File is empty.");
+
+  parsedActions = [];
+  for (let i = 1; i < lines.length; i++) {
+    const row = lines[i].split(',');
+    if (row.length < 8) continue;
+    const sym = row[0].trim();
+    const series = row[1].trim();
+    if (series && series !== 'EQ') continue;
+    const name = row[2].trim();
+    const exDate = row[6].trim();
+    const purpose = row[7].trim();
+
+    let type = 'OTHER';
+    let multiplier = 1.0;
+    let factor = 1.0;
+
+    let splitMatch = purpose.match(/(?:Split|Sub-?Division|Sub\s+Division).*?(?:From|Rs\.?|Re\.?)\s*(\d+(?:\.\d+)?).*?(?:To|Rs\.?|Re\.?)\s*(\d+(?:\.\d+)?)/i);
+    if (splitMatch) {
+      const fV = parseFloat(splitMatch[1]);
+      const tV = parseFloat(splitMatch[2]);
+      if (fV > tV && tV > 0) {
+        type = 'SPLIT';
+        multiplier = tV / fV;
+        factor = fV / tV;
+      }
+    }
+
+    if (type === 'OTHER') {
+      let bMatch = purpose.match(/Bonus.*?(\d+)\s*:\s*(\d+)/i);
+      if (bMatch) {
+        const bFor = parseFloat(bMatch[1]);
+        const bHeld = parseFloat(bMatch[2]);
+        if (bHeld > 0 && bFor > 0) {
+          type = 'BONUS';
+          multiplier = bHeld / (bHeld + bFor);
+          factor = (bHeld + bFor) / bHeld;
+        }
+      }
+    }
+
+    if (type === 'OTHER') {
+      let cMatch = purpose.match(/Consolidation.*?(?:From|Rs\.?|Re\.?)\s*(\d+(?:\.\d+)?).*?(?:To|Rs\.?|Re\.?)\s*(\d+(?:\.\d+)?)/i);
+      if (cMatch) {
+        const fV = parseFloat(cMatch[1]);
+        const tV = parseFloat(cMatch[2]);
+        if (tV > fV && fV > 0) {
+          type = 'CONSOLIDATION';
+          multiplier = tV / fV;
+          factor = fV / tV;
+        }
+      }
+    }
+
+    if (type === 'OTHER' && /Demerger|Spin-?off|Scheme of Arrangement/i.test(purpose)) {
+      type = 'DEMERGER';
+    }
+
+    parsedActions.push({ sym, name, series: 'EQ', purpose, exDate, type, multiplier: Number(multiplier.toFixed(6)), factor: Number(factor.toFixed(4)) });
+  }
+
+  document.getElementById('caCountBadge').textContent = parsedActions.length;
+  renderCorporateActionsTable();
+  generateCorporateActionsJS(false);
+}
+
+function renderCorporateActionsTable() {
+  const tbody = document.getElementById('caTableBody');
+  if (!parsedActions.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:24px; text-align:center; color:var(--muted);">No actions found in file.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = parsedActions.map(a => `
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:6px 12px; font-weight:700; color:var(--text);">${a.sym}</td>
+      <td style="padding:6px 12px; color:var(--muted); font-size:11.5px;">${a.name}</td>
+      <td style="padding:6px 12px; font-family:var(--mono);">${a.exDate}</td>
+      <td style="padding:6px 12px;"><span style="padding:2px 8px; border-radius:4px; font-size:10.5px; font-weight:700; background:${a.type==='SPLIT'?'rgba(56,189,248,0.15)':(a.type==='BONUS'?'rgba(34,197,94,0.15)':(a.type==='CONSOLIDATION'?'rgba(234,179,8,0.15)':'rgba(239,68,68,0.15)'))}; color:${a.type==='SPLIT'?'#38bdf8':(a.type==='BONUS'?'#22c55e':(a.type==='CONSOLIDATION'?'#eab308':'#ef4444'))};">${a.type}</span></td>
+      <td style="padding:6px 12px; text-align:right; font-family:var(--mono); font-weight:700;">${a.multiplier}x</td>
+      <td style="padding:6px 12px; font-size:11.5px; color:var(--muted);">${a.purpose}</td>
+    </tr>
+  `).join('');
+}
+
+function generateCorporateActionsJS(triggerDownload) {
+  const tuples = parsedActions.map(a => [a.sym, a.name, a.series, a.purpose, a.exDate, a.type, a.multiplier, a.factor]);
+  const out = {
+    asOf: new Date().toISOString().slice(0, 10),
+    source: "NSE actions.csv",
+    columns: ["symbol", "companyName", "series", "purpose", "exDate", "type", "multiplier", "factor"],
+    actions: tuples
+  };
+  const code = `// Auto-generated by KYF EOD Admin on ${new Date().toISOString()}\nwindow.KYF_CORPORATE_ACTIONS = ${JSON.stringify(out, null, 2)};\n`;
+  document.getElementById('caPreview').value = code;
+  if (triggerDownload) downloadFile("market-corporate-actions.js", code);
 }
 
 renderHorizonTables();

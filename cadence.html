@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Know Your Finance (KYF) Action Cadence — Organize and track your financial milestones, life goals, and recurring housekeeping activities. 100% private, runs locally.">
   <meta name="theme-color" content="#1f7a6c">
-  <title>Action Cadence — Know Your Finance (KYF)</title>
+  <title>Financial Cadence — Secret sauce of success | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
   <style>
     :root {
@@ -252,6 +252,39 @@
     .act-card.status-not_applicable { opacity: .55; background: #fbfbfb; }
     .act-card.status-not_applicable::before { background: var(--muted); }
 
+    .act-card.is-clickable-card {
+      cursor: pointer;
+    }
+    .act-card.is-clickable-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(31,122,108,.16);
+      border-color: var(--teal);
+    }
+    .act-card.is-clickable-card:hover h3 {
+      color: var(--teal);
+    }
+    .act-card .card-action-cue {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--teal);
+      text-decoration: none;
+      font-weight: 700;
+      padding: 5px 12px;
+      background: var(--teal-soft);
+      border-radius: 6px;
+      border: 1px solid rgba(31,122,108,.2);
+      transition: all .15s ease;
+      width: fit-content;
+      margin-bottom: 12px;
+    }
+    .act-card.is-clickable-card:hover .card-action-cue {
+      background: var(--teal);
+      color: #fff;
+    }
+
     .card-head {
       display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
       margin-bottom: 12px;
@@ -442,14 +475,11 @@
       <div class="wrap">
         <div class="hero-top">
           <div>
-            <p class="eyebrow">Personal Finance Cadence</p>
-            <h1>Action Cadence &amp; Rituals</h1>
+            <h1>Financial Cadence &mdash; Secret sauce of success</h1>
             <p class="lede">Manage the complete spectrum of your personal wealth journey: from high-conviction life milestone targets to regular housekeeping health checks. Track progress, schedule target dates, and review at your own calm pace.</p>
           </div>
           <div class="action-buttons">
             <button class="btn-action primary" id="openAddModalBtn">+ Add Activity</button>
-            <button class="btn-action" id="exportCadenceBtn" title="Save & export .kyf file">💾 Save .kyf</button>
-            <button class="btn-action" id="openFileHeroBtn" title="Open .kyf file">📂 Open .kyf</button>
             <button class="btn-action" id="resetCadenceBtn" title="Reset all activities to clean slate">Reset</button>
           </div>
         </div>
@@ -611,7 +641,7 @@
   <!-- SCRIPT -->
   <script>
     (function () {
-      const STORAGE_KEY = "kyf_cadence_v2";
+      const STORAGE_KEY = "kyf_cadence_v3";
 
       const DEFAULT_ACTIVITIES = [
         // --- Section 1: Life Milestones & Goals ---
@@ -881,9 +911,34 @@
       // Load activities
       function loadActivities() {
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
+          let raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) {
+            raw = localStorage.getItem("kyf_cadence_v2") || localStorage.getItem("kyf_cadence_v1");
+          }
           if (raw) {
-            activities = JSON.parse(raw);
+            const stored = JSON.parse(raw);
+            const defaultMap = new Map(DEFAULT_ACTIVITIES.map(d => [d.id, d]));
+            activities = stored.map(s => {
+              const def = defaultMap.get(s.id);
+              if (def) {
+                return Object.assign({}, def, s, {
+                  pageUrl: def.pageUrl || s.pageUrl || (s.id === "house-market-performance" ? "market-performance.html" : null),
+                  icon: def.icon || s.icon,
+                  title: def.title || s.title,
+                  description: def.description || s.description,
+                  tags: def.tags || s.tags
+                });
+              }
+              return s;
+            });
+            // Append any default activity not yet in stored
+            const storedIds = new Set(stored.map(s => s.id));
+            DEFAULT_ACTIVITIES.forEach(def => {
+              if (!storedIds.has(def.id)) {
+                activities.push(JSON.parse(JSON.stringify(def)));
+              }
+            });
+            saveActivities();
           } else {
             activities = JSON.parse(JSON.stringify(DEFAULT_ACTIVITIES));
             saveActivities();
@@ -958,9 +1013,10 @@
         const isDone = item.status === "done";
         const isScheduled = item.status === "scheduled";
         const isNA = item.status === "not_applicable";
+        const pageUrl = item.pageUrl || (item.id === "house-market-performance" ? "market-performance.html" : null);
 
         return `
-          <div class="act-card status-${item.status}" id="card-${item.id}" data-id="${item.id}">
+          <div class="act-card status-${item.status} ${pageUrl ? 'is-clickable-card' : ''}" id="card-${item.id}" data-id="${item.id}" ${pageUrl ? `data-url="${pageUrl}" title="Click to open ${escapeHtml(item.title)}"` : ''}>
             <div class="card-head">
               <div class="card-meta">
                 <span class="tag-cat ${item.section}">${item.category || (item.section === 'goals' ? 'Milestone' : 'Housekeeping')}</span>
@@ -978,9 +1034,9 @@
               </div>
             ` : ''}
 
-            ${item.pageUrl ? `
-              <div style="margin-bottom: 14px;">
-                <a href="${item.pageUrl}" style="display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;color:var(--teal);text-decoration:none;font-weight:700;padding:4px 10px;background:var(--teal-soft);border-radius:4px;transition:all .15s ease;">
+            ${pageUrl ? `
+              <div style="margin-bottom: 12px;">
+                <a href="${pageUrl}" class="card-action-cue" onclick="event.stopPropagation();">
                   <span>Open Tool</span> &rarr;
                 </a>
               </div>
@@ -1124,16 +1180,30 @@
 
         document.addEventListener("click", function (e) {
           const btn = e.target.closest("button[data-action='toggle-done']");
-          if (!btn) return;
-          const cardEl = btn.closest(".act-card");
-          if (!cardEl) return;
-          const itemId = cardEl.dataset.id;
-          const item = activities.find(i => i.id === itemId);
-          if (!item) return;
+          if (btn) {
+            const cardEl = btn.closest(".act-card");
+            if (!cardEl) return;
+            const itemId = cardEl.dataset.id;
+            const item = activities.find(i => i.id === itemId);
+            if (!item) return;
 
-          item.status = (item.status === "done") ? "active" : "done";
-          saveActivities();
-          render();
+            item.status = (item.status === "done") ? "active" : "done";
+            saveActivities();
+            render();
+            return;
+          }
+
+          // If clicking interactive child controls (select, input, button, textarea), do not navigate
+          if (e.target.closest("select, input, button, textarea")) return;
+
+          // If clicking directly on an anchor tag, let the browser follow the link
+          if (e.target.closest("a")) return;
+
+          // If clicking on a card with a pageUrl, navigate to that page
+          const clickableCard = e.target.closest(".act-card.is-clickable-card, .act-card[data-url]");
+          if (clickableCard && clickableCard.dataset.url) {
+            window.location.href = clickableCard.dataset.url;
+          }
         });
 
         // Add Custom Activity Modal
