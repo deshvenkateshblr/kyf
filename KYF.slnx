@@ -7,4 +7,10 @@
     <File Path="data/market-holidays.js" />
     <File Path="data/market-pulse.js" />
   </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="cadence.html" />
+    <File Path="index.html" />
+    <File Path="index_bkup.html" />
+    <File Path="market-performance.html" />
+  </Folder>
 </Solution>

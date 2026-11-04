@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Review broad market performance, indices, equities, and mutual funds across 1D, 5D, 1M, 3M, 6M, and 1Y windows with valuation multiples and macro benchmarks.">
+  <meta name="description" content="Review broad market performance, indices, equities, and mutual funds across 1M, 3M, 6M, and 1Y windows with valuation multiples and macro benchmarks.">
   <meta name="theme-color" content="#1f7a6c">
   <title>Review Market Performance &amp; Benchmarks | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
@@ -104,7 +104,7 @@
         var(--paper);
       border-bottom: 1px solid var(--line);
     }
-    .hero-flex { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 20px; }
+    .hero-content { max-width: 820px; }
     .eyebrow {
       font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
       text-transform: uppercase; color: var(--teal); margin: 0 0 10px; display: flex; align-items: center; gap: 8px;
@@ -114,11 +114,12 @@
     .market-hero .lede { font-size: clamp(15px, 1.2vw, 17px); color: var(--ink-soft); max-width: 720px; margin: 0; line-height: 1.5; }
     
     .as-of-badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
-      padding: 8px 14px; font-family: var(--mono); font-size: 12px; color: var(--ink-soft);
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+      padding: 5px 12px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft);
+      white-space: nowrap;
     }
-    .as-of-badge strong { color: var(--teal); }
+    .as-of-badge strong { color: var(--teal); font-weight: 700; }
 
     /* ---------- Global Horizon Bar ---------- */
     .horizon-toolbar {
@@ -130,14 +131,20 @@
       box-shadow: 0 4px 12px rgba(0,0,0,.03);
     }
     .horizon-inner {
-      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
+      display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 14px;
     }
     .horizon-label-group {
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; gap: 12px; flex-shrink: 0;
     }
     .horizon-label {
       font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em;
-      color: var(--muted); font-weight: 600;
+      color: var(--muted); font-weight: 600; white-space: nowrap;
+    }
+    .hl-tablet { display: none; }
+    .hl-mobile { display: none; }
+    .as-of-mobile-icon { display: none; }
+    .horizon-sub-group {
+      display: flex; align-items: center; gap: 14px; flex-shrink: 0;
     }
     .horizon-pills {
       display: inline-flex; background: var(--panel); border: 1px solid var(--line);
@@ -164,13 +171,14 @@
     /* ---------- Section Headers ---------- */
     .section-wrap {
       padding: 38px 0;
+      scroll-margin-top: 130px;
     }
     .section-header {
       display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
       gap: 12px; margin-bottom: 22px; padding-bottom: 12px; border-bottom: 2px solid var(--line);
     }
     .section-title {
-      font-family: var(--serif); font-size: 26px; font-weight: 100; margin: 0;
+      font-family: var(--serif); font-size: clamp(20px, 2.4vw, 26px); font-weight: 100; margin: 0;
       display: flex; align-items: center; gap: 10px;
     }
     .section-desc {
@@ -250,39 +258,63 @@
     }
     .cagr-anchor b { color: var(--teal); font-weight: 700; }
 
-    /* ---------- Commodities & Macro Strip ---------- */
-    .metals-macro-grid {
-      display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; margin-top: 20px;
+    /* ---------- Macro & Sovereign Strip (Above Horizon) ---------- */
+    .macro-section {
+      padding: 26px 0 16px;
+      scroll-margin-top: 70px;
     }
-    .macro-panel {
+    .macro-strip-card {
       background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
-      padding: 22px 24px; display: flex; flex-direction: column; justify-content: space-between;
+      padding: 22px 24px; box-shadow: 0 4px 16px rgba(0,0,0,.02);
     }
-    .macro-panel h3 {
-      font-family: var(--sans); font-size: 18px; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;
+    .macro-strip-header {
+      display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+      gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line);
     }
-    .metals-list {
-      display: grid; gap: 12px;
+    .macro-strip-title {
+      font-family: var(--serif); font-size: 22px; font-weight: 100; margin: 0;
+      display: flex; align-items: center; gap: 8px;
     }
-    .metal-item {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: #fafbfa;
+    .macro-strip-desc {
+      font-size: 13px; color: var(--muted); margin: 4px 0 0;
     }
-    .metal-item .m-title { font-weight: 600; font-size: 14px; }
-    .metal-item .m-sub { font-size: 11.5px; color: var(--muted); font-family: var(--mono); }
-    .metal-item .m-price { font-family: var(--mono); font-size: 16px; font-weight: 700; text-align: right; }
-
+    .spot-rate-badge {
+      font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--teal);
+      background: var(--teal-soft); border: 1px solid rgba(31,122,108,.25);
+      border-radius: 999px; padding: 4px 12px; white-space: nowrap;
+    }
     .rates-list {
-      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;
     }
     .rate-box {
-      padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fafbfa;
+      padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fafbfa;
+      transition: transform .15s ease, box-shadow .15s ease;
     }
-    .rate-box .r-lbl { font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
-    .rate-box .r-val { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--ink); margin-top: 2px; }
+    .rate-box:hover {
+      transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,.04);
+    }
+    .rate-box .r-lbl { font-size: 10.5px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+    .rate-box .r-val { font-family: var(--mono); font-size: 19px; font-weight: 700; color: var(--ink); margin-top: 4px; }
     .rate-box.benchmark { border-color: var(--amber); background: var(--amber-soft); }
     .rate-box.benchmark .r-lbl { color: #82470e; font-weight: 700; }
     .rate-box.benchmark .r-val { color: #82470e; }
+
+    /* ---------- Precious Metals Cards ---------- */
+    .metals-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;
+    }
+    .metal-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 18px 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel);
+      box-shadow: 0 4px 16px rgba(0,0,0,.02); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .metal-item:hover {
+      transform: translateY(-2px); border-color: var(--teal);
+      box-shadow: 0 8px 20px rgba(24,38,32,.06);
+    }
+    .metal-item .m-title { font-weight: 700; font-size: 15px; color: var(--ink); }
+    .metal-item .m-sub { font-size: 11.5px; color: var(--muted); font-family: var(--mono); margin-top: 3px; }
+    .metal-item .m-price { font-family: var(--mono); font-size: 18px; font-weight: 700; text-align: right; color: var(--ink); }
 
     /* ---------- Equities & MF Filter Controls ---------- */
     .controls-shelf {
@@ -373,6 +405,77 @@
     }
     .outlier-modal-close:hover { color: var(--ink); }
 
+    /* Share Button Next to Section Titles */
+    .section-share-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; font-family: var(--mono); font-size: 11px; font-weight: 600;
+      color: var(--teal); background: var(--teal-soft); border: 1px solid rgba(31,122,108,.25);
+      border-radius: 999px; cursor: pointer; vertical-align: middle; margin-left: 10px;
+      transition: all .15s ease; text-decoration: none;
+    }
+    .section-share-btn:hover {
+      background: var(--teal); color: #fff; border-color: var(--teal);
+      transform: translateY(-1px); box-shadow: 0 2px 8px rgba(31,122,108,.25);
+    }
+    .section-share-btn svg { flex-shrink: 0; }
+
+    /* Share Modal */
+    .share-modal-overlay {
+      position: fixed; inset: 0; z-index: 70;
+      background: rgba(24,38,32,.65); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      display: none; place-items: center; padding: 20px;
+    }
+    .share-modal-overlay.open { display: grid; }
+    .share-modal-box {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+      width: min(720px, 100%); max-height: 88vh; overflow-y: auto; padding: 24px;
+      box-shadow: 0 24px 48px rgba(0,0,0,.28);
+    }
+    .share-modal-head {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 12px;
+    }
+    .share-actions-row {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+    }
+    .share-action-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
+      border-radius: 8px; font-family: var(--mono); font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: all .15s ease; border: 1px solid transparent;
+    }
+    .share-action-btn.primary {
+      background: #000; color: #fff; border-color: #000;
+    }
+    .share-action-btn.primary:hover {
+      background: #1d9bf0; border-color: #1d9bf0;
+      box-shadow: 0 3px 10px rgba(29,155,240,.3);
+    }
+    .share-action-btn.secondary {
+      background: var(--paper); color: var(--ink); border-color: var(--line);
+    }
+    .share-action-btn.secondary:hover {
+      border-color: var(--teal); color: var(--teal); background: var(--teal-soft);
+    }
+    .share-toast {
+      display: none; font-family: var(--mono); font-size: 12px; font-weight: 600;
+      padding: 8px 12px; border-radius: 6px; margin-bottom: 12px;
+      background: var(--teal-soft); color: var(--teal); border: 1px solid rgba(31,122,108,.3);
+    }
+    .share-toast.show { display: block; }
+    .share-textarea {
+      width: 100%; box-sizing: border-box; background: var(--paper); border: 1px solid var(--line);
+      border-radius: 8px; padding: 10px 12px; font-family: var(--mono); font-size: 12px;
+      line-height: 1.5; color: var(--ink); resize: vertical; outline: none; margin-top: 4px;
+    }
+    .share-textarea:focus { border-color: var(--teal); }
+    .share-img-preview-wrap {
+      margin-top: 6px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+      background: #0f1814; text-align: center; max-height: 320px; overflow-y: auto;
+    }
+    .share-img-preview-wrap img {
+      width: 100%; height: auto; display: block;
+    }
+
     .search-input-wrap {
       position: relative; width: 260px; max-width: 100%;
     }
@@ -389,8 +492,7 @@
 
     /* Category Pill Filter for MF */
     .cat-pills-wrap {
-      display: flex; flex-wrap: wrap; gap: 6px; align-items: center; width: 100%; margin-top: 8px;
-      padding-top: 12px; border-top: 1px dashed var(--line);
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center; width: 100%;
     }
     .cat-pill {
       font-family: var(--mono); font-size: 11px; padding: 4px 10px; border-radius: 999px;
@@ -403,37 +505,60 @@
     /* ---------- Responsive Tables ---------- */
     .table-container {
       background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
-      overflow-x: auto; box-shadow: 0 4px 16px rgba(0,0,0,.02);
+      overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 4px 16px rgba(0,0,0,.02);
     }
     table.data-table {
       width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px;
+      table-layout: auto;
     }
     table.data-table th {
       background: #fafbfa; font-family: var(--mono); font-size: 11px;
       letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
-      padding: 12px 18px; border-bottom: 2px solid var(--line); white-space: nowrap;
+      padding: 11px 14px; border-bottom: 2px solid var(--line);
     }
     table.data-table td {
-      padding: 12px 18px; border-bottom: 1px solid var(--line); vertical-align: middle;
+      padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: middle;
     }
     table.data-table tr:last-child td { border-bottom: none; }
     table.data-table tr:hover td { background: #f6f9f7; }
+
+    .col-hdr-full { display: inline; }
+    .col-hdr-short { display: none; }
     
     .rank-cell {
-      font-family: var(--mono); font-weight: 700; color: var(--muted); width: 44px;
+      font-family: var(--mono); font-weight: 700; color: var(--muted);
+      width: 38px; text-align: center; padding-left: 8px; padding-right: 6px;
+      white-space: nowrap;
     }
     .rank-cell.top-3 { color: var(--amber); }
+
+    .name-col { min-width: 0; }
     .stock-symbol {
       font-family: var(--mono); font-weight: 700; color: var(--ink); font-size: 13.5px;
     }
     .stock-name {
       font-size: 12px; color: var(--muted); margin-top: 2px;
+      word-break: break-word; overflow-wrap: break-word;
+    }
+    .fund-title {
+      font-weight: 600; font-size: 13.5px; color: var(--ink); line-height: 1.35;
+      word-break: break-word; overflow-wrap: break-word;
+    }
+    .fund-cat {
+      font-family: var(--mono); font-size: 11px; color: var(--teal); margin-top: 2px;
+      word-break: break-word; overflow-wrap: break-word;
+    }
+    .price-col {
+      width: 95px; text-align: right;
+    }
+    .ret-col {
+      width: 95px; text-align: right;
     }
     .price-cell {
-      font-family: var(--mono); font-weight: 700; text-align: right; white-space: nowrap;
+      font-family: var(--mono); font-weight: 700; text-align: right; white-space: nowrap; width: 95px;
     }
     .ret-cell {
-      font-family: var(--mono); font-weight: 700; text-align: right; white-space: nowrap;
+      font-family: var(--mono); font-weight: 700; text-align: right; white-space: nowrap; width: 95px;
     }
 
     /* ---------- Educational Takeaway Card ---------- */
@@ -466,10 +591,76 @@
     .sticky-footer a:hover { color: #fff; }
 
     @media (max-width: 900px) {
-      .metals-macro-grid { grid-template-columns: 1fr; }
       .nav-links { display: none; }
       .controls-shelf { flex-direction: column; align-items: stretch; }
       .search-input-wrap { width: 100%; }
+      .jump-nav { display: none; }
+
+      /* Single-Row Sticky Toolbar on Mobile/Tablet */
+      .hl-desktop { display: none; }
+      .hl-tablet { display: inline; }
+      .hl-mobile { display: none; }
+      .horizon-toolbar { padding: 9px 0; }
+      .horizon-inner {
+        flex-direction: row; justify-content: space-between; align-items: center;
+        flex-wrap: nowrap; gap: 8px;
+      }
+      .horizon-label-group {
+        display: flex; align-items: center; gap: 8px; flex-shrink: 0; width: auto;
+      }
+      .horizon-sub-group {
+        display: flex; align-items: center; gap: 8px; flex-shrink: 0; width: auto;
+      }
+      .horizon-pill { padding: 5px 11px; font-size: 11.5px; }
+      .as-of-badge { font-size: 11px; padding: 4px 10px; }
+
+      /* Table column compaction to eliminate horizontal scroll */
+      table.data-table th, table.data-table td {
+        padding: 9px 10px;
+      }
+      .col-hdr-full { display: none; }
+      .col-hdr-short { display: inline; }
+      .rank-cell { width: 34px; padding-left: 6px; padding-right: 4px; }
+      .price-col, .price-cell { width: 85px; }
+      .ret-col, .ret-cell { width: 85px; }
+    }
+
+    @media (max-width: 600px) {
+      .hl-desktop { display: none; }
+      .hl-tablet { display: none; }
+      .hl-mobile { display: inline; }
+      .as-of-prefix { display: none; }
+      .as-of-mobile-icon { display: inline; }
+      .horizon-toolbar { padding: 7px 0; }
+      .horizon-inner { gap: 6px; }
+      .horizon-label-group { gap: 6px; }
+      .horizon-pill { padding: 4px 8px; font-size: 11px; }
+      .as-of-badge { font-size: 10.5px; padding: 3px 6px; }
+
+      /* Macro & Metals cards */
+      .section-share-btn { padding: 2px 7px; font-size: 10px; margin-left: 6px; }
+      .share-modal-box { padding: 16px; }
+      .share-actions-row { gap: 6px; }
+      .share-action-btn { padding: 7px 10px; font-size: 11px; }
+      .macro-strip-card { padding: 16px; }
+      .metal-item { padding: 14px 16px; }
+      .rate-box { padding: 10px; }
+      .rate-box .r-val { font-size: 17px; }
+      .rates-list { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .metals-grid { grid-template-columns: 1fr; gap: 10px; }
+
+      /* Mobile Table sizing */
+      table.data-table { font-size: 12.5px; }
+      table.data-table th { font-size: 10px; letter-spacing: .02em; }
+      table.data-table th, table.data-table td { padding: 8px 6px; }
+      .rank-cell { width: 28px; padding-left: 4px; padding-right: 2px; font-size: 11.5px; }
+      .fund-title { font-size: 12px; }
+      .fund-cat { font-size: 10px; }
+      .stock-symbol { font-size: 12px; }
+      .stock-name { font-size: 10.5px; }
+      .price-col, .price-cell { width: 72px; font-size: 12px; }
+      .ret-col, .ret-cell { width: 72px; font-size: 12px; }
+      .ret-badge { font-size: 11px; padding: 2px 5px; }
     }
   </style>
 </head>
@@ -498,14 +689,37 @@
   <!-- HERO -->
   <section class="market-hero">
     <div class="wrap">
-      <div class="hero-flex">
-        <div>
-          <p class="eyebrow"><span class="badge-dot"></span> Cadence Activity &bull; Market &amp; Macro Benchmarks</p>
-          <h1>Review Market Performance &amp; Benchmarks</h1>
-          <p class="lede">Calm, empirical perspective on market cycles across multi-horizon return windows (1D, 5D, 1M, 3M, 6M, 1Y). Compare index valuations, monitor inflation &amp; sovereign yields, and discover top momentum performers across equities and mutual funds without reacting to short-term daily noise.</p>
+      <div class="hero-content">
+        <p class="eyebrow"><span class="badge-dot"></span> Cadence Activity &bull; Market &amp; Macro Benchmarks</p>
+        <h1>Review Market Performance &amp; Benchmarks</h1>
+        <p class="lede">Calm, empirical perspective on market cycles across multi-horizon return windows (1M, 3M, 6M, 1Y). Compare index valuations, monitor inflation &amp; sovereign yields, and discover top momentum performers across equities and mutual funds without reacting to short-term daily noise.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ECONOMIC DATA & SOVEREIGN BENCHMARK (HORIZON AGNOSTIC) -->
+  <section class="macro-section" id="section-macro">
+    <div class="wrap">
+      <div class="macro-strip-card">
+        <div class="macro-strip-header">
+          <div>
+            <h2 class="macro-strip-title">
+              <span>🏛️ Sovereign Yields &amp; Economic Baseline</span>
+              <button type="button" class="section-share-btn" data-section="macro" aria-label="Share Sovereign Yields &amp; Economic Baseline on X and other platforms" title="Share on X / Social">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                <span>Share</span>
+              </button>
+            </h2>
+            <p class="macro-strip-desc">Spot inflation benchmarks, tax-free sovereign yields, and liquid hurdle rates (% p.a. &bull; horizon agnostic).</p>
+          </div>
+          <span class="spot-rate-badge">📌 Active Spot &amp; Administered Rates</span>
         </div>
-        <div class="as-of-badge" id="asOfBadge">
-          <span>📅 Benchmark As of:</span> <strong id="asOfDateText">Loading...</strong>
+        <div class="rates-list" id="ratesList">
+          <!-- Rendered via JS -->
+        </div>
+        <div class="cagr-anchor" style="margin-top: 14px;">
+          <span>Real EPF Spread over CPI:</span>
+          <b id="realSpreadVal" style="color:var(--green)">+2.85% tax-free real yield over CPI</b>
         </div>
       </div>
     </div>
@@ -515,136 +729,76 @@
   <aside class="horizon-toolbar" aria-label="Horizon Filter Toolbar">
     <div class="wrap horizon-inner">
       <div class="horizon-label-group">
-        <span class="horizon-label">⏱️ Select Return Horizon:</span>
+        <span class="horizon-label">
+          <span class="hl-desktop">⏱️ Return Window:</span>
+          <span class="hl-tablet">⏱️ Window:</span>
+          <span class="hl-mobile">⏱️</span>
+        </span>
         <div class="horizon-pills" role="tablist" id="horizonTabs">
-          <button type="button" class="horizon-pill" data-horizon="1d" role="tab" aria-selected="false">1D</button>
-          <button type="button" class="horizon-pill" data-horizon="5d" role="tab" aria-selected="false">5D</button>
-          <button type="button" class="horizon-pill active" data-horizon="1m" role="tab" aria-selected="true">1M</button>
+          <button type="button" class="horizon-pill" data-horizon="1m" role="tab" aria-selected="false">1M</button>
           <button type="button" class="horizon-pill" data-horizon="3m" role="tab" aria-selected="false">3M</button>
           <button type="button" class="horizon-pill" data-horizon="6m" role="tab" aria-selected="false">6M</button>
-          <button type="button" class="horizon-pill" data-horizon="1y" role="tab" aria-selected="false">1Y</button>
+          <button type="button" class="horizon-pill active" data-horizon="1y" role="tab" aria-selected="true">1Y</button>
         </div>
       </div>
-      <div class="jump-nav">
-        <a href="#section-indices">Indices &amp; Macro</a>
-        <a href="#section-equities">Top Equities</a>
-        <a href="#section-mf">Top Mutual Funds</a>
+      <div class="horizon-sub-group">
+        <div class="jump-nav">
+          <a href="#section-macro">Macro</a>
+          <a href="#section-metals">Metals</a>
+          <a href="#section-indices">Indices</a>
+          <a href="#section-mf">Mutual Funds</a>
+          <a href="#section-equities">Equities</a>
+        </div>
+        <div class="as-of-badge" id="asOfBadge" title="Official market benchmark closing date">
+          <span class="as-of-prefix">📅 As of:</span>
+          <span class="as-of-mobile-icon">📅</span>
+          <strong id="asOfDateText">Loading...</strong>
+        </div>
       </div>
     </div>
   </aside>
 
   <main class="wrap">
 
-    <!-- SECTION 1: INDICES & MACRO -->
+    <!-- SECTION 1: PRECIOUS METALS -->
+    <section class="section-wrap" id="section-metals">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <span>🪙 Precious Metals</span>
+            <button type="button" class="section-share-btn" data-section="metals" aria-label="Share Precious Metals on X and other platforms" title="Share on X / Social">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+              <span>Share</span>
+            </button>
+          </h2>
+          <p class="section-desc">Retail spot bullion prices and multi-horizon ETF returns.</p>
+        </div>
+        <span class="section-badge" id="metalsHorizonBadge">Showing 1-Year Trailing Return (via ETFs)</span>
+      </div>
+
+      <div class="metals-grid" id="metalsList">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- SECTION 2: INDICES & VALUATIONS -->
     <section class="section-wrap" id="section-indices">
       <div class="section-header">
         <div>
-          <h2 class="section-title">📊 Broad Market Indices &amp; Valuation Multiples</h2>
-          <p class="section-desc">Key equity benchmarks across market-cap segments, valuation multiples (P/E, P/B), and long-term 5Y/10Y compounding anchors.</p>
+          <h2 class="section-title">
+            <span>📊 Market Indices &amp; Valuations</span>
+            <button type="button" class="section-share-btn" data-section="indices" aria-label="Share Market Indices &amp; Valuations on X and other platforms" title="Share on X / Social">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+              <span>Share</span>
+            </button>
+          </h2>
+          <p class="section-desc">Key equity benchmarks across market-cap segments with live P/E valuation multiples.</p>
         </div>
-        <span class="section-badge" id="indicesHorizonBadge">Showing 1-Month Return</span>
+        <span class="section-badge" id="indicesHorizonBadge">Showing 1-Year Trailing Return</span>
       </div>
 
       <div class="indices-grid" id="indicesGrid">
         <!-- Rendered via JS -->
-      </div>
-
-      <!-- COMMODITIES & FIXED INCOME MACRO STRIP -->
-      <div class="metals-macro-grid">
-        <!-- Precious Metals Panel -->
-        <div class="macro-panel">
-          <div>
-            <h3>🪙 Precious Metals &amp; Commodities</h3>
-            <p class="section-desc" style="margin-bottom: 14px;">Store of value and hedge against currency debasement. Track spot retail prices and trailing returns.</p>
-            <div class="metals-list" id="metalsList">
-              <!-- Rendered via JS -->
-            </div>
-          </div>
-          <div class="cagr-anchor" style="margin-top: 14px;">
-            <span>Gold 10-Year Compounded CAGR:</span>
-            <b id="gold10YrCagrVal">+11.4% p.a.</b>
-          </div>
-        </div>
-
-        <!-- Fixed Income & Sovereign Macro Panel -->
-        <div class="macro-panel">
-          <div>
-            <h3>🏛️ Sovereign Yields &amp; Hurdle Rates</h3>
-            <p class="section-desc" style="margin-bottom: 14px;">Your baseline opportunity costs: inflation hurdle rate, government bond yields, and guaranteed small-savings rates.</p>
-            <div class="rates-list" id="ratesList">
-              <!-- Rendered via JS -->
-            </div>
-          </div>
-          <div class="cagr-anchor" style="margin-top: 14px;">
-            <span>Real G-Sec Spread over CPI:</span>
-            <b id="realSpreadVal" style="color:var(--green)">+1.38% (Positive real yield)</b>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 2: TOP 10 EQUITIES -->
-    <section class="section-wrap" id="section-equities">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">📈 Top 10 Equities (NSE Momentum)</h2>
-          <p class="section-desc">Live performance rankings across 2,700+ actively traded NSE stocks for selected momentum horizons.</p>
-        </div>
-        <span class="section-badge" id="equityCountBadge">2,703 Stocks Screened</span>
-      </div>
-
-      <div class="controls-shelf">
-        <div class="controls-left">
-          <span class="control-label">Horizon:</span>
-          <div class="time-btn-group" id="equityTimeGroup">
-            <button type="button" class="time-btn active" data-time="ret1m">1M</button>
-            <button type="button" class="time-btn" data-time="ret3m">3M</button>
-            <button type="button" class="time-btn" data-time="ret6m">6M</button>
-            <button type="button" class="time-btn" data-time="ret1y">1Y</button>
-          </div>
-
-          <button type="button" class="toggle-sort-btn gainers" id="equitySortToggle">
-            <span>🟢 Top Gainers</span>
-          </button>
-
-          <button type="button" class="outlier-btn active" id="equityOutlierToggle" title="Click to toggle unadjusted corporate action & penny stock filter">
-            <span>🛡️ Outlier Filter: ON</span>
-          </button>
-
-          <select class="segment-select" id="equitySegmentSelect" aria-label="Stock universe segment">
-            <option value="nifty500" selected>⭐ Segment: Nifty 500 Leaders (Established &amp; Liquid)</option>
-            <option value="allTraded">🌐 Segment: All Traded Equities (2,700+ Screened)</option>
-            <option value="nonPenny">Segment: Non-Penny (&gt; ₹10)</option>
-          </select>
-        </div>
-
-        <div class="search-input-wrap">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" id="equitySearchInput" placeholder="Filter stock symbol or name...">
-        </div>
-      </div>
-
-      <!-- Outlier Notice Banner -->
-      <div class="outlier-notice-banner" id="outlierNoticeBanner">
-        <span id="outlierNoticeText">🛡️ <strong>Outlier Filter Active:</strong> Excluded unadjusted corporate actions (stock splits, consolidations) &amp; penny spikes to surface genuine momentum leaders.</span>
-        <button type="button" class="view-outliers-btn" id="openOutliersModalBtn">View Filtered Anomalies (<span id="outlierCountSpan">0</span>)</button>
-      </div>
-
-      <div class="table-container">
-        <table class="data-table" id="equityTable">
-          <thead>
-            <tr>
-              <th class="rank-cell">#</th>
-              <th>Symbol &amp; Company</th>
-              <th style="text-align:right">Current Price</th>
-              <th style="text-align:right" id="equityThReturn">1M Return</th>
-              <th style="text-align:center">1M &bull; 3M &bull; 6M &bull; 1Y Trend</th>
-            </tr>
-          </thead>
-          <tbody id="equityTableBody">
-            <!-- Rendered via JS -->
-          </tbody>
-        </table>
       </div>
     </section>
 
@@ -652,23 +806,19 @@
     <section class="section-wrap" id="section-mf">
       <div class="section-header">
         <div>
-          <h2 class="section-title">🌱 Top 10 Mutual Funds (AMFI Benchmark Schemes)</h2>
-          <p class="section-desc">Leading direct plan benchmark schemes across SEBI equity, hybrid, debt, and ELSS categories.</p>
+          <h2 class="section-title">
+            <span>🌱 Top 10 Mutual Funds</span>
+            <button type="button" class="section-share-btn" data-section="mf" aria-label="Share Top 10 Mutual Funds on X and other platforms" title="Share on X / Social">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+              <span>Share</span>
+            </button>
+          </h2>
+          <p class="section-desc">Leading direct plan benchmark schemes across SEBI categories.</p>
         </div>
         <span class="section-badge" id="mfCountBadge">32 Benchmark Schemes</span>
       </div>
 
       <div class="controls-shelf">
-        <div class="controls-left">
-          <span class="control-label">Horizon:</span>
-          <div class="time-btn-group" id="mfTimeGroup">
-            <button type="button" class="time-btn active" data-time="ret1m">1M</button>
-            <button type="button" class="time-btn" data-time="ret3m">3M</button>
-            <button type="button" class="time-btn" data-time="ret6m">6M</button>
-            <button type="button" class="time-btn" data-time="ret1y">1Y</button>
-          </div>
-        </div>
-
         <div class="cat-pills-wrap" id="mfCatFilters">
           <button type="button" class="cat-pill active" data-cat="all">All Categories</button>
           <button type="button" class="cat-pill" data-cat="Large Cap">Large Cap &amp; Index</button>
@@ -686,11 +836,9 @@
           <thead>
             <tr>
               <th class="rank-cell">#</th>
-              <th>Fund Name &amp; Category</th>
-              <th style="text-align:right">Direct NAV</th>
-              <th style="text-align:right">Regular NAV</th>
-              <th style="text-align:right">Direct Alpha Spread</th>
-              <th style="text-align:right" id="mfThReturn">1M Return</th>
+              <th class="name-col"><span class="col-hdr-full">Fund Name &amp; Category</span><span class="col-hdr-short">Fund &amp; Category</span></th>
+              <th class="price-col"><span class="col-hdr-full">Current NAV</span><span class="col-hdr-short">NAV</span></th>
+              <th class="ret-col" id="mfThReturn">1M Return</th>
             </tr>
           </thead>
           <tbody id="mfTableBody">
@@ -698,6 +846,56 @@
           </tbody>
         </table>
       </div>
+    </section>
+
+    <!-- SECTION 4: TOP 10 EQUITIES -->
+    <section class="section-wrap" id="section-equities">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <span>📈 Top 10 Equities</span>
+            <button type="button" class="section-share-btn" data-section="equities" aria-label="Share Top 10 Equities on X and other platforms" title="Share on X / Social">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+              <span>Share</span>
+            </button>
+          </h2>
+          <p class="section-desc">Leading NSE momentum performers for the active return window.</p>
+        </div>
+        <span class="section-badge" id="equityCountBadge">2,703 Stocks Screened</span>
+      </div>
+
+      <div class="controls-shelf">
+        <div class="controls-left">
+          <button type="button" class="toggle-sort-btn gainers" id="equitySortToggle">
+            <span>🟢 Top Gainers</span>
+          </button>
+
+          <label style="font-family:var(--mono); font-size:11.5px; color:var(--muted); display:inline-flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="includeAllNseToggle" style="accent-color:var(--teal);"> Expand to all 2,700+ NSE stocks</label>
+        </div>
+
+        <div class="search-input-wrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="equitySearchInput" placeholder="Filter stock symbol or name...">
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table" id="equityTable">
+          <thead>
+            <tr>
+              <th class="rank-cell">#</th>
+              <th class="name-col"><span class="col-hdr-full">Symbol &amp; Company</span><span class="col-hdr-short">Symbol &amp; Name</span></th>
+              <th class="price-col"><span class="col-hdr-full">Current Price</span><span class="col-hdr-short">Price</span></th>
+              <th class="ret-col" id="equityThReturn">1Y Return</th>
+            </tr>
+          </thead>
+          <tbody id="equityTableBody">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; font-family:var(--mono); font-size:11.5px; color:var(--muted);"><span>🛡️ Auto-excluded <strong id="outlierCountSpan">0</strong> unadjusted split/demerger &amp; penny anomalies.</span><button type="button" class="view-outliers-btn" id="openOutliersModalBtn">Inspect excluded stocks &rarr;</button></div>
     </section>
 
     <!-- CADENCE PHILOSOPHY CALLOUT -->
@@ -740,6 +938,58 @@
     </div>
   </div>
 
+  <!-- SECTION SHARE MODAL -->
+  <div class="share-modal-overlay" id="shareModal" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle">
+    <div class="share-modal-box">
+      <div class="share-modal-head">
+        <div>
+          <h3 id="shareModalTitle" style="margin:0; font-family:var(--serif); font-size:20px; display:flex; align-items:center; gap:8px;">
+            <span>📤 Share Section Insights</span>
+          </h3>
+          <p id="shareModalSubtitle" style="font-size:12.5px; color:var(--muted); margin:4px 0 0; font-family:var(--mono);">...</p>
+        </div>
+        <button type="button" class="outlier-modal-close" id="closeShareModalBtn" aria-label="Close share dialog">&times;</button>
+      </div>
+
+      <!-- Action Buttons Row -->
+      <div class="share-actions-row">
+        <button type="button" class="share-action-btn primary" id="shareToXBtn" title="Compose post on X with prefilled text">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <span>Share on X</span>
+        </button>
+        <button type="button" class="share-action-btn secondary" id="copyShareTextBtn">
+          <span>📋 Copy Text</span>
+        </button>
+        <button type="button" class="share-action-btn secondary" id="copyShareImgBtn">
+          <span>🖼️ Copy Image</span>
+        </button>
+        <button type="button" class="share-action-btn secondary" id="downloadShareImgBtn">
+          <span>💾 Download PNG</span>
+        </button>
+        <button type="button" class="share-action-btn primary" id="nativeShareBtn" style="display:none;">
+          <span>📲 Share to Apps...</span>
+        </button>
+      </div>
+
+      <!-- Status Toast / Feedback -->
+      <div class="share-toast" id="shareToast"></div>
+
+      <!-- Message Text Preview -->
+      <div style="margin:14px 0 10px;">
+        <label style="font-family:var(--mono); font-size:11px; text-transform:uppercase; color:var(--muted); font-weight:700;">📝 Post Message Preview</label>
+        <textarea id="shareTextPreview" rows="5" class="share-textarea"></textarea>
+      </div>
+
+      <!-- Generated Image Card Preview -->
+      <div>
+        <label style="font-family:var(--mono); font-size:11px; text-transform:uppercase; color:var(--muted); font-weight:700;">🖼️ Image Card Preview (Ready to Paste/Upload)</label>
+        <div class="share-img-preview-wrap">
+          <img id="shareImgPreview" src="" alt="Section Card Preview">
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- STICKY FEEDBACK FOOTER -->
   <footer class="sticky-footer" role="contentinfo">
     <span>Comments, questions, feedback? Write to</span>
@@ -757,14 +1007,13 @@
     (function () {
       "use strict";
 
+      const STORAGE_KEY = "kyf_cadence_v3";
+
       // State
-      let selectedHorizon = "1m"; // '1d', '5d', '1m', '3m', '6m', '1y'
-      let equityTimeKey = "ret1m";
+      let selectedHorizon = "1y"; // '1m', '3m', '6m', '1y'
+      let expandAllNse = false;
       let equityIsGainers = true;
       let equitySearchTerm = "";
-      let filterAbnormalOutliers = true;
-      let equitySegment = "nifty500"; // 'nifty500', 'allTraded', 'nonPenny'
-      let mfTimeKey = "ret1m";
       let mfCategory = "all";
       let flaggedOutliers = [];
 
@@ -779,7 +1028,7 @@
         const d = new Date(pulseData.asOf);
         const formatted = d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
         const asOfEl = document.getElementById("asOfDateText");
-        if (asOfEl) asOfEl.textContent = `${formatted} (Trading Close)`;
+        if (asOfEl) asOfEl.textContent = formatted;
       }
 
       // Formatters
@@ -801,29 +1050,26 @@
         return `<span class="ret-badge ${cls}">${sign}${num.toFixed(2)}%</span>`;
       }
 
-      function getHorizonKey(horizon) {
-        // maps horizon to field name in indices data
-        switch (horizon) {
-          case "1d": return "ret1d";
-          case "5d": return "ret5d";
-          case "1m": return "ret1m";
-          case "3m": return "ret3m";
-          case "6m": return "ret6m";
-          case "1y": return "cagr1y";
-          default: return "ret1m";
+      function getHorizonMeta(h) {
+        switch (h) {
+          case "1m":
+            return { idxKey: "ret1m", eqCol: 3, mfCol: 5, label: "1-Month Return", short: "1M Return" };
+          case "3m":
+            return { idxKey: "ret3m", eqCol: 4, mfCol: 6, label: "3-Month Return", short: "3M Return" };
+          case "6m":
+            return { idxKey: "ret6m", eqCol: 5, mfCol: 7, label: "6-Month Return", short: "6M Return" };
+          case "1y":
+          default:
+            return { idxKey: "cagr1y", eqCol: 6, mfCol: 8, label: "1-Year Trailing Return", short: "1Y Return" };
         }
       }
 
-      function getHorizonLabel(horizon) {
-        switch (horizon) {
-          case "1d": return "1-Day Return";
-          case "5d": return "5-Day Return";
-          case "1m": return "1-Month Return";
-          case "3m": return "3-Month Return";
-          case "6m": return "6-Month Return";
-          case "1y": return "1-Year Trailing Return";
-          default: return "1-Month Return";
-        }
+      function getValuationTag(pe) {
+        if (!pe || isNaN(pe)) return { label: "N/A", color: "var(--muted)" };
+        const num = Number(pe);
+        if (num < 20) return { label: "Comfort Zone", color: "var(--green)" };
+        if (num <= 25) return { label: "Fairly Valued", color: "var(--amber)" };
+        return { label: "Heated / Pricey", color: "var(--rose)" };
       }
 
       // ==========================================
@@ -833,52 +1079,27 @@
         const grid = document.getElementById("indicesGrid");
         if (!grid || !pulseData.indices) return;
 
-        const horizonKey = getHorizonKey(selectedHorizon);
+        const meta = getHorizonMeta(selectedHorizon);
         const badgeEl = document.getElementById("indicesHorizonBadge");
-        if (badgeEl) badgeEl.textContent = `Showing ${getHorizonLabel(selectedHorizon)}`;
+        if (badgeEl) badgeEl.textContent = `Showing ${meta.label}`;
 
         let html = "";
         for (const [key, idx] of Object.entries(pulseData.indices)) {
-          const retVal = idx[horizonKey];
-          const peVal = idx.pe ? idx.pe.toFixed(1) : "—";
-          const pbVal = idx.pb ? idx.pb.toFixed(2) : "—";
-          const divVal = idx.divYield ? idx.divYield.toFixed(2) + "%" : "—";
-          const cagr5y = idx.cagr5y ? `+${idx.cagr5y}%` : "—";
-          const cagr10y = idx.cagr10y ? `+${idx.cagr10y}%` : "—";
+          const retVal = idx[meta.idxKey];
+          const pe = idx.pe ? idx.pe.toFixed(1) : "—";
+          const tag = getValuationTag(idx.pe);
 
           html += `
             <div class="index-card">
               <div>
                 <div class="index-card-head">
-                  <span class="index-category">${escapeHtml(idx.category || "Equity")}</span>
+                  <span class="index-category">P/E ${pe} &bull; <span style="color:${tag.color}; font-weight:700;">${tag.label}</span></span>
                   ${formatReturnBadge(retVal)}
                 </div>
                 <h3>${escapeHtml(idx.name)}</h3>
                 <p class="index-role">${escapeHtml(idx.role || "")}</p>
-                <div class="index-level-row">
+                <div class="index-level-row" style="margin: 16px 0 0;">
                   <span class="index-level">${formatNumber(idx.level, 1)}</span>
-                </div>
-              </div>
-
-              <div>
-                <div class="index-stats-grid">
-                  <div class="stat-item">
-                    <span class="stat-lbl">P/E Ratio</span>
-                    <span class="stat-val">${peVal}</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-lbl">P/B Ratio</span>
-                    <span class="stat-val">${pbVal}</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-lbl">Div Yield</span>
-                    <span class="stat-val">${divVal}</span>
-                  </div>
-                </div>
-
-                <div class="cagr-anchor">
-                  <span>5Y CAGR: <b>${cagr5y}</b></span>
-                  <span>10Y CAGR: <b>${cagr10y}</b></span>
                 </div>
               </div>
             </div>
@@ -893,51 +1114,57 @@
         if (!container || !pulseData.preciousMetals) return;
 
         const pm = pulseData.preciousMetals;
-        const goldKey = "goldRet" + selectedHorizon;
-        const silverKey = "silverRet" + selectedHorizon;
+        const meta = getHorizonMeta(selectedHorizon);
+        const eqCol = meta.eqCol;
 
-        const goldRet = pm[goldKey] !== undefined ? pm[goldKey] : pm.goldRet1m;
-        const silverRet = pm[silverKey] !== undefined ? pm[silverKey] : pm.silverRet1m;
+        const badge = document.getElementById("metalsHorizonBadge");
+        if (badge) {
+          badge.textContent = `Showing ${meta.label} (via ETFs)`;
+        }
+
+        // Resolve Gold return for active selectedHorizon (with fallback to GOLDBEES in equities)
+        let goldRet = pm["goldRet" + selectedHorizon];
+        if (goldRet === undefined && equitiesData.stocks) {
+          const goldSym = pm.goldBenchmarkSymbol || "GOLDBEES";
+          const goldStock = equitiesData.stocks.find(s => s[0] === goldSym || s[0] === "GOLDBEES");
+          if (goldStock && goldStock[eqCol] !== undefined) {
+            goldRet = goldStock[eqCol];
+          }
+        }
+
+        // Resolve Silver return for active selectedHorizon (with fallback to SILVERBEES in equities)
+        let silverRet = pm["silverRet" + selectedHorizon];
+        if (silverRet === undefined && equitiesData.stocks) {
+          const silverSym = pm.silverBenchmarkSymbol || "SILVERBEES";
+          const silverStock = equitiesData.stocks.find(s => s[0] === silverSym || s[0] === "SILVERBEES");
+          if (silverStock && silverStock[eqCol] !== undefined) {
+            silverRet = silverStock[eqCol];
+          }
+        }
 
         container.innerHTML = `
           <div class="metal-item">
             <div>
-              <div class="m-title">Gold (24 Karat 99.9% Pure)</div>
-              <div class="m-sub">Retail Benchmark per Gram</div>
+              <div class="m-title">Gold — 24K Pure (99.9%)</div>
+              <div class="m-sub">22K Jewellery Standard: ₹${formatNumber(pm.gold22kPerGram, 0)}/g • via ${escapeHtml(pm.goldBenchmarkSymbol || 'GOLDBEES')}</div>
             </div>
-            <div>
-              <div class="m-price">₹${formatNumber(pm.gold24kPerGram, 0)}</div>
-              <div style="text-align:right; margin-top:3px;">${formatReturnBadge(goldRet)}</div>
-            </div>
-          </div>
-
-          <div class="metal-item">
-            <div>
-              <div class="m-title">Gold (22 Karat Standard Jewellery)</div>
-              <div class="m-sub">Retail Standard per Gram</div>
-            </div>
-            <div>
-              <div class="m-price">₹${formatNumber(pm.gold22kPerGram, 0)}</div>
-              <div style="text-align:right; margin-top:3px;">${formatReturnBadge(goldRet)}</div>
+            <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+              <div class="m-price">₹${formatNumber(pm.gold24kPerGram, 0)} / g</div>
+              <div>${formatReturnBadge(goldRet)}</div>
             </div>
           </div>
 
           <div class="metal-item">
             <div>
-              <div class="m-title">Silver (1 Kg Industrial / Retail Bar)</div>
-              <div class="m-sub">₹${formatNumber(pm.silverPerGram, 0)} / gram</div>
+              <div class="m-title">Silver — 999 Bullion Bar</div>
+              <div class="m-sub">Retail Spot: ₹${formatNumber(pm.silverPerGram, 0)}/g • via ${escapeHtml(pm.silverBenchmarkSymbol || 'SILVERBEES')}</div>
             </div>
-            <div>
-              <div class="m-price">₹${formatNumber(pm.silverPerKg, 0)}</div>
-              <div style="text-align:right; margin-top:3px;">${formatReturnBadge(silverRet)}</div>
+            <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+              <div class="m-price">₹${formatNumber(pm.silverPerKg, 0)} / kg</div>
+              <div>${formatReturnBadge(silverRet)}</div>
             </div>
           </div>
         `;
-
-        const goldCagrEl = document.getElementById("gold10YrCagrVal");
-        if (goldCagrEl && pm.gold10YrCagr) {
-          goldCagrEl.textContent = `+${pm.gold10YrCagr}% p.a.`;
-        }
       }
 
       // Render Macro Rates
@@ -951,46 +1178,47 @@
             <div class="r-lbl">CPI Inflation (Target Baseline)</div>
             <div class="r-val">${m.cpiInflation}%</div>
           </div>
-          <div class="rate-box">
-            <div class="r-lbl">10-Year G-Sec Benchmark Yield</div>
-            <div class="r-val">${m.gsec10Yr}%</div>
+          <div class="rate-box benchmark">
+            <div class="r-lbl">Education / Medical Inflation</div>
+            <div class="r-val">${m.educationInflation}% &ndash; ${m.medicalInflation}%</div>
           </div>
           <div class="rate-box">
-            <div class="r-lbl">EPF (Provident Fund)</div>
+            <div class="r-lbl">EPF (Tax-Free Sovereign)</div>
             <div class="r-val">${m.epfRate}%</div>
           </div>
           <div class="rate-box">
-            <div class="r-lbl">PPF (Public Provident)</div>
-            <div class="r-val">${m.ppfRate}%</div>
-          </div>
-          <div class="rate-box">
-            <div class="r-lbl">Sukanya Samriddhi (SSY)</div>
-            <div class="r-val">${m.ssyRate}%</div>
+            <div class="r-lbl">PPF / SSY (Tax-Free)</div>
+            <div class="r-val">${m.ppfRate}% / ${m.ssyRate}%</div>
           </div>
           <div class="rate-box">
             <div class="r-lbl">SBI 1Y Fixed Deposit</div>
             <div class="r-val">${m.sbiFd1Yr}%</div>
           </div>
+          <div class="rate-box">
+            <div class="r-lbl">Arbitrage / Liquid Avg</div>
+            <div class="r-val">${m.arbitrageFundAvg}%</div>
+          </div>
         `;
 
         const realSpreadEl = document.getElementById("realSpreadVal");
-        if (realSpreadEl && m.gsec10Yr && m.cpiInflation) {
-          const spread = (m.gsec10Yr - m.cpiInflation).toFixed(2);
-          realSpreadEl.textContent = `+${spread}% real yield over CPI`;
+        if (realSpreadEl && m.epfRate && m.cpiInflation) {
+          const spread = (m.epfRate - m.cpiInflation).toFixed(2);
+          const sign = Number(spread) > 0 ? "+" : "";
+          realSpreadEl.textContent = `${sign}${spread}% tax-free real yield over CPI`;
+          if (realSpreadEl.previousElementSibling) {
+            realSpreadEl.previousElementSibling.textContent = "Real EPF Spread over CPI:";
+          }
         }
       }
 
       // Outlier detection for corporate action anomalies & illiquid penny spikes
       function getAbnormalReason(stock, colIdx) {
-        const ret = Number(stock[colIdx]);
         const price = Number(stock[2]);
-        const isN500 = stock[7] === 1;
-        if (ret === null || isNaN(ret)) return null;
-
-        // Penny stock filter
-        if (equitySegment === "nonPenny" && price < 10) {
+        if (price < 10) {
           return `Microcap penny stock (< ₹10: trading at ₹${price.toFixed(2)})`;
         }
+        const ret = Number(stock[colIdx]);
+        if (ret === null || isNaN(ret)) return null;
 
         // Horizon-specific unadjusted corporate action / split thresholds
         if (colIdx === 3 && (ret > 60.0 || ret < -45.0)) {
@@ -1016,38 +1244,27 @@
         const tbody = document.getElementById("equityTableBody");
         if (!tbody || !equitiesData.stocks) return;
 
-        // Map column key to index
-        // columns: ["symbol", "companyName", "closePrice", "ret1m", "ret3m", "ret6m", "ret1y"]
-        const colMap = {
-          symbol: 0,
-          companyName: 1,
-          closePrice: 2,
-          ret1m: 3,
-          ret3m: 4,
-          ret6m: 5,
-          ret1y: 6
-        };
-        const sortColIdx = colMap[equityTimeKey] || 3;
+        const meta = getHorizonMeta(selectedHorizon);
+        const sortColIdx = meta.eqCol;
 
         // Update table header text
         const thEl = document.getElementById("equityThReturn");
         if (thEl) {
-          const lblMap = { ret1m: "1M Return", ret3m: "3M Return", ret6m: "6M Return", ret1y: "1Y Return" };
-          thEl.textContent = lblMap[equityTimeKey] || "Return";
+          thEl.textContent = meta.short;
         }
-
-        flaggedOutliers = [];
-        let validStocks = [];
 
         // Update section badge counter
         const countBadge = document.getElementById("equityCountBadge");
         if (countBadge) {
-          if (equitySegment === "nifty500") {
-            countBadge.innerHTML = `⭐ ${equitiesData.nifty500Count || 501} Nifty 500 Leaders`;
-          } else {
+          if (expandAllNse) {
             countBadge.innerHTML = `${(equitiesData.stocks || []).length} Stocks Screened`;
+          } else {
+            countBadge.innerHTML = `⭐ ${equitiesData.nifty500Count || 501} Nifty 500 Leaders`;
           }
         }
+
+        flaggedOutliers = [];
+        let validStocks = [];
 
         for (const s of equitiesData.stocks) {
           const val = s[sortColIdx];
@@ -1055,11 +1272,12 @@
 
           const isN500 = s[7] === 1;
 
-          // If not searching, restrict to Nifty 500 when selected
-          if (!equitySearchTerm && equitySegment === "nifty500" && !isN500) {
+          // Filter for Nifty 500 by default unless expandAllNse is true or equitySearchTerm is non-empty
+          if (!expandAllNse && !equitySearchTerm && !isN500) {
             continue;
           }
 
+          // Always filter out penny stocks and corporate action outliers
           const reason = getAbnormalReason(s, sortColIdx);
           if (reason) {
             flaggedOutliers.push({
@@ -1070,9 +1288,7 @@
               reason: reason,
               isN500: isN500
             });
-            if (filterAbnormalOutliers) {
-              continue;
-            }
+            continue;
           }
 
           if (equitySearchTerm) {
@@ -1086,21 +1302,9 @@
           validStocks.push(s);
         }
 
-        // Update notice banner & counts
-        const noticeBanner = document.getElementById("outlierNoticeBanner");
+        // Update counts
         const countSpan = document.getElementById("outlierCountSpan");
-        const noticeText = document.getElementById("outlierNoticeText");
         if (countSpan) countSpan.textContent = flaggedOutliers.length;
-
-        if (noticeBanner && noticeText) {
-          if (filterAbnormalOutliers) {
-            noticeBanner.className = "outlier-notice-banner";
-            noticeText.innerHTML = `🛡️ <strong>Outlier Filter Active:</strong> Excluded <strong>${flaggedOutliers.length}</strong> unadjusted corporate action distortions (splits, consolidations) &amp; penny anomalies.`;
-          } else {
-            noticeBanner.className = "outlier-notice-banner warn";
-            noticeText.innerHTML = `⚠️ <strong>Warning: Outlier Filter is OFF:</strong> Showing raw unadjusted bhavcopy data. Rankings may include artificial spikes from stock splits or reverse consolidations.`;
-          }
-        }
 
         // Populate Outliers Modal
         const modalBody = document.getElementById("outliersModalBody");
@@ -1130,7 +1334,7 @@
         const top10 = validStocks.slice(0, 10);
 
         if (!top10.length) {
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted)">No stocks found matching "${escapeHtml(equitySearchTerm)}"</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:32px; color:var(--muted)">No stocks found matching "${escapeHtml(equitySearchTerm)}"</td></tr>`;
           return;
         }
 
@@ -1141,11 +1345,6 @@
           const name = s[1];
           const price = s[2];
           const targetRet = s[sortColIdx];
-
-          const ret1m = s[3];
-          const ret3m = s[4];
-          const ret6m = s[5];
-          const ret1y = s[6];
 
           const ca = caMap.get(symbol);
           const caBadge = ca ? `<span style="display:inline-block; font-family:var(--mono); font-size:10px; font-weight:700; color:var(--teal); background:var(--teal-soft); padding:1px 5px; border-radius:3px; margin-left:6px;" title="${escapeHtml(ca[3])}">⚡ ${ca[5]}</span>` : '';
@@ -1165,18 +1364,13 @@
           html += `
             <tr>
               <td class="rank-cell ${rank <= 3 ? 'top-3' : ''}">#${rank}</td>
-              <td>
+              <td class="name-col">
                 <div class="stock-symbol">${escapeHtml(symbol)}${n500Badge}${caBadge}</div>
                 <div class="stock-name">${escapeHtml(name)}</div>
                 ${disambigNote}
               </td>
               <td class="price-cell">₹${formatNumber(price, 2)}</td>
               <td class="ret-cell">${formatReturnBadge(targetRet)}</td>
-              <td style="text-align:center">
-                <span style="font-family:var(--mono); font-size:11px; color:var(--muted)">
-                  ${formatReturnBadge(ret1m)} &bull; ${formatReturnBadge(ret3m)} &bull; ${formatReturnBadge(ret6m)} &bull; ${formatReturnBadge(ret1y)}
-                </span>
-              </td>
             </tr>
           `;
         });
@@ -1191,20 +1385,13 @@
         const tbody = document.getElementById("mfTableBody");
         if (!tbody || !mfData.schemes) return;
 
-        // columns: ["directCode", "fundName", "category", "directNav", "regularNav", "ret1m", "ret3m", "ret6m", "ret1y"]
-        const colMap = {
-          ret1m: 5,
-          ret3m: 6,
-          ret6m: 7,
-          ret1y: 8
-        };
-        const sortColIdx = colMap[mfTimeKey] || 5;
+        const meta = getHorizonMeta(selectedHorizon);
+        const sortColIdx = meta.mfCol;
 
         // Update table header text
         const thEl = document.getElementById("mfThReturn");
         if (thEl) {
-          const lblMap = { ret1m: "1M Return", ret3m: "3M Return", ret6m: "6M Return", ret1y: "1Y Return" };
-          thEl.textContent = lblMap[mfTimeKey] || "Return";
+          thEl.textContent = meta.short;
         }
 
         let list = mfData.schemes.filter(s => {
@@ -1223,7 +1410,7 @@
         const top10 = list.slice(0, 10);
 
         if (!top10.length) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:32px; color:var(--muted)">No schemes found in this category</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:32px; color:var(--muted)">No schemes found in this category</td></tr>`;
           return;
         }
 
@@ -1232,28 +1419,17 @@
           const rank = idx + 1;
           const name = s[1];
           const category = s[2];
-          const directNav = s[3];
-          const regularNav = s[4];
+          const nav = s[3];
           const targetRet = s[sortColIdx];
-
-          // Compute direct spread
-          const spreadDiff = (directNav - regularNav);
-          const spreadPct = regularNav > 0 ? ((spreadDiff / regularNav) * 100).toFixed(1) : "—";
 
           html += `
             <tr>
               <td class="rank-cell ${rank <= 3 ? 'top-3' : ''}">#${rank}</td>
-              <td>
-                <div style="font-weight:600; font-size:13.5px; color:var(--ink)">${escapeHtml(name)}</div>
-                <div style="font-family:var(--mono); font-size:11px; color:var(--teal); margin-top:2px;">${escapeHtml(category)}</div>
+              <td class="name-col">
+                <div class="fund-title">${escapeHtml(name)}</div>
+                <div class="fund-cat">${escapeHtml(category)}</div>
               </td>
-              <td class="price-cell">₹${formatNumber(directNav, 2)}</td>
-              <td class="price-cell" style="color:var(--muted)">₹${formatNumber(regularNav, 2)}</td>
-              <td style="text-align:right">
-                <span style="font-family:var(--mono); font-size:12px; font-weight:700; color:var(--green)">
-                  +${spreadPct}% alpha
-                </span>
-              </td>
+              <td class="price-cell">₹${formatNumber(nav, 2)}</td>
               <td class="ret-cell">${formatReturnBadge(targetRet)}</td>
             </tr>
           `;
@@ -1273,10 +1449,681 @@
       }
 
       // ==========================================
+      // SECTION SHARING & CANVAS CARD GENERATOR
+      // ==========================================
+      let currentShareBlob = null;
+      let currentShareText = "";
+      let currentShareSection = "";
+      let currentShareFileName = "KYF-Market-Snapshot.png";
+      let shareToastTimer = null;
+
+      function getFormattedAsOf() {
+        if (pulseData.asOf) {
+          const d = new Date(pulseData.asOf);
+          return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+        }
+        return "3 Nov 2026";
+      }
+
+      function getActiveGoldRet() {
+        const pm = pulseData.preciousMetals || {};
+        let r = pm["goldRet" + selectedHorizon];
+        if (r === undefined && equitiesData.stocks) {
+          const s = equitiesData.stocks.find(st => st[0] === (pm.goldBenchmarkSymbol || "GOLDBEES"));
+          if (s) r = s[getHorizonMeta(selectedHorizon).eqCol];
+        }
+        return Number(r || 0);
+      }
+
+      function getActiveSilverRet() {
+        const pm = pulseData.preciousMetals || {};
+        let r = pm["silverRet" + selectedHorizon];
+        if (r === undefined && equitiesData.stocks) {
+          const s = equitiesData.stocks.find(st => st[0] === (pm.silverBenchmarkSymbol || "SILVERBEES"));
+          if (s) r = s[getHorizonMeta(selectedHorizon).eqCol];
+        }
+        return Number(r || 0);
+      }
+
+      function getSectionDisplayName(sectionKey) {
+        switch (sectionKey) {
+          case "macro": return "🏛️ Sovereign Yields & Economic Baseline";
+          case "metals": return "🪙 Precious Metals";
+          case "indices": return "📊 Market Indices & Valuations";
+          case "mf": return "🌱 Top 10 Mutual Funds";
+          case "equities": return "📈 Top 10 Equities";
+          default: return "Market Performance";
+        }
+      }
+
+      function getSectionShareText(sectionKey) {
+        const meta = getHorizonMeta(selectedHorizon);
+        const asOf = getFormattedAsOf();
+
+        if (sectionKey === "macro") {
+          const m = pulseData.macro || {};
+          const spread = (m.epfRate - m.cpiInflation).toFixed(2);
+          return `🏛️ India Macro & Sovereign Yields (${asOf}):\n` +
+            `• CPI Inflation: ${m.cpiInflation}% YoY\n` +
+            `• EPF (Tax-Free): ${m.epfRate}% (+${spread}% real spread)\n` +
+            `• PPF / SSY: ${m.ppfRate}% / ${m.ssyRate}%\n` +
+            `• SBI 1Y FD / Arbitrage: ${m.sbiFd1Yr}% / ${m.arbitrageFundAvg}%\n\n` +
+            `Empirical benchmarks via @KnowYourFinance\n` +
+            `#PersonalFinance #India #Inflation #FixedIncome`;
+        }
+
+        if (sectionKey === "metals") {
+          const pm = pulseData.preciousMetals || {};
+          const gRet = getActiveGoldRet();
+          const sRet = getActiveSilverRet();
+          const gSign = gRet > 0 ? "+" : "";
+          const sSign = sRet > 0 ? "+" : "";
+          return `🪙 Precious Metals Benchmark (${meta.short} • ${asOf}):\n` +
+            `• Gold 24K: ₹${formatNumber(pm.gold24kPerGram, 0)}/g (${gSign}${gRet.toFixed(2)}% via GOLDBEES)\n` +
+            `• Gold 22K: ₹${formatNumber(pm.gold22kPerGram, 0)}/g\n` +
+            `• Silver 999: ₹${formatNumber(pm.silverPerKg, 0)}/kg (${sSign}${sRet.toFixed(2)}% via SILVERBEES)\n\n` +
+            `Asset allocation pulse via @KnowYourFinance\n` +
+            `#Gold #Silver #PreciousMetals #Investing`;
+        }
+
+        if (sectionKey === "indices") {
+          const lines = Object.values(pulseData.indices || {}).map(idx => {
+            const r = Number(idx[meta.idxKey] || 0);
+            const sign = r > 0 ? "+" : "";
+            const pe = idx.pe ? ` | P/E ${idx.pe.toFixed(1)}` : "";
+            const shortName = idx.name.replace("Nifty Midcap 150", "Midcap 150").replace("Nifty Smallcap 250", "Smallcap 250");
+            return `• ${shortName}: ${formatNumber(idx.level, 0)} (${sign}${r.toFixed(2)}%${pe})`;
+          });
+          return `📊 Market Indices & Valuations (${meta.short} • ${asOf}):\n` +
+            lines.join("\n") + "\n\n" +
+            `Market pulse via @KnowYourFinance\n` +
+            `#Nifty50 #Sensex #StockMarket`;
+        }
+
+        if (sectionKey === "mf") {
+          const sortColIdx = meta.mfCol;
+          let list = (mfData.schemes || []).filter(s => {
+            const val = s[sortColIdx];
+            if (val === null || val === undefined || isNaN(val)) return false;
+            if (mfCategory !== "all") {
+              const cat = (s[2] || "").toLowerCase();
+              return cat.includes(mfCategory.toLowerCase());
+            }
+            return true;
+          });
+          list.sort((a, b) => Number(b[sortColIdx]) - Number(a[sortColIdx]));
+          const top3 = list.slice(0, 3);
+          const lines = top3.map((s, i) => {
+            const r = Number(s[sortColIdx]);
+            const sign = r > 0 ? "+" : "";
+            const cleanName = (s[1] || "").replace(/ - Direct Plan.*$/i, "").replace(/ Direct Plan.*$/i, "").replace(/ - Growth.*$/i, "").trim();
+            return `${i + 1}. ${cleanName}: ${sign}${r.toFixed(2)}%`;
+          });
+          const catStr = mfCategory === "all" ? "All" : mfCategory;
+          return `🌱 Top Mutual Funds [${catStr}] (${meta.short} • ${asOf}):\n` +
+            lines.join("\n") + "\n\n" +
+            `Direct plan benchmarks via @KnowYourFinance\n` +
+            `#MutualFunds #DirectMutualFunds #Investing`;
+        }
+
+        if (sectionKey === "equities") {
+          const sortColIdx = meta.eqCol;
+          let list = (equitiesData.stocks || []).filter(s => {
+            if (!expandAllNse && s[7] !== 1) return false;
+            const val = s[sortColIdx];
+            if (val === null || isNaN(val)) return false;
+            if (equitySearchTerm && !(s[0] + " " + s[1]).toLowerCase().includes(equitySearchTerm)) return false;
+            return true;
+          });
+          list.sort((a, b) => equityIsGainers ? Number(b[sortColIdx]) - Number(a[sortColIdx]) : Number(a[sortColIdx]) - Number(b[sortColIdx]));
+          const top3 = list.slice(0, 3);
+          const lines = top3.map((s, i) => {
+            const r = Number(s[sortColIdx]);
+            const sign = r > 0 ? "+" : "";
+            return `${i + 1}. ${s[0]}: ₹${formatNumber(s[2], 2)} (${sign}${r.toFixed(2)}%)`;
+          });
+          const typeStr = equityIsGainers ? "Top Gainers" : "Top Decliners";
+          return `📈 Top NSE Equities — ${typeStr} (${meta.short} • ${asOf}):\n` +
+            lines.join("\n") + "\n\n" +
+            `Screened & split-verified on @KnowYourFinance\n` +
+            `#NSE #StockMarketIndia #Nifty500`;
+        }
+
+        return "Empirical market review on Know Your Finance (https://knowyourfinance.in)";
+      }
+
+      function drawCanvasRoundedRect(ctx, x, y, width, height, radius) {
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(x, y, width, height, radius);
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(x + radius, y);
+          ctx.lineTo(x + width - radius, y);
+          ctx.arcTo(x + width, y, x + width, y + radius, radius);
+          ctx.lineTo(x + width, y + height - radius);
+          ctx.arcTo(x + width, y + height, x + width - radius, y + height, radius);
+          ctx.lineTo(x + radius, y + height);
+          ctx.arcTo(x, y + height, x, y + height - radius, radius);
+          ctx.lineTo(x, y + radius);
+          ctx.arcTo(x, y, x + radius, y, radius);
+          ctx.closePath();
+        }
+      }
+
+      function truncateCanvasText(ctx, text, maxWidth) {
+        if (!text) return "";
+        if (ctx.measureText(text).width <= maxWidth) return text;
+        let t = text;
+        while (t.length > 0 && ctx.measureText(t + "...").width > maxWidth) {
+          t = t.slice(0, -1);
+        }
+        return t + "...";
+      }
+
+      function drawCanvasReturnBadge(ctx, val, x, y, w, h) {
+        const num = Number(val);
+        const isPos = num > 0;
+        const isNeg = num < 0;
+        const sign = isPos ? "+" : "";
+        const text = isNaN(num) ? "—" : `${sign}${num.toFixed(2)}%`;
+
+        let bgColor = "rgba(255, 255, 255, 0.08)";
+        let borderColor = "rgba(255, 255, 255, 0.16)";
+        let textColor = "#9ca3af";
+
+        if (isPos) {
+          bgColor = "rgba(16, 185, 129, 0.22)";
+          borderColor = "rgba(16, 185, 129, 0.45)";
+          textColor = "#34d399";
+        } else if (isNeg) {
+          bgColor = "rgba(239, 68, 68, 0.22)";
+          borderColor = "rgba(239, 68, 68, 0.45)";
+          textColor = "#f87171";
+        }
+
+        ctx.fillStyle = bgColor;
+        drawCanvasRoundedRect(ctx, x, y, w, h, 6);
+        ctx.fill();
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = textColor;
+        ctx.font = "bold 13px 'SF Mono', Cascadia Code, Consolas, monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, x + w / 2, y + h / 2 + 1);
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+      }
+
+      function generateSectionCard(sectionKey, callback) {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const width = 1200;
+        let height = 720;
+
+        if (sectionKey === "metals") height = 500;
+        else if (sectionKey === "macro") height = 650;
+        else if (sectionKey === "indices") height = 640;
+        else if (sectionKey === "mf" || sectionKey === "equities") height = 820;
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const meta = getHorizonMeta(selectedHorizon);
+        const asOfDate = getFormattedAsOf();
+
+        // Canvas Background Gradient
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+        bgGrad.addColorStop(0, "#162720");
+        bgGrad.addColorStop(1, "#0d1712");
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // Frame Border
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+        ctx.lineWidth = 2;
+        drawCanvasRoundedRect(ctx, 16, 16, width - 32, height - 32, 20);
+        ctx.stroke();
+
+        // Brand Banner Header
+        ctx.fillStyle = "#c97a2b";
+        drawCanvasRoundedRect(ctx, 48, 44, 48, 24, 6);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 12px 'SF Mono', Cascadia Code, Consolas, monospace";
+        ctx.fillText("KYF", 59, 60);
+
+        ctx.fillStyle = "#eef1ea";
+        ctx.font = "bold 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.fillText("KNOW YOUR FINANCE", 108, 62);
+
+        ctx.fillStyle = "#8ea89d";
+        ctx.font = "14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.fillText("• Calm Cadence Market Review", 295, 62);
+
+        // Right side pills: Date & Horizon
+        ctx.font = "bold 12.5px 'SF Mono', Cascadia Code, monospace";
+        const dateStr = `📅 ${asOfDate}`;
+        const dateW = ctx.measureText(dateStr).width + 24;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+        drawCanvasRoundedRect(ctx, width - 48 - dateW, 42, dateW, 26, 13);
+        ctx.fill();
+        ctx.fillStyle = "#8fe0cd";
+        ctx.fillText(dateStr, width - 48 - dateW + 12, 59);
+
+        if (sectionKey !== "macro") {
+          const horizonStr = `⏱️ ${meta.short}`;
+          const horizW = ctx.measureText(horizonStr).width + 24;
+          ctx.fillStyle = "#1f7a6c";
+          drawCanvasRoundedRect(ctx, width - 48 - dateW - horizW - 10, 42, horizW, 26, 13);
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText(horizonStr, width - 48 - dateW - horizW - 10 + 12, 59);
+        }
+
+        // Section Title & Subtitle
+        let secTitle = "";
+        let secSubtitle = "";
+        if (sectionKey === "macro") {
+          secTitle = "🏛️ Sovereign Yields & Economic Baseline";
+          secSubtitle = "Spot inflation benchmarks, tax-free sovereign yields, and liquid hurdle rates (% p.a. • horizon agnostic)";
+        } else if (sectionKey === "metals") {
+          secTitle = "🪙 Precious Metals Benchmark";
+          secSubtitle = `Retail spot bullion prices and ${meta.label} returns (via ETFs)`;
+        } else if (sectionKey === "indices") {
+          secTitle = "📊 Market Indices & Valuations";
+          secSubtitle = `Benchmark equities with live P/E multiples and ${meta.label}`;
+        } else if (sectionKey === "mf") {
+          const catStr = mfCategory === "all" ? "All Categories" : mfCategory;
+          secTitle = `🌱 Top 10 Mutual Funds • ${catStr}`;
+          secSubtitle = `Leading direct plan benchmark schemes sorted by ${meta.label}`;
+        } else if (sectionKey === "equities") {
+          const sortStr = equityIsGainers ? "Top Gainers" : "Top Decliners";
+          secTitle = `📈 Top 10 Equities • ${sortStr}`;
+          secSubtitle = `Leading NSE momentum performers for ${meta.label}`;
+        }
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 25px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.fillText(secTitle, 48, 116);
+
+        ctx.fillStyle = "#8ea89d";
+        ctx.font = "14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.fillText(secSubtitle, 48, 140);
+
+        // Divider Line
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.beginPath();
+        ctx.moveTo(48, 158);
+        ctx.lineTo(width - 48, 158);
+        ctx.stroke();
+
+        // ------------------------------------------
+        // BODY RENDERING
+        // ------------------------------------------
+        if (sectionKey === "macro") {
+          const m = pulseData.macro || {};
+          const boxes = [
+            { lbl: "CPI INFLATION (BASELINE)", val: `${m.cpiInflation}%`, isBench: true },
+            { lbl: "EDUCATION / MEDICAL", val: `${m.educationInflation}% – ${m.medicalInflation}%`, isBench: true },
+            { lbl: "EPF (TAX-FREE SOVEREIGN)", val: `${m.epfRate}%`, isBench: false },
+            { lbl: "PPF / SSY (TAX-FREE)", val: `${m.ppfRate}% / ${m.ssyRate}%`, isBench: false },
+            { lbl: "SBI 1Y FIXED DEPOSIT", val: `${m.sbiFd1Yr}%`, isBench: false },
+            { lbl: "ARBITRAGE / LIQUID AVG", val: `${m.arbitrageFundAvg}%`, isBench: false }
+          ];
+
+          const colW = 346;
+          const rowH = 125;
+          const gapX = 33;
+          const startY = 185;
+
+          boxes.forEach((b, idx) => {
+            const r = Math.floor(idx / 3);
+            const c = idx % 3;
+            const bx = 48 + c * (colW + gapX);
+            const by = startY + r * (rowH + 20);
+
+            ctx.fillStyle = b.isBench ? "rgba(201, 122, 43, 0.12)" : "rgba(255, 255, 255, 0.04)";
+            drawCanvasRoundedRect(ctx, bx, by, colW, rowH, 12);
+            ctx.fill();
+            ctx.strokeStyle = b.isBench ? "rgba(201, 122, 43, 0.4)" : "rgba(255, 255, 255, 0.1)";
+            ctx.stroke();
+
+            ctx.fillStyle = b.isBench ? "#dca368" : "#8ea89d";
+            ctx.font = "bold 11.5px 'SF Mono', Cascadia Code, monospace";
+            ctx.fillText(b.lbl, bx + 18, by + 34);
+
+            ctx.fillStyle = b.isBench ? "#f3bc85" : "#ffffff";
+            ctx.font = "bold 26px 'SF Mono', Cascadia Code, monospace";
+            ctx.fillText(b.val, bx + 18, by + 86);
+          });
+
+          // Spread banner
+          const spread = (m.epfRate - m.cpiInflation).toFixed(2);
+          const bannerY = 490;
+          ctx.fillStyle = "rgba(31, 122, 108, 0.22)";
+          drawCanvasRoundedRect(ctx, 48, bannerY, width - 96, 52, 10);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(31, 122, 108, 0.45)";
+          ctx.stroke();
+
+          ctx.fillStyle = "#8fe0cd";
+          ctx.font = "14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+          ctx.fillText("Real EPF Spread over CPI:", 68, bannerY + 32);
+
+          ctx.fillStyle = "#34d399";
+          ctx.font = "bold 16px 'SF Mono', Cascadia Code, monospace";
+          ctx.fillText(`+${spread}% tax-free real yield over CPI`, 270, bannerY + 32);
+        }
+
+        else if (sectionKey === "metals") {
+          const pm = pulseData.preciousMetals || {};
+          const gRet = getActiveGoldRet();
+          const sRet = getActiveSilverRet();
+
+          const cardW = 535;
+          const cardH = 200;
+          const cardY = 190;
+
+          // Gold Card
+          const gx = 48;
+          ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+          drawCanvasRoundedRect(ctx, gx, cardY, cardW, cardH, 14);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(201, 122, 43, 0.35)";
+          ctx.stroke();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+          ctx.fillText("Gold — 24K Pure (99.9%)", gx + 22, cardY + 42);
+
+          ctx.fillStyle = "#8ea89d";
+          ctx.font = "13px 'SF Mono', Cascadia Code, monospace";
+          ctx.fillText(`22K Jewellery Standard: ₹${formatNumber(pm.gold22kPerGram, 0)}/g • via GOLDBEES`, gx + 22, cardY + 70);
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 28px 'SF Mono', Cascadia Code, monospace";
+          ctx.fillText(`₹${formatNumber(pm.gold24kPerGram, 0)} / g`, gx + 22, cardY + 146);
+
+          drawCanvasReturnBadge(ctx, gRet, gx + cardW - 120, cardY + 122, 98, 34);
+
+          // Silver Card
+          const sx = 48 + cardW + 34;
+          ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+          drawCanvasRoundedRect(ctx, sx, cardY, cardW, cardH, 14);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(142, 224, 205, 0.35)";
+          ctx.stroke();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+          ctx.fillText("Silver — 999 Bullion Bar", sx + 22, cardY + 42);
+
+          ctx.fillStyle = "#8ea89d";
+          ctx.font = "13px 'SF Mono', Cascadia Code, monospace";
+          ctx.fillText(`Retail Spot: ₹${formatNumber(pm.silverPerGram, 0)}/g • via SILVERBEES`, sx + 22, cardY + 70);
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 28px 'SF Mono', Cascadia Code, monospace";
+          ctx.fillText(`₹${formatNumber(pm.silverPerKg, 0)} / kg`, sx + 22, cardY + 146);
+
+          drawCanvasReturnBadge(ctx, sRet, sx + cardW - 120, cardY + 122, 98, 34);
+        }
+
+        else if (sectionKey === "indices") {
+          // Table header
+          ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+          drawCanvasRoundedRect(ctx, 48, 185, width - 96, 36, 8);
+          ctx.fill();
+
+          ctx.fillStyle = "#8ea89d";
+          ctx.font = "bold 11.5px 'SF Mono', Cascadia Code, monospace";
+          ctx.fillText("BENCHMARK INDEX", 68, 208);
+          ctx.fillText("ROLE / FOCUS", 340, 208);
+          ctx.fillText("CURRENT LEVEL", 680, 208);
+          ctx.fillText("P/E VALUATION", 860, 208);
+          ctx.fillText(`${meta.short} RETURN`, 1030, 208);
+
+          const indices = Object.values(pulseData.indices || {});
+          indices.forEach((idx, i) => {
+            const ry = 236 + i * 84;
+            ctx.fillStyle = i % 2 === 0 ? "rgba(255, 255, 255, 0.03)" : "rgba(255, 255, 255, 0.015)";
+            drawCanvasRoundedRect(ctx, 48, ry, width - 96, 72, 10);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+            ctx.stroke();
+
+            // Name
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            ctx.fillText(idx.name, 68, ry + 42);
+
+            // Role
+            ctx.fillStyle = "#8ea89d";
+            ctx.font = "13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            ctx.fillText(truncateCanvasText(ctx, idx.role || "", 300), 340, ry + 42);
+
+            // Level
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 18px 'SF Mono', Cascadia Code, monospace";
+            ctx.fillText(formatNumber(idx.level, 1), 680, ry + 42);
+
+            // P/E Badge
+            const tag = getValuationTag(idx.pe);
+            const peText = `P/E ${idx.pe ? idx.pe.toFixed(1) : '—'} • ${tag.label}`;
+            ctx.font = "bold 12px 'SF Mono', monospace";
+            const peW = ctx.measureText(peText).width + 16;
+            ctx.fillStyle = "rgba(31, 122, 108, 0.25)";
+            drawCanvasRoundedRect(ctx, 860, ry + 24, peW, 26, 6);
+            ctx.fill();
+            ctx.fillStyle = tag.color;
+            ctx.fillText(peText, 868, ry + 41);
+
+            // Return badge
+            drawCanvasReturnBadge(ctx, idx[meta.idxKey], 1020, ry + 22, 88, 30);
+          });
+        }
+
+        else if (sectionKey === "mf") {
+          // Table Header
+          ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+          drawCanvasRoundedRect(ctx, 48, 180, width - 96, 36, 8);
+          ctx.fill();
+
+          ctx.fillStyle = "#8ea89d";
+          ctx.font = "bold 11.5px 'SF Mono', Cascadia Code, monospace";
+          ctx.fillText("#", 66, 203);
+          ctx.fillText("FUND NAME & CATEGORY", 120, 203);
+          ctx.fillText("CURRENT NAV", 880, 203);
+          ctx.fillText(`${meta.short} RETURN`, 1040, 203);
+
+          const sortColIdx = meta.mfCol;
+          let list = (mfData.schemes || []).filter(s => {
+            const val = s[sortColIdx];
+            if (val === null || val === undefined || isNaN(val)) return false;
+            if (mfCategory !== "all") {
+              const cat = (s[2] || "").toLowerCase();
+              return cat.includes(mfCategory.toLowerCase());
+            }
+            return true;
+          });
+          list.sort((a, b) => Number(b[sortColIdx]) - Number(a[sortColIdx]));
+          const top10 = list.slice(0, 10);
+
+          top10.forEach((s, i) => {
+            const ry = 226 + i * 50;
+            ctx.fillStyle = i % 2 === 0 ? "rgba(255, 255, 255, 0.03)" : "rgba(255, 255, 255, 0.015)";
+            drawCanvasRoundedRect(ctx, 48, ry, width - 96, 44, 8);
+            ctx.fill();
+
+            // Rank
+            ctx.fillStyle = i < 3 ? "#c97a2b" : "#8ea89d";
+            ctx.font = "bold 14px 'SF Mono', monospace";
+            ctx.fillText(`#${i + 1}`, 64, ry + 27);
+
+            // Name
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            const cleanName = s[1].replace(/ - Direct Plan/gi, "");
+            ctx.fillText(truncateCanvasText(ctx, cleanName, 500), 120, ry + 27);
+
+            // Category
+            ctx.fillStyle = "#8fe0cd";
+            ctx.font = "12px 'SF Mono', monospace";
+            ctx.fillText(truncateCanvasText(ctx, s[2] || "", 180), 660, ry + 27);
+
+            // NAV
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 14.5px 'SF Mono', monospace";
+            ctx.fillText(`₹${formatNumber(s[3], 2)}`, 880, ry + 27);
+
+            // Return badge
+            drawCanvasReturnBadge(ctx, s[sortColIdx], 1030, ry + 9, 86, 26);
+          });
+        }
+
+        else if (sectionKey === "equities") {
+          // Table Header
+          ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+          drawCanvasRoundedRect(ctx, 48, 180, width - 96, 36, 8);
+          ctx.fill();
+
+          ctx.fillStyle = "#8ea89d";
+          ctx.font = "bold 11.5px 'SF Mono', Cascadia Code, monospace";
+          ctx.fillText("#", 66, 203);
+          ctx.fillText("SYMBOL & COMPANY", 120, 203);
+          ctx.fillText("PRICE (₹)", 880, 203);
+          ctx.fillText(`${meta.short} RETURN`, 1040, 203);
+
+          const sortColIdx = meta.eqCol;
+          let list = (equitiesData.stocks || []).filter(s => {
+            if (!expandAllNse && s[7] !== 1) return false;
+            const val = s[sortColIdx];
+            if (val === null || isNaN(val)) return false;
+            if (equitySearchTerm && !(s[0] + " " + s[1]).toLowerCase().includes(equitySearchTerm)) return false;
+            return true;
+          });
+          list.sort((a, b) => equityIsGainers ? Number(b[sortColIdx]) - Number(a[sortColIdx]) : Number(a[sortColIdx]) - Number(b[sortColIdx]));
+          const top10 = list.slice(0, 10);
+
+          top10.forEach((s, i) => {
+            const ry = 226 + i * 50;
+            ctx.fillStyle = i % 2 === 0 ? "rgba(255, 255, 255, 0.03)" : "rgba(255, 255, 255, 0.015)";
+            drawCanvasRoundedRect(ctx, 48, ry, width - 96, 44, 8);
+            ctx.fill();
+
+            // Rank
+            ctx.fillStyle = i < 3 ? "#c97a2b" : "#8ea89d";
+            ctx.font = "bold 14px 'SF Mono', monospace";
+            ctx.fillText(`#${i + 1}`, 64, ry + 27);
+
+            // Symbol
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 14.5px 'SF Mono', monospace";
+            ctx.fillText(s[0], 120, ry + 27);
+
+            // Name
+            ctx.fillStyle = "#8ea89d";
+            ctx.font = "13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            ctx.fillText(truncateCanvasText(ctx, s[1], 420), 260, ry + 27);
+
+            // Price
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 14.5px 'SF Mono', monospace";
+            ctx.fillText(`₹${formatNumber(s[2], 2)}`, 880, ry + 27);
+
+            // Return badge
+            drawCanvasReturnBadge(ctx, s[sortColIdx], 1030, ry + 9, 86, 26);
+          });
+        }
+
+        // Card Footer
+        ctx.fillStyle = "#8ea89d";
+        ctx.font = "12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.fillText("🛡️ Verified empirical data • Filtered unadjusted split distortions • knowyourfinance.in", 48, height - 36);
+
+        ctx.fillStyle = "#8fe0cd";
+        ctx.font = "bold 13px 'SF Mono', Cascadia Code, monospace";
+        ctx.fillText("@KnowYourFinance", width - 48 - 140, height - 36);
+
+        // Convert canvas to blob & data URL
+        canvas.toBlob(function (blob) {
+          const dataUrl = canvas.toDataURL("image/png");
+          callback({ canvas, blob, dataUrl });
+        }, "image/png");
+      }
+
+      function showShareToast(msg) {
+        const toast = document.getElementById("shareToast");
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.classList.add("show");
+        if (shareToastTimer) clearTimeout(shareToastTimer);
+        shareToastTimer = setTimeout(() => {
+          toast.classList.remove("show");
+        }, 4000);
+      }
+
+      function openShareModal(sectionKey) {
+        currentShareSection = sectionKey;
+        const meta = getHorizonMeta(selectedHorizon);
+        const asOf = getFormattedAsOf();
+
+        currentShareFileName = `KYF-${sectionKey}-${selectedHorizon}.png`;
+        currentShareText = getSectionShareText(sectionKey);
+
+        const modal = document.getElementById("shareModal");
+        const titleEl = document.getElementById("shareModalTitle");
+        const subEl = document.getElementById("shareModalSubtitle");
+        const textPreview = document.getElementById("shareTextPreview");
+        const imgPreview = document.getElementById("shareImgPreview");
+        const nativeBtn = document.getElementById("nativeShareBtn");
+
+        if (titleEl) {
+          titleEl.innerHTML = `<span>📤 Share: ${getSectionDisplayName(sectionKey)}</span>`;
+        }
+        if (subEl) {
+          const horizLabel = sectionKey === "macro" ? "Spot Administered Benchmark" : meta.label;
+          subEl.textContent = `Horizon: ${horizLabel} • Benchmark Date: ${asOf}`;
+        }
+        if (textPreview) {
+          textPreview.value = currentShareText;
+        }
+        if (imgPreview) {
+          imgPreview.alt = "Generating high-resolution card...";
+          imgPreview.src = "";
+        }
+
+        // Render card
+        generateSectionCard(sectionKey, function (res) {
+          currentShareBlob = res.blob;
+          if (imgPreview) {
+            imgPreview.src = res.dataUrl;
+            imgPreview.alt = `${getSectionDisplayName(sectionKey)} Snapshot`;
+          }
+
+          // Check Web Share API with files
+          if (nativeBtn && navigator.canShare && res.blob) {
+            const testFile = new File([res.blob], currentShareFileName, { type: "image/png" });
+            if (navigator.canShare({ files: [testFile] })) {
+              nativeBtn.style.display = "inline-flex";
+            } else {
+              nativeBtn.style.display = "none";
+            }
+          }
+        });
+
+        if (modal) modal.classList.add("open");
+      }
+
+      // ==========================================
       // EVENT BINDINGS
       // ==========================================
       function bindEvents() {
-        // Horizon pill clicks
+        // Horizon pill clicks (drives Indices, Precious Metals, Equities, and Mutual Funds)
         const horizonPills = document.querySelectorAll(".horizon-pill");
         horizonPills.forEach(pill => {
           pill.addEventListener("click", function () {
@@ -1288,18 +2135,9 @@
             this.setAttribute("aria-selected", "true");
             selectedHorizon = this.dataset.horizon;
 
-            renderIndices();
             renderPreciousMetals();
-          });
-        });
-
-        // Equities time buttons
-        const eqTimeBtns = document.querySelectorAll("#equityTimeGroup .time-btn");
-        eqTimeBtns.forEach(btn => {
-          btn.addEventListener("click", function () {
-            eqTimeBtns.forEach(b => b.classList.remove("active"));
-            this.classList.add("active");
-            equityTimeKey = this.dataset.time;
+            renderIndices();
+            renderMutualFunds();
             renderEquities();
           });
         });
@@ -1320,27 +2158,19 @@
           });
         }
 
-        // Outlier Filter Toggle Button
-        const outlierToggleBtn = document.getElementById("equityOutlierToggle");
-        if (outlierToggleBtn) {
-          outlierToggleBtn.addEventListener("click", function () {
-            filterAbnormalOutliers = !filterAbnormalOutliers;
-            if (filterAbnormalOutliers) {
-              this.className = "outlier-btn active";
-              this.innerHTML = "<span>🛡️ Outlier Filter: ON</span>";
-            } else {
-              this.className = "outlier-btn inactive";
-              this.innerHTML = "<span>⚠️ Outlier Filter: OFF</span>";
+        // Expand to all NSE stocks checkbox toggle
+        const includeAllNseToggle = document.getElementById("includeAllNseToggle");
+        if (includeAllNseToggle) {
+          includeAllNseToggle.addEventListener("change", function () {
+            expandAllNse = this.checked;
+            const countBadge = document.getElementById("equityCountBadge");
+            if (countBadge) {
+              if (expandAllNse) {
+                countBadge.innerHTML = `${(equitiesData.stocks || []).length} Stocks Screened`;
+              } else {
+                countBadge.innerHTML = `⭐ ${equitiesData.nifty500Count || 501} Nifty 500 Leaders`;
+              }
             }
-            renderEquities();
-          });
-        }
-
-        // Segment selector
-        const segSelect = document.getElementById("equitySegmentSelect");
-        if (segSelect) {
-          segSelect.addEventListener("change", function () {
-            equitySegment = this.value;
             renderEquities();
           });
         }
@@ -1371,17 +2201,6 @@
           });
         }
 
-        // Mutual Funds time buttons
-        const mfTimeBtns = document.querySelectorAll("#mfTimeGroup .time-btn");
-        mfTimeBtns.forEach(btn => {
-          btn.addEventListener("click", function () {
-            mfTimeBtns.forEach(b => b.classList.remove("active"));
-            this.classList.add("active");
-            mfTimeKey = this.dataset.time;
-            renderMutualFunds();
-          });
-        });
-
         // Mutual Funds category filter pills
         const catPills = document.querySelectorAll("#mfCatFilters .cat-pill");
         catPills.forEach(pill => {
@@ -1411,7 +2230,7 @@
                 try {
                   const parsed = JSON.parse(evt.target.result);
                   if (parsed && parsed.data && parsed.data.cadence) {
-                    localStorage.setItem("kyf_cadence_v1", JSON.stringify(parsed.data.cadence));
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed.data.cadence));
                     alert("✓ Loaded cadence activities from " + file.name + ". Return to Cadence to view.");
                   } else {
                     alert("File loaded successfully.");
@@ -1428,7 +2247,7 @@
 
         if (navSaveBtn) {
           navSaveBtn.addEventListener("click", function () {
-            const raw = localStorage.getItem("kyf_cadence_v1");
+            const raw = localStorage.getItem(STORAGE_KEY);
             const activities = raw ? JSON.parse(raw) : [];
             const payload = {
               app: "Know Your Finance",
@@ -1454,14 +2273,164 @@
             URL.revokeObjectURL(url);
           });
         }
+
+        // ------------------------------------------
+        // Section Share Buttons & Modal Handlers
+        // ------------------------------------------
+        document.querySelectorAll(".section-share-btn").forEach(btn => {
+          btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            openShareModal(this.dataset.section);
+          });
+        });
+
+        const shareModal = document.getElementById("shareModal");
+        const closeShareModalBtn = document.getElementById("closeShareModalBtn");
+        if (closeShareModalBtn && shareModal) {
+          closeShareModalBtn.addEventListener("click", () => shareModal.classList.remove("open"));
+        }
+        if (shareModal) {
+          shareModal.addEventListener("click", function (e) {
+            if (e.target === shareModal) shareModal.classList.remove("open");
+          });
+        }
+
+        // Close on Escape key
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && shareModal && shareModal.classList.contains("open")) {
+            shareModal.classList.remove("open");
+          }
+        });
+
+        // Share on X (Twitter)
+        const shareToXBtn = document.getElementById("shareToXBtn");
+        if (shareToXBtn) {
+          shareToXBtn.addEventListener("click", async function () {
+            const textPreview = document.getElementById("shareTextPreview");
+            const tweetText = textPreview ? textPreview.value : currentShareText;
+            const tweetUrl = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(tweetText);
+
+            // Attempt to copy image to clipboard so user can directly paste (Ctrl+V) in their X post
+            if (currentShareBlob && navigator.clipboard && window.ClipboardItem) {
+              try {
+                await navigator.clipboard.write([new ClipboardItem({ "image/png": currentShareBlob })]);
+                showShareToast("✓ Image copied to clipboard! Paste (Ctrl+V) directly in your X post.");
+              } catch (err) {
+                console.warn("Clipboard image write failed:", err);
+                showShareToast("Opening X composer... Use 'Download PNG' to attach the visual card.");
+              }
+            } else {
+              showShareToast("Opening X composer...");
+            }
+
+            window.open(tweetUrl, "_blank", "noopener,noreferrer");
+          });
+        }
+
+        // Copy Text
+        const copyShareTextBtn = document.getElementById("copyShareTextBtn");
+        if (copyShareTextBtn) {
+          copyShareTextBtn.addEventListener("click", function () {
+            const textPreview = document.getElementById("shareTextPreview");
+            const text = textPreview ? textPreview.value : currentShareText;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).then(() => {
+                showShareToast("✓ Post text copied to clipboard!");
+              }).catch(err => {
+                showShareToast("Could not copy text: " + err.message);
+              });
+            } else {
+              if (textPreview) {
+                textPreview.select();
+                document.execCommand("copy");
+                showShareToast("✓ Post text copied to clipboard!");
+              }
+            }
+          });
+        }
+
+        // Copy Image
+        const copyShareImgBtn = document.getElementById("copyShareImgBtn");
+        if (copyShareImgBtn) {
+          copyShareImgBtn.addEventListener("click", async function () {
+            if (!currentShareBlob) {
+              showShareToast("Please wait for card image to generate...");
+              return;
+            }
+            if (navigator.clipboard && window.ClipboardItem) {
+              try {
+                await navigator.clipboard.write([new ClipboardItem({ "image/png": currentShareBlob })]);
+                showShareToast("✓ Visual card copied to clipboard! Paste with Ctrl+V.");
+              } catch (err) {
+                console.warn("Clipboard write failed:", err);
+                showShareToast("Clipboard image access denied. Please click 'Download PNG'.");
+              }
+            } else {
+              showShareToast("Clipboard image copy not supported in this browser. Use 'Download PNG'.");
+            }
+          });
+        }
+
+        // Download PNG Image
+        const downloadShareImgBtn = document.getElementById("downloadShareImgBtn");
+        if (downloadShareImgBtn) {
+          downloadShareImgBtn.addEventListener("click", function () {
+            if (!currentShareBlob) {
+              showShareToast("Please wait for card image to generate...");
+              return;
+            }
+            const url = URL.createObjectURL(currentShareBlob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = currentShareFileName || "KYF-Market-Snapshot.png";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showShareToast(`✓ Downloaded ${a.download}`);
+          });
+        }
+
+        // Native Web Share API (Mobile / Tablet / Supporting OS)
+        const nativeShareBtn = document.getElementById("nativeShareBtn");
+        if (nativeShareBtn) {
+          nativeShareBtn.addEventListener("click", async function () {
+            if (!navigator.share) return;
+            const textPreview = document.getElementById("shareTextPreview");
+            const text = textPreview ? textPreview.value : currentShareText;
+            const shareData = {
+              title: getSectionDisplayName(currentShareSection),
+              text: text
+            };
+            if (currentShareBlob && navigator.canShare) {
+              try {
+                const file = new File([currentShareBlob], currentShareFileName, { type: "image/png" });
+                if (navigator.canShare({ files: [file] })) {
+                  shareData.files = [file];
+                }
+              } catch (e) {
+                console.warn("File share prep error:", e);
+              }
+            }
+            try {
+              await navigator.share(shareData);
+              showShareToast("✓ Shared successfully!");
+            } catch (err) {
+              if (err.name !== "AbortError") {
+                showShareToast("Share failed: " + err.message);
+              }
+            }
+          });
+        }
       }
 
       // Initial Render
-      renderIndices();
-      renderPreciousMetals();
       renderMacroRates();
-      renderEquities();
+      renderPreciousMetals();
+      renderIndices();
       renderMutualFunds();
+      renderEquities();
       bindEvents();
     })();
   </script>

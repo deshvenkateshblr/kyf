@@ -417,24 +417,13 @@ DEFAULT_PULSE_CONFIG = {
         "creditCardApr": 39.00,
     },
     "preciousMetals": {
-        "gold24kPerGram": 7920,
-        "gold22kPerGram": 7260,
-        "gold18kPerGram": 5940,
-        "silverPerGram": 200,
-        "silverPerKg": 200000,
-        "gold10YrCagr": 11.40,
-        "goldRet1d": 0.18,
-        "goldRet5d": 0.65,
-        "goldRet1m": 2.15,
-        "goldRet3m": 4.10,
-        "goldRet6m": 7.20,
-        "goldRet1y": 18.40,
-        "silverRet1d": 0.32,
-        "silverRet5d": 1.10,
-        "silverRet1m": 3.40,
-        "silverRet3m": 6.20,
-        "silverRet6m": 11.80,
-        "silverRet1y": 22.10,
+        "gold24kPerGram": 13800,
+        "gold22kPerGram": 12650,
+        "gold18kPerGram": 10350,
+        "goldEtfTo24kFactor": 122.5,
+        "silverPerGram": 192.5,
+        "silverPerKg": 192500,
+        "silverEtfToKgFactor": 1153.8,
     },
     "indicesBaseline": {
         "NIFTY50": {
@@ -533,6 +522,69 @@ def parse_nse_index_csv(csv_text: str) -> dict:
     return out
 
 
+def compute_live_precious_metals(opener, horizons: dict, base_pm: dict) -> dict:
+    """
+    Computes daily Gold & Silver spot prices and 1M/3M/6M/1Y trailing returns
+    directly from NSE Bhavcopy ETFs (GOLDBEES & SILVERBEES) so it never breaks.
+    """
+    snapshots = {}
+    for key, dt in horizons.items():
+        csv_text = fetch_nse_bhavcopy_csv(opener, dt)
+        snapshots[key] = parse_nse_csv(csv_text)
+
+    def pick_etf_series(candidates):
+        for sym in candidates:
+            latest_obj = snapshots.get("latest", {}).get(sym)
+            if latest_obj and latest_obj.get("close", 0) > 0:
+                return sym, {
+                    k: snapshots.get(k, {}).get(sym, {}).get("close")
+                    for k in horizons.keys()
+                }
+        return None, {}
+
+    gold_sym, g_prices = pick_etf_series(["GOLDBEES", "HDFCGOLD", "GOLDIETF"])
+    silver_sym, s_prices = pick_etf_series(["SILVERBEES", "SILVERIETF", "HDFCSILVER"])
+
+    out = dict(base_pm)
+
+    if g_prices.get("latest"):
+        g_curr = g_prices["latest"]
+        # Anchor factor: converts GOLDBEES close to 1g 24K retail bullion price
+        # (Can be overridden in pulse_config.json via "goldEtfTo24kFactor")
+        g_factor = float(base_pm.get("goldEtfTo24kFactor", base_pm.get("goldEtfTo24kGramFactor", 122.5)))
+        g24k = int(round(g_curr * g_factor, -1))
+        out["gold24kPerGram"] = g24k
+        out["gold22kPerGram"] = int(round(g24k * (22.0 / 24.0), -1))
+        out["gold18kPerGram"] = int(round(g24k * (18.0 / 24.0), -1))
+        out["goldBenchmarkSymbol"] = gold_sym
+        out["goldRet1m"] = calc_pct(g_curr, g_prices.get("m1"))
+        out["goldRet3m"] = calc_pct(g_curr, g_prices.get("m3"))
+        out["goldRet6m"] = calc_pct(g_curr, g_prices.get("m6"))
+        out["goldRet1y"] = calc_pct(g_curr, g_prices.get("y1"))
+        try:
+            print(f"  [Live Gold via {gold_sym}] 24K: ₹{g24k}/g | 1Y: {out['goldRet1y']}%")
+        except UnicodeEncodeError:
+            print(f"  [Live Gold via {gold_sym}] 24K: Rs {g24k}/g | 1Y: {out['goldRet1y']}%")
+
+    if s_prices.get("latest"):
+        s_curr = s_prices["latest"]
+        s_factor = float(base_pm.get("silverEtfToKgFactor", 1153.80))
+        s_kg = int(round(s_curr * s_factor, -2))
+        out["silverPerKg"] = s_kg
+        out["silverPerGram"] = round(s_kg / 1000.0, 1)
+        out["silverBenchmarkSymbol"] = silver_sym
+        out["silverRet1m"] = calc_pct(s_curr, s_prices.get("m1"))
+        out["silverRet3m"] = calc_pct(s_curr, s_prices.get("m3"))
+        out["silverRet6m"] = calc_pct(s_curr, s_prices.get("m6"))
+        out["silverRet1y"] = calc_pct(s_curr, s_prices.get("y1"))
+        try:
+            print(f"  [Live Silver via {silver_sym}] 1Kg: ₹{s_kg} | 1Y: {out['silverRet1y']}%")
+        except UnicodeEncodeError:
+            print(f"  [Live Silver via {silver_sym}] 1Kg: Rs {s_kg} | 1Y: {out['silverRet1y']}%")
+
+    return out
+
+
 def build_pulse_js(opener, horizons: dict):
     print("\n--- Building Module 3: data/market-pulse.js ---")
     if not os.path.exists(PULSE_CONFIG_PATH):
@@ -579,12 +631,14 @@ def build_pulse_js(opener, horizons: dict):
             "cagr10y": base_obj["cagr10y"],
         }
 
+    live_pm = compute_live_precious_metals(opener, horizons, cfg.get("preciousMetals", {}))
+
     pulse_payload = {
         "asOf": horizons["latest"].isoformat(),
         "lastTradingDay": horizons["latest"].isoformat(),
         "horizons": {k: v.isoformat() for k, v in horizons.items()},
         "macro": cfg["macro"],
-        "preciousMetals": cfg["preciousMetals"],
+        "preciousMetals": live_pm,
         "indices": indices_out,
     }
 

@@ -17,24 +17,13 @@
     "creditCardApr": 39
   },
   "preciousMetals": {
-    "gold24kPerGram": 7920,
-    "gold22kPerGram": 7260,
-    "gold18kPerGram": 5940,
-    "silverPerGram": 200,
-    "silverPerKg": 200000,
-    "gold10YrCagr": 11.4,
-    "goldRet1d": 0.18,
-    "goldRet5d": 0.65,
-    "goldRet1m": 2.15,
-    "goldRet3m": 4.1,
-    "goldRet6m": 7.2,
-    "goldRet1y": 18.4,
-    "silverRet1d": 0.32,
-    "silverRet5d": 1.1,
-    "silverRet1m": 3.4,
-    "silverRet3m": 6.2,
-    "silverRet6m": 11.8,
-    "silverRet1y": 22.1
+    "gold24kPerGram": 13800,
+    "gold22kPerGram": 12650,
+    "gold18kPerGram": 10350,
+    "goldEtfTo24kFactor": 122.5,
+    "silverPerGram": 192.5,
+    "silverPerKg": 192500,
+    "silverEtfToKgFactor": 1153.8
   },
   "indicesBaseline": {
     "NIFTY50": {
