@@ -1518,8 +1518,7 @@
             `• EPF (Tax-Free): ${m.epfRate}% (+${spread}% real spread)\n` +
             `• PPF / SSY: ${m.ppfRate}% / ${m.ssyRate}%\n` +
             `• SBI 1Y FD / Arbitrage: ${m.sbiFd1Yr}% / ${m.arbitrageFundAvg}%\n\n` +
-            `Empirical benchmarks via @KnowYourFinance\n` +
-            `#PersonalFinance #India #Inflation #FixedIncome`;
+            `More at vividnova.com/kyf/market-performance.html`;
         }
 
         if (sectionKey === "metals") {
@@ -1532,8 +1531,7 @@
             `• Gold 24K: ₹${formatNumber(pm.gold24kPerGram, 0)}/g (${gSign}${gRet.toFixed(2)}% via GOLDBEES)\n` +
             `• Gold 22K: ₹${formatNumber(pm.gold22kPerGram, 0)}/g\n` +
             `• Silver 999: ₹${formatNumber(pm.silverPerKg, 0)}/kg (${sSign}${sRet.toFixed(2)}% via SILVERBEES)\n\n` +
-            `Asset allocation pulse via @KnowYourFinance\n` +
-            `#Gold #Silver #PreciousMetals #Investing`;
+            `More at vividnova.com/kyf/market-performance.html`;
         }
 
         if (sectionKey === "indices") {
@@ -1546,8 +1544,7 @@
           });
           return `📊 Market Indices & Valuations (${meta.short} • ${asOf}):\n` +
             lines.join("\n") + "\n\n" +
-            `Market pulse via @KnowYourFinance\n` +
-            `#Nifty50 #Sensex #StockMarket`;
+            `More at vividnova.com/kyf/market-performance.html`;
         }
 
         if (sectionKey === "mf") {
@@ -1572,8 +1569,7 @@
           const catStr = mfCategory === "all" ? "All" : mfCategory;
           return `🌱 Top Mutual Funds [${catStr}] (${meta.short} • ${asOf}):\n` +
             lines.join("\n") + "\n\n" +
-            `Direct plan benchmarks via @KnowYourFinance\n` +
-            `#MutualFunds #DirectMutualFunds #Investing`;
+            `More at vividnova.com/kyf/market-performance.html`;
         }
 
         if (sectionKey === "equities") {
@@ -1595,11 +1591,10 @@
           const typeStr = equityIsGainers ? "Top Gainers" : "Top Decliners";
           return `📈 Top NSE Equities — ${typeStr} (${meta.short} • ${asOf}):\n` +
             lines.join("\n") + "\n\n" +
-            `Screened & split-verified on @KnowYourFinance\n` +
-            `#NSE #StockMarketIndia #Nifty500`;
+            `More at vividnova.com/kyf/market-performance.html`;
         }
 
-        return "Empirical market review on Know Your Finance (https://knowyourfinance.in)";
+        return "Empirical market review on vividnova.com/kyf/market-performance.html";
       }
 
       function drawCanvasRoundedRect(ctx, x, y, width, height, radius) {
