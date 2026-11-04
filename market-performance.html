@@ -815,7 +815,7 @@
           </h2>
           <p class="section-desc">Leading direct plan benchmark schemes across SEBI categories.</p>
         </div>
-        <span class="section-badge" id="mfCountBadge">32 Benchmark Schemes</span>
+        <span class="section-badge" id="mfCountBadge">1,778 Direct Schemes Screened</span>
       </div>
 
       <div class="controls-shelf">
@@ -1407,6 +1407,16 @@
         // Sort highest return first
         list.sort((a, b) => Number(b[sortColIdx]) - Number(a[sortColIdx]));
 
+        // Update count badge dynamically
+        const countBadge = document.getElementById("mfCountBadge");
+        if (countBadge && mfData.schemes) {
+          if (mfCategory === "all") {
+            countBadge.innerHTML = `⭐ ${mfData.schemes.length} Direct Schemes Screened`;
+          } else {
+            countBadge.innerHTML = `⭐ ${list.length} Schemes in ${escapeHtml(mfCategory)}`;
+          }
+        }
+
         const top10 = list.slice(0, 10);
 
         if (!top10.length) {
@@ -1938,7 +1948,7 @@
           ctx.fillText("#", 66, 203);
           ctx.fillText("FUND NAME & CATEGORY", 120, 203);
           ctx.fillText("CURRENT NAV", 880, 203);
-          ctx.fillText(`${meta.short} RETURN`, 1040, 203);
+          ctx.fillText(meta.short.toUpperCase(), 1040, 203);
 
           const sortColIdx = meta.mfCol;
           let list = (mfData.schemes || []).filter(s => {
@@ -1996,7 +2006,7 @@
           ctx.fillText("#", 66, 203);
           ctx.fillText("SYMBOL & COMPANY", 120, 203);
           ctx.fillText("PRICE (₹)", 880, 203);
-          ctx.fillText(`${meta.short} RETURN`, 1040, 203);
+          ctx.fillText(meta.short.toUpperCase(), 1040, 203);
 
           const sortColIdx = meta.eqCol;
           let list = (equitiesData.stocks || []).filter(s => {

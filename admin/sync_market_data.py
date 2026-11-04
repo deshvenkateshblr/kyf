@@ -95,7 +95,9 @@ def get_horizons(reference_date: datetime.date = None):
     if reference_date is None:
         ist_now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
         base_dt = ist_now.date()
-        if ist_now.hour < 16 and is_trading_day(base_dt):
+        # AMFI NAVs and Bhavcopies are finalized late evening (typically 20:30+ IST).
+        # Before 20:30, use previous trading day.
+        if (ist_now.hour < 20 or (ist_now.hour == 20 and ist_now.minute < 30)) and is_trading_day(base_dt):
             base_dt -= datetime.timedelta(days=1)
     else:
         base_dt = reference_date
@@ -810,11 +812,37 @@ def build_equities_js(opener, horizons: dict, ca_data: dict = None):
 # ============================================================================
 # 5. BUILD MODULE 5 (`data/market-mf.js`)
 # ============================================================================
-def parse_amfi_txt(raw_text: str, is_latest: bool):
+# 5. BUILD MODULE 5 (`data/market-mf.js`)
+# ============================================================================
+def normalize_mf_category(raw_cat: str) -> str:
+    r = (raw_cat or "").lower()
+    if "small cap" in r:
+        return "Small Cap"
+    if "mid cap" in r:
+        return "Mid Cap"
+    if "large & mid" in r:
+        return "Large & Mid Cap"
+    if "large cap" in r or "index" in r:
+        return "Large Cap & Index"
+    if "flexi cap" in r or "multi cap" in r:
+        return "Flexi Cap"
+    if "elss" in r or "tax saver" in r:
+        return "ELSS Tax Saver"
+    if "hybrid" in r or "balanced advantage" in r or "dynamic asset" in r or "arbitrage" in r:
+        return "Hybrid / BAF"
+    if any(k in r for k in ["debt", "liquid", "money market", "gilt", "overnight", "corporate bond"]):
+        return "Debt & Fixed Income"
+    return raw_cat.strip() if raw_cat else "Open Ended"
+
+
+def parse_amfi_txt(raw_text: str, is_latest: bool, code_names: dict = None):
     grouped = {}
     by_code = {}
     if not raw_text:
         return grouped if is_latest else by_code
+
+    if code_names is None:
+        code_names = {}
 
     current_cat = "Open Ended"
     is_open_ended = True
@@ -834,13 +862,15 @@ def parse_amfi_txt(raw_text: str, is_latest: bool):
 
         if not is_open_ended:
             continue
-        parts = line.split(";");
+        parts = line.split(";")
         if len(parts) < 5:
             continue
         try:
             code = int(parts[0].strip())
-            raw_name = parts[3].strip()
-            nav = float(parts[4].strip())
+            nav_str = parts[-2].strip()
+            if nav_str in ("-", "N.A.", ""):
+                continue
+            nav = float(nav_str)
         except ValueError:
             continue
 
@@ -849,29 +879,53 @@ def parse_amfi_txt(raw_text: str, is_latest: bool):
         by_code[code] = nav
 
         if is_latest:
-            if re.search(r"(?i)idcw|dividend|bonus|payout|reinvestment|weekly|daily|monthly|quarterly", raw_name):
+            # Scheme name can be in parts[3] (8-column format) or parts[1] (6-column format)
+            raw_name = parts[3].strip() if len(parts) > 3 and parts[3].strip() else parts[1].strip()
+            plan = parts[4].strip() if len(parts) > 4 else ""
+            option = parts[5].strip() if len(parts) > 5 else ""
+
+            # Check if name is found in code_names fallback (e.g. Motilal Oswal Midcap with blank plan/option in AMFI)
+            fallback_nm = code_names.get(code, "")
+            full_desc = f"{raw_name} {plan} {option} {fallback_nm}".strip()
+            full_lower = full_desc.lower()
+
+            # Ignore IDCW / dividend / bonus / payout / reinvestment / periodic frequency / segregated portfolios
+            if re.search(r"(?i)idcw|dividend|bonus|payout|reinvestment|weekly|daily|monthly|quarterly|segregated", full_lower):
                 continue
-            if not re.search(r"(?i)growth", raw_name):
+            # Must be Growth
+            if not re.search(r"(?i)growth", full_lower):
                 continue
 
-            is_direct = bool(re.search(r"(?i)\bdirect\b", raw_name))
+            is_direct = bool(re.search(r"(?i)\bdirect\b", full_lower))
+            is_regular = bool(re.search(r"(?i)\bregular\b", full_lower)) or (not is_direct and "growth" in full_lower)
+
             base_key = re.sub(r"(?i)\b(direct|regular|plan|option|growth)\b", "", raw_name)
             base_key = re.sub(r"[^a-zA-Z0-9]", "", base_key).lower()
+            if not base_key:
+                continue
 
             if base_key not in grouped:
                 clean_display = re.sub(r"(?i)\s*-\s*(direct|regular)\s*(plan)?", "", raw_name)
-                clean_display = re.sub(r"(?i)\s*-\s*growth\s*(option)?", "", clean_display).strip()
+                clean_display = re.sub(r"(?i)\s*-\s*growth\s*(option)?", "", clean_display)
+                clean_display = re.sub(r"(?i)\s+direct\s+plan\b", "", clean_display)
+                clean_display = re.sub(r"(?i)\s+direct\s+growth\b", "", clean_display)
+                clean_display = re.sub(r"(?i)\s+growth\s*(option)?\b", "", clean_display)
+                clean_display = re.sub(r"\s*-\s*$", "", clean_display).strip()
+                if not clean_display:
+                    clean_display = raw_name
+
                 grouped[base_key] = {
                     "directCode": None,
                     "cleanName": clean_display,
-                    "category": current_cat,
+                    "category": normalize_mf_category(current_cat),
                     "directNav": None,
                     "regularNav": None,
                 }
+
             if is_direct:
                 grouped[base_key]["directCode"] = code
                 grouped[base_key]["directNav"] = nav
-            else:
+            elif is_regular:
                 grouped[base_key]["regularNav"] = nav
 
     return grouped if is_latest else by_code
@@ -880,9 +934,29 @@ def parse_amfi_txt(raw_text: str, is_latest: bool):
 def build_mf_js(opener, horizons: dict):
     print("\n--- Building Module 5: data/market-mf.js ---")
     snapshots = {}
+    code_names = {}
+
     for idx, (key, dt) in enumerate(horizons.items()):
         txt = fetch_amfi_nav_txt(opener, dt, is_latest=(idx == 0))
-        snapshots[key] = parse_amfi_txt(txt, is_latest=(idx == 0))
+        if idx > 0 and txt:
+            # Populate code_names from historical AMFI files
+            for line in txt.splitlines():
+                if ";" in line and not line.strip().startswith("Scheme"):
+                    parts = line.strip().split(";")
+                    if len(parts) >= 5:
+                        try:
+                            c = int(parts[0].strip())
+                            nm = parts[1].strip() if len(parts) > 1 and parts[1].strip() else parts[3].strip()
+                            if nm and c not in code_names:
+                                code_names[c] = nm
+                        except Exception:
+                            pass
+        snapshots[key] = parse_amfi_txt(txt, is_latest=(idx == 0), code_names=code_names)
+
+    # Re-parse latest if code_names had extra lookups
+    if code_names:
+        latest_txt = fetch_amfi_nav_txt(opener, horizons["latest"], is_latest=True)
+        snapshots["latest"] = parse_amfi_txt(latest_txt, is_latest=True, code_names=code_names)
 
     latest_grouped = snapshots.get("latest", {})
     if not latest_grouped:
