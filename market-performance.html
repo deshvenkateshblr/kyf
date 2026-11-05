@@ -979,6 +979,28 @@
       border-top: 2px solid var(--amber);
       border-bottom: 2px solid var(--amber);
     }
+    .re-sortable-th {
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: color .15s ease, background-color .15s ease;
+      white-space: nowrap;
+    }
+    .re-sortable-th:hover {
+      color: var(--teal) !important;
+      background: var(--teal-soft) !important;
+    }
+    .re-sortable-th.active-sort {
+      color: var(--teal-deep) !important;
+      font-weight: 700;
+    }
+    .re-sort-arrow {
+      display: inline-block;
+      margin-left: 3px;
+      font-size: 10px;
+      vertical-align: middle;
+      color: var(--teal);
+    }
 
     /* Reality Check Mini-Calculator */
     .re-calc-card {
@@ -1463,12 +1485,12 @@
                 <tr>
                   <th style="width: 40px; text-align: center;">#</th>
                   <th>City &amp; State</th>
-                  <th style="text-align: right;">Latest HPI</th>
-                  <th style="text-align: right;">1Y YoY %</th>
-                  <th style="text-align: right;">3Y CAGR</th>
-                  <th style="text-align: right;">5Y CAGR</th>
-                  <th style="text-align: right;">8Y Total Growth</th>
-                  <th style="text-align: right;">Carpet Price (₹/sq.ft.)</th>
+                  <th style="text-align: right;" class="re-sortable-th" data-sort="hpi_index" title="Sort by Latest HPI">Latest HPI <span class="re-sort-arrow"></span></th>
+                  <th style="text-align: right;" class="re-sortable-th" data-sort="hpi_yoy_pct" title="Sort by 1Y YoY %">1Y YoY % <span class="re-sort-arrow"></span></th>
+                  <th style="text-align: right;" class="re-sortable-th" data-sort="hpi_cagr_3y" title="Sort by 3Y CAGR">3Y CAGR <span class="re-sort-arrow"></span></th>
+                  <th style="text-align: right;" class="re-sortable-th" data-sort="hpi_cagr_5y" title="Sort by 5Y CAGR">5Y CAGR <span class="re-sort-arrow"></span></th>
+                  <th style="text-align: right;" class="re-sortable-th" data-sort="hpi_total_growth_8y" title="Sort by 8Y Total Growth">8Y Total Growth <span class="re-sort-arrow"></span></th>
+                  <th style="text-align: right;" class="re-sortable-th" data-sort="carpet_price_sqft" title="Sort by Carpet Price">Carpet Price (₹/sq.ft.) <span class="re-sort-arrow"></span></th>
                 </tr>
               </thead>
               <tbody id="reLeaderboardBody">
@@ -1882,6 +1904,8 @@
       // Real Estate State
       let activeReCity = "Bengaluru";
       let activeReViewMode = "hpi"; // 'hpi' or 'tiers'
+      let reSortCol = "hpi_yoy_pct"; // 'hpi_index', 'hpi_yoy_pct', 'hpi_cagr_3y', 'hpi_cagr_5y', 'hpi_total_growth_8y', 'carpet_price_sqft'
+      let reSortAsc = false;
 
       // Initialize As-Of Date
       if (pulseData.asOf) {
@@ -2187,25 +2211,25 @@
             <div class="re-hero-stat-card">
               <div class="re-hero-stat-lbl">3Y / 5Y CAGR</div>
               <div class="re-hero-stat-val" style="color:var(--teal-deep);">
-                <span>${s.hpi_cagr_3y ? s.hpi_cagr_3y.toFixed(1) + '%' : '—'}</span>
+                <span>${s.hpi_cagr_3y != null ? s.hpi_cagr_3y.toFixed(1) + '%' : '—'}</span>
                 <span style="font-size:11.5px; color:var(--muted); font-weight:400;">/</span>
-                <span>${s.hpi_cagr_5y ? s.hpi_cagr_5y.toFixed(1) + '%' : '—'}</span>
+                <span>${s.hpi_cagr_5y != null ? s.hpi_cagr_5y.toFixed(1) + '%' : '—'}</span>
               </div>
             </div>
 
             <div class="re-hero-stat-card">
               <div class="re-hero-stat-lbl">8-Year Total Gain (2018–26)</div>
               <div class="re-hero-stat-val" style="color:${(s.hpi_total_growth_8y || 0) >= 50 ? 'var(--green)' : 'var(--ink)'};">
-                <span>${s.hpi_total_growth_8y !== undefined ? (s.hpi_total_growth_8y > 0 ? '+' : '') + s.hpi_total_growth_8y.toFixed(1) + '%' : '—'}</span>
+                <span>${s.hpi_total_growth_8y != null ? (s.hpi_total_growth_8y > 0 ? '+' : '') + s.hpi_total_growth_8y.toFixed(1) + '%' : '—'}</span>
               </div>
             </div>
           </div>
 
           <div class="re-tier-pills-row">
             <span class="re-tier-label">Carpet Area Rates by Unit Size:</span>
-            <span class="re-tier-pill">Compact (&le;646 sq.ft.): <b>${latestTierCompact ? '₹' + formatNumber(latestTierCompact, 0) : '—'} /sq.ft.</b></span>
-            <span class="re-tier-pill">Mid-Size (646–1,184 sq.ft.): <b>${latestTierMid ? '₹' + formatNumber(latestTierMid, 0) : '—'} /sq.ft.</b></span>
-            <span class="re-tier-pill">Large (&gt;1,184 sq.ft.): <b>${latestTierLarge ? '₹' + formatNumber(latestTierLarge, 0) : '—'} /sq.ft.</b></span>
+            <span class="re-tier-pill">Compact (&le;646 sq.ft.): <b>${latestTierCompact != null ? '₹' + formatNumber(latestTierCompact, 0) : '—'} /sq.ft.</b></span>
+            <span class="re-tier-pill">Mid-Size (646–1,184 sq.ft.): <b>${latestTierMid != null ? '₹' + formatNumber(latestTierMid, 0) : '—'} /sq.ft.</b></span>
+            <span class="re-tier-pill">Large (&gt;1,184 sq.ft.): <b>${latestTierLarge != null ? '₹' + formatNumber(latestTierLarge, 0) : '—'} /sq.ft.</b></span>
           </div>
         `;
       }
@@ -2352,10 +2376,10 @@
           const natHoverDot = document.getElementById("reNatHoverCircle");
 
           if (svgEl) {
-            svgEl.addEventListener("mousemove", function (e) {
+            function handlePointer(clientX, clientY) {
               const rect = svgEl.getBoundingClientRect();
               const scaleX = width / rect.width;
-              const mouseSvgX = (e.clientX - rect.left) * scaleX;
+              const mouseSvgX = (clientX - rect.left) * scaleX;
 
               let closestIdx = 0;
               let minDist = Infinity;
@@ -2404,8 +2428,8 @@
                 `;
 
                 const containerRect = container.getBoundingClientRect();
-                let tipX = e.clientX - containerRect.left + 15;
-                let tipY = e.clientY - containerRect.top - 20;
+                let tipX = clientX - containerRect.left + 15;
+                let tipY = clientY - containerRect.top - 20;
                 if (tipX + 200 > containerRect.width) tipX -= 220;
                 if (tipY < 10) tipY = 10;
 
@@ -2413,14 +2437,31 @@
                 tooltip.style.top = `${tipY}px`;
                 tooltip.style.display = "block";
               }
-            });
+            }
 
-            svgEl.addEventListener("mouseleave", function () {
+            function hidePointer() {
               if (crosshair) crosshair.style.display = "none";
               if (cityHoverDot) cityHoverDot.style.display = "none";
               if (natHoverDot) natHoverDot.style.display = "none";
               if (tooltip) tooltip.style.display = "none";
+            }
+
+            svgEl.addEventListener("mousemove", function (e) {
+              handlePointer(e.clientX, e.clientY);
             });
+            svgEl.addEventListener("mouseleave", hidePointer);
+
+            svgEl.addEventListener("touchstart", function (e) {
+              if (e.touches && e.touches.length > 0) {
+                handlePointer(e.touches[0].clientX, e.touches[0].clientY);
+              }
+            }, { passive: true });
+
+            svgEl.addEventListener("touchmove", function (e) {
+              if (e.touches && e.touches.length > 0) {
+                handlePointer(e.touches[0].clientX, e.touches[0].clientY);
+              }
+            }, { passive: true });
           }
         }
 
@@ -2522,10 +2563,10 @@
           const svgEl = document.getElementById("reInteractiveTiersSvg");
           const crosshair = document.getElementById("reTierCrosshair");
           if (svgEl) {
-            svgEl.addEventListener("mousemove", function (e) {
+            function handleTiersPointer(clientX, clientY) {
               const rect = svgEl.getBoundingClientRect();
               const scaleX = width / rect.width;
-              const mouseSvgX = (e.clientX - rect.left) * scaleX;
+              const mouseSvgX = (clientX - rect.left) * scaleX;
 
               let closestIdx = 0;
               let minDist = Infinity;
@@ -2559,8 +2600,8 @@
                 `;
 
                 const containerRect = container.getBoundingClientRect();
-                let tipX = e.clientX - containerRect.left + 15;
-                let tipY = e.clientY - containerRect.top - 20;
+                let tipX = clientX - containerRect.left + 15;
+                let tipY = clientY - containerRect.top - 20;
                 if (tipX + 220 > containerRect.width) tipX -= 240;
                 if (tipY < 10) tipY = 10;
 
@@ -2568,12 +2609,29 @@
                 tooltip.style.top = `${tipY}px`;
                 tooltip.style.display = "block";
               }
-            });
+            }
 
-            svgEl.addEventListener("mouseleave", function () {
+            function hideTiersPointer() {
               if (crosshair) crosshair.style.display = "none";
               if (tooltip) tooltip.style.display = "none";
+            }
+
+            svgEl.addEventListener("mousemove", function (e) {
+              handleTiersPointer(e.clientX, e.clientY);
             });
+            svgEl.addEventListener("mouseleave", hideTiersPointer);
+
+            svgEl.addEventListener("touchstart", function (e) {
+              if (e.touches && e.touches.length > 0) {
+                handleTiersPointer(e.touches[0].clientX, e.touches[0].clientY);
+              }
+            }, { passive: true });
+
+            svgEl.addEventListener("touchmove", function (e) {
+              if (e.touches && e.touches.length > 0) {
+                handleTiersPointer(e.touches[0].clientX, e.touches[0].clientY);
+              }
+            }, { passive: true });
           }
         }
       }
@@ -2584,6 +2642,19 @@
         const cities = residexData.cities || {};
         const nat = residexData.national_composite_50_cities?.summary || {};
 
+        // Update active sort indicator on table header
+        const ths = document.querySelectorAll("#reLeaderboardTable th.re-sortable-th");
+        ths.forEach(th => {
+          const arrow = th.querySelector(".re-sort-arrow");
+          if (th.dataset.sort === reSortCol) {
+            th.classList.add("active-sort");
+            if (arrow) arrow.textContent = reSortAsc ? " ▴" : " ▾";
+          } else {
+            th.classList.remove("active-sort");
+            if (arrow) arrow.textContent = "";
+          }
+        });
+
         const cityEntries = Object.entries(cities).map(([name, data]) => {
           return {
             name: name,
@@ -2592,8 +2663,14 @@
           };
         });
 
-        // Sort descending by 1Y YoY %
-        cityEntries.sort((a, b) => Number(b.summary.hpi_yoy_pct || 0) - Number(a.summary.hpi_yoy_pct || 0));
+        // Dynamic sort by active column & direction
+        cityEntries.sort((a, b) => {
+          const valA = a.summary[reSortCol];
+          const valB = b.summary[reSortCol];
+          const numA = (valA != null && !isNaN(valA)) ? Number(valA) : (reSortAsc ? Infinity : -Infinity);
+          const numB = (valB != null && !isNaN(valB)) ? Number(valB) : (reSortAsc ? Infinity : -Infinity);
+          return reSortAsc ? numA - numB : numB - numA;
+        });
 
         let html = "";
         cityEntries.forEach((c, idx) => {
@@ -2622,7 +2699,7 @@
           `;
         });
 
-        // National Benchmark Anchor Row
+        // National Benchmark Anchor Row (Pinned at bottom)
         html += `
           <tr class="national-row" data-city="NATIONAL" title="50-City National Composite Benchmark">
             <td class="rank-cell" style="color:#82470e;">🇮🇳</td>
@@ -3069,14 +3146,19 @@
           const cityKey = activeReCity || "Bengaluru";
           const cityObj = (residexData.cities || {})[cityKey] || {};
           const citySummary = cityObj.summary || {};
-          const cYoy = citySummary.hpi_yoy_pct !== undefined ? (citySummary.hpi_yoy_pct > 0 ? "+" : "") + citySummary.hpi_yoy_pct.toFixed(2) + "%" : "—";
-          const cPrice = citySummary.carpet_price_sqft ? "₹" + formatNumber(citySummary.carpet_price_sqft, 0) + "/sq.ft." : "—";
-          const cCagr5 = citySummary.hpi_cagr_5y !== undefined ? citySummary.hpi_cagr_5y.toFixed(2) + "% p.a." : "—";
+          const cYoy = citySummary.hpi_yoy_pct != null ? (citySummary.hpi_yoy_pct > 0 ? "+" : "") + citySummary.hpi_yoy_pct.toFixed(2) + "%" : "—";
+          const cPrice = citySummary.carpet_price_sqft != null ? "₹" + formatNumber(citySummary.carpet_price_sqft, 0) + "/sq.ft." : "—";
+          const cCagr5 = citySummary.hpi_cagr_5y != null ? citySummary.hpi_cagr_5y.toFixed(2) + "% p.a." : "—";
+          const natYoySign = (nat.hpi_yoy_pct || 0) > 0 ? "+" : "";
+          const natYoy = nat.hpi_yoy_pct != null ? nat.hpi_yoy_pct.toFixed(2) : "1.56";
+          const c8ySign = (citySummary.hpi_total_growth_8y || 0) > 0 ? "+" : "";
+          const c8yStr = citySummary.hpi_total_growth_8y != null ? `${c8ySign}${citySummary.hpi_total_growth_8y.toFixed(1)}%` : "—";
+
           return `🏡 Real Estate & Housing Price Index (${nat.latest_quarter || "NHB RESIDEX"}):\n` +
-            `• 50-City National Composite: ${nat.hpi_index || 101.96} HPI (+${nat.hpi_yoy_pct || 1.56}% YoY) | ₹${formatNumber(nat.carpet_price_sqft || 5495, 0)}/sq.ft.\n` +
+            `• 50-City National Composite: ${nat.hpi_index || 101.96} HPI (${natYoySign}${natYoy}% YoY) | ₹${formatNumber(nat.carpet_price_sqft || 5495, 0)}/sq.ft.\n` +
             `• ${cityKey}: ${citySummary.hpi_index || "—"} HPI (${cYoy} YoY) | Carpet: ${cPrice}\n` +
-            `• 5Y Annualized CAGR: ${cCagr5} (vs National: ${nat.hpi_cagr_5y || 4.83}%)\n` +
-            `• 8Y Total Appreciation: +${citySummary.hpi_total_growth_8y || "—"}% (2018–2026 spliced)\n\n` +
+            `• 5Y Annualized CAGR: ${cCagr5} (vs National: ${nat.hpi_cagr_5y != null ? nat.hpi_cagr_5y.toFixed(2) : "4.83"}%)\n` +
+            `• 8Y Total Appreciation: ${c8yStr} (2018–2026 spliced)\n\n` +
             `More at vividnova.com/kyf/market-performance.html`;
         }
 
@@ -3413,11 +3495,13 @@
           const cityObj = (residexData.cities || {})[cityKey] || {};
           const citySummary = cityObj.summary || {};
 
+          const natYoySign = (nat.hpi_yoy_pct || 0) > 0 ? "+" : "";
+          const nat8ySign = (nat.hpi_total_growth_8y || 0) > 0 ? "+" : "";
           const boxes = [
-            { lbl: "50-CITY NATIONAL HPI", val: `${nat.hpi_index || 101.96}`, sub: `YoY: ${(nat.hpi_yoy_pct || 0) > 0 ? '+' : ''}${nat.hpi_yoy_pct || 1.56}%`, isBench: true },
+            { lbl: "50-CITY NATIONAL HPI", val: `${nat.hpi_index || 101.96}`, sub: `YoY: ${natYoySign}${nat.hpi_yoy_pct != null ? nat.hpi_yoy_pct : 1.56}%`, isBench: true },
             { lbl: "COMPOSITE CARPET RATE", val: `₹${formatNumber(nat.carpet_price_sqft || 5495, 0)}`, sub: "50-City National Average /sq.ft.", isBench: false },
-            { lbl: "5Y ANNUALIZED CAGR", val: `${nat.hpi_cagr_5y !== undefined ? nat.hpi_cagr_5y.toFixed(2) : '4.83'}%`, sub: "National Housing Return (2021–26)", isBench: false },
-            { lbl: "8Y SPLICED APPRECIATION", val: `+${nat.hpi_total_growth_8y || '10.02'}%`, sub: "33-Quarter Continuous Curve", isBench: false }
+            { lbl: "5Y ANNUALIZED CAGR", val: `${nat.hpi_cagr_5y != null ? nat.hpi_cagr_5y.toFixed(2) : '4.83'}%`, sub: "National Housing Return (2021–26)", isBench: false },
+            { lbl: "8Y SPLICED APPRECIATION", val: `${nat8ySign}${nat.hpi_total_growth_8y != null ? nat.hpi_total_growth_8y : '10.02'}%`, sub: "33-Quarter Continuous Curve", isBench: false }
           ];
 
           const colW = 260;
@@ -3462,9 +3546,12 @@
 
           ctx.font = "bold 13px 'SF Mono', Cascadia Code, monospace";
           ctx.fillStyle = "#ffffff";
-          ctx.fillText(`• Latest HPI: ${citySummary.hpi_index || '—'} (${(citySummary.hpi_yoy_pct || 0) > 0 ? '+' : ''}${citySummary.hpi_yoy_pct || 0}% YoY)`, 72, cityCardY + 76);
-          ctx.fillText(`• Usable Carpet Price: ₹${formatNumber(citySummary.carpet_price_sqft || 0, 0)}/sq.ft. (${(citySummary.carpet_price_yoy_pct || 0) > 0 ? '+' : ''}${citySummary.carpet_price_yoy_pct || 0}% YoY)`, 72, cityCardY + 106);
-          ctx.fillText(`• 3Y / 5Y CAGR: ${citySummary.hpi_cagr_3y || 0}% / ${citySummary.hpi_cagr_5y || 0}% p.a.  |  8-Year Total Gain: +${citySummary.hpi_total_growth_8y || 0}%`, 72, cityCardY + 136);
+          const cYoySign = (citySummary.hpi_yoy_pct || 0) > 0 ? "+" : "";
+          const cCarpetYoySign = (citySummary.carpet_price_yoy_pct || 0) > 0 ? "+" : "";
+          const c8ySign = (citySummary.hpi_total_growth_8y || 0) > 0 ? "+" : "";
+          ctx.fillText(`• Latest HPI: ${citySummary.hpi_index || '—'} (${cYoySign}${citySummary.hpi_yoy_pct != null ? citySummary.hpi_yoy_pct : 0}% YoY)`, 72, cityCardY + 76);
+          ctx.fillText(`• Usable Carpet Price: ₹${formatNumber(citySummary.carpet_price_sqft || 0, 0)}/sq.ft. (${cCarpetYoySign}${citySummary.carpet_price_yoy_pct != null ? citySummary.carpet_price_yoy_pct : 0}% YoY)`, 72, cityCardY + 106);
+          ctx.fillText(`• 3Y / 5Y CAGR: ${citySummary.hpi_cagr_3y != null ? citySummary.hpi_cagr_3y : 0}% / ${citySummary.hpi_cagr_5y != null ? citySummary.hpi_cagr_5y : 0}% p.a.  |  8-Year Total Gain: ${c8ySign}${citySummary.hpi_total_growth_8y != null ? citySummary.hpi_total_growth_8y : 0}%`, 72, cityCardY + 136);
 
           // Reality Check Banner
           const bannerY = 530;
@@ -3707,7 +3794,7 @@
         // Card Footer
         ctx.fillStyle = "#8ea89d";
         ctx.font = "12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-        ctx.fillText("🛡️ Verified empirical data • Filtered unadjusted split distortions • knowyourfinance.in", 48, height - 36);
+        ctx.fillText("🛡️ Verified empirical data • Filtered unadjusted split distortions • vividnova.com/kyf", 48, height - 36);
 
         ctx.fillStyle = "#8fe0cd";
         ctx.font = "bold 13px 'SF Mono', Cascadia Code, monospace";
@@ -4151,6 +4238,22 @@
         if (calcLoading) {
           calcLoading.addEventListener("input", updateRealEstateCalculator);
         }
+
+        // Leaderboard Column Sorting
+        const reThs = document.querySelectorAll("#reLeaderboardTable th.re-sortable-th");
+        reThs.forEach(th => {
+          th.addEventListener("click", function () {
+            const col = this.dataset.sort;
+            if (!col) return;
+            if (reSortCol === col) {
+              reSortAsc = !reSortAsc;
+            } else {
+              reSortCol = col;
+              reSortAsc = false; // default descending on new column
+            }
+            renderRealEstateLeaderboard();
+          });
+        });
       }
 
       // ==========================================
