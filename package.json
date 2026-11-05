@@ -1,0 +1,18 @@
+{
+  "name": "kyf",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Know Your Finance (KYF)",
+  "type": "module",
+  "scripts": {
+    "sync-data": "py admin/sync_market_data.py",
+    "sync-data:force-nhb": "py admin/sync_market_data.py --force-nhb",
+    "sync-and-push": "py admin/sync_market_data.py --commit-push",
+    "sync-nhb": "node admin/sync_nhb_residex.mjs",
+    "sync-nhb:force": "node admin/sync_nhb_residex.mjs --force-nhb"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.64.0"
+  }
+}
+

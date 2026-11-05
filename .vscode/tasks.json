@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "KYF: Sync EOD Market Data (NSE & AMFI)",
+      "label": "KYF: Sync EOD Market Data (NSE, AMFI & NHB RESIDEX)",
       "type": "shell",
       "command": "py",
       "windows": {
@@ -26,6 +26,33 @@
         "clear": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "KYF: Sync Market Data & Push to GitHub",
+      "type": "shell",
+      "command": "py",
+      "args": ["admin/sync_market_data.py", "--commit-push"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "KYF: Sync NHB RESIDEX Real Estate (Force Refresh)",
+      "type": "shell",
+      "command": "node",
+      "args": ["admin/sync_nhb_residex.mjs", "--force-nhb"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true,
+        "clear": true
+      },
+      "problemMatcher": []
     }
   ]
+}
 }

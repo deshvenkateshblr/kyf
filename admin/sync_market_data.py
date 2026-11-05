@@ -15,6 +15,8 @@ import io
 import json
 import os
 import re
+import subprocess
+import sys
 import urllib.error
 import urllib.request
 import zipfile
@@ -1000,8 +1002,60 @@ def build_mf_js(opener, horizons: dict):
     print(f"  [Success] Wrote {len(tuples)} MF schemes to {out_path} ({len(js_content)/1024:.1f} KB)")
 
 
+def sync_nhb_residex():
+    """Module 6: NHB RESIDEX Real Estate Sync via admin/sync_nhb_residex.mjs"""
+    print("\n--- Building Module 6: Real Estate (NHB RESIDEX) ---")
+    script_path = os.path.abspath(os.path.join(BASE_DIR, "sync_nhb_residex.mjs"))
+    if not os.path.exists(script_path):
+        print(f"  [Skip] Scraper script not found: {script_path}")
+        return
+
+    cmd = ["node", script_path]
+    if "--force-nhb" in sys.argv:
+        cmd.append("--force-nhb")
+
+    try:
+        proc = subprocess.run(cmd, check=False)
+        if proc.returncode != 0:
+            print(f"  [Warn] NHB RESIDEX sync process returned code {proc.returncode}")
+    except Exception as e:
+        print(f"  [Warn] Failed to invoke node for NHB RESIDEX sync: {e}")
+
+
+def git_commit_and_push(horizons: dict):
+    """Module 7: Automatically stages data/ files, commits with asOf date, and pushes to origin/master."""
+    if "--commit-push" not in sys.argv and "--git-push" not in sys.argv:
+        return
+
+    print("\n--- Module 7: Git Automated Commit & Push ---")
+    repo_root = os.path.abspath(os.path.join(BASE_DIR, ".."))
+    as_of = horizons["latest"].isoformat()
+
+    try:
+        # Stage data directory
+        subprocess.run(["git", "add", "data/"], cwd=repo_root, check=True)
+
+        # Check if there are staged differences
+        diff_res = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=repo_root)
+        if diff_res.returncode == 0:
+            print("  [Info] No changes detected in data/ to commit.")
+            return
+
+        commit_msg = f"chore(data): auto-sync market data as of {as_of}"
+        subprocess.run(["git", "commit", "-m", commit_msg], cwd=repo_root, check=True)
+        print(f"  [Success] Committed: '{commit_msg}'")
+
+        print("  [Pushing] git push origin master ...")
+        subprocess.run(["git", "push", "origin", "master"], cwd=repo_root, check=True)
+        print("  [Success] Successfully pushed to GitHub (origin/master)!")
+    except subprocess.CalledProcessError as e:
+        print(f"  [Error] Git automated command failed: {e}")
+    except Exception as e:
+        print(f"  [Error] Failed to complete git commit/push: {e}")
+
+
 if __name__ == "__main__":
-    print("=== KYF Unified EOD Market Sync (Modules 3, 4 & 5) ===")
+    print("=== KYF Unified EOD Market Sync (Modules 3, 4, 5 & 6) ===")
     target_horizons = get_horizons()
     for k, d in target_horizons.items():
         print(f"  Horizon [{k.upper():6s}] -> {d.isoformat()} ({d.strftime('%a')})")
@@ -1011,4 +1065,6 @@ if __name__ == "__main__":
     ca_data = build_corporate_actions_js(http_opener)
     build_equities_js(http_opener, target_horizons, ca_data)
     build_mf_js(http_opener, target_horizons)
-    print("\n=== All Market Bundles (pulse, corporate-actions, equities, mf) Updated in /data/ ===")
+    sync_nhb_residex()
+    git_commit_and_push(target_horizons)
+    print("\n=== All Market Bundles (pulse, corporate-actions, equities, mf, realestate) Updated in /data/ ===")

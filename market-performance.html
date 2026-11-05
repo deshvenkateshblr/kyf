@@ -117,18 +117,58 @@
       display: inline-flex; align-items: center; gap: 6px;
       background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
       padding: 5px 12px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft);
-      white-space: nowrap;
+      white-space: nowrap; flex-shrink: 0;
     }
     .as-of-badge strong { color: var(--teal); font-weight: 700; }
 
-    /* ---------- Global Horizon Bar ---------- */
-    .horizon-toolbar {
-      position: sticky; top: 65px; z-index: 30;
+    /* ---------- Section Sticky Navigation Bar (Above Sovereign Yields) ---------- */
+    .section-nav-toolbar {
+      position: sticky; top: 65px; z-index: 38;
       background: rgba(238,241,234,.96);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      padding: 14px 0; border-bottom: 1px solid var(--line);
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 2px 10px rgba(0,0,0,.02);
+      transition: top .2s ease, padding .2s ease;
+    }
+    .section-nav-inner {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      min-width: 0;
+    }
+    .section-jump-links {
+      display: flex; align-items: center; gap: 4px;
+      flex: 1 1 auto; min-width: 0;
+      overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 2px 0;
+    }
+    .section-jump-links::-webkit-scrollbar { display: none; }
+    .sec-nav-link {
+      font-family: var(--mono); font-size: 12px; font-weight: 600;
+      color: var(--ink-soft); text-decoration: none; padding: 5px 10px;
+      border-radius: 6px; transition: all .15s ease;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .sec-nav-link:hover {
+      background: var(--teal-soft); color: var(--teal);
+    }
+    .sec-nav-link.active {
+      background: var(--teal); color: #ffffff !important;
+      font-weight: 700; box-shadow: 0 2px 6px rgba(31,122,108,.25);
+    }
+    .sec-lbl-full { display: inline; }
+    .sec-lbl-short { display: none; }
+
+    /* ---------- Global Horizon Bar (Return Window Only) ---------- */
+    .horizon-toolbar {
+      position: sticky; top: 106px; z-index: 30;
+      background: rgba(238,241,234,.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 9px 0; border-bottom: 1px solid var(--line);
       box-shadow: 0 4px 12px rgba(0,0,0,.03);
+      transition: top .2s ease, padding .2s ease;
     }
     .horizon-inner {
       display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 14px;
@@ -143,8 +183,12 @@
     .hl-tablet { display: none; }
     .hl-mobile { display: none; }
     .as-of-mobile-icon { display: none; }
-    .horizon-sub-group {
-      display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+    .horizon-meta-info {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .horizon-window-desc {
+      font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+      font-weight: 600;
     }
     .horizon-pills {
       display: inline-flex; background: var(--panel); border: 1px solid var(--line);
@@ -159,19 +203,11 @@
     .horizon-pill.active {
       background: var(--ink); color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.15);
     }
-    .jump-nav {
-      display: flex; gap: 12px; font-family: var(--mono); font-size: 12px;
-    }
-    .jump-nav a {
-      color: var(--ink-soft); text-decoration: none; padding: 4px 10px; border-radius: 6px;
-      transition: all .15s ease;
-    }
-    .jump-nav a:hover { background: var(--teal-soft); color: var(--teal); }
 
     /* ---------- Section Headers ---------- */
     .section-wrap {
       padding: 38px 0;
-      scroll-margin-top: 130px;
+      scroll-margin-top: 160px;
     }
     .section-header {
       display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
@@ -261,7 +297,7 @@
     /* ---------- Macro & Sovereign Strip (Above Horizon) ---------- */
     .macro-section {
       padding: 26px 0 16px;
-      scroll-margin-top: 70px;
+      scroll-margin-top: 120px;
     }
     .macro-strip-card {
       background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
@@ -590,29 +626,554 @@
     }
     .sticky-footer a:hover { color: #fff; }
 
+    /* ==========================================
+       REAL ESTATE BENCHMARK (NHB RESIDEX)
+       ========================================== */
+    .re-section {
+      padding: 10px 0 24px;
+      scroll-margin-top: 120px;
+    }
+    .re-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.02);
+      margin-bottom: 24px;
+    }
+    .re-strip-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .re-strip-title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 100;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .re-strip-desc {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 4px 0 0;
+    }
+    .re-badge-national {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--amber);
+      background: var(--amber-soft);
+      border: 1px solid rgba(201,122,43,.3);
+      border-radius: 999px;
+      padding: 4px 12px;
+      white-space: nowrap;
+    }
+    .re-anchor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .re-stat-box {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafbfa;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .re-stat-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,.04);
+    }
+    .re-stat-box.highlight {
+      background: var(--teal-soft);
+      border-color: rgba(31,122,108,.3);
+    }
+    .re-stat-box.amber-highlight {
+      background: var(--amber-soft);
+      border-color: rgba(201,122,43,.35);
+    }
+    .re-stat-box .re-lbl {
+      font-size: 10.5px;
+      color: var(--muted);
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .re-stat-box.highlight .re-lbl { color: var(--teal-deep); }
+    .re-stat-box.amber-highlight .re-lbl { color: #82470e; }
+    .re-stat-box .re-val {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-top: 6px;
+      line-height: 1.1;
+    }
+    .re-stat-box .re-subtext {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* City Explorer Toolbar */
+    .re-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+    }
+    .re-toolbar-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .re-toolbar-right {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .re-city-dropdown {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 7px 12px;
+      background: #ffffff;
+      border: 1.5px solid var(--teal);
+      border-radius: 8px;
+      color: var(--teal-deep);
+      outline: none;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(31,122,108,.1);
+    }
+    .re-city-dropdown:focus {
+      border-color: var(--ink);
+    }
+    .re-view-pills {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+    .re-view-pill {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 7px 13px;
+      background: #ffffff;
+      border: none;
+      border-right: 1px solid var(--line);
+      cursor: pointer;
+      color: var(--ink-soft);
+      transition: all .15s ease;
+    }
+    .re-view-pill:last-child { border-right: none; }
+    .re-view-pill:hover { color: var(--teal); background: #f6f9f7; }
+    .re-view-pill.active { background: var(--ink); color: #ffffff; }
+
+    /* City Hero Highlight Strip */
+    .re-hero-strip {
+      background: linear-gradient(135deg, #fafbfa 0%, #ffffff 100%);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .re-hero-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .re-hero-city-name {
+      font-family: var(--sans);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .re-hero-state-pill {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--paper);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .re-hero-stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .re-hero-stat-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .re-hero-stat-lbl {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+    }
+    .re-hero-stat-val {
+      font-family: var(--mono);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-top: 4px;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .re-tier-pills-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--line);
+      align-items: center;
+    }
+    .re-tier-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-right: 4px;
+    }
+    .re-tier-pill {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      color: var(--ink-soft);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .re-tier-pill b { color: var(--teal-deep); }
+
+    /* Chart SVG Container & Tooltip */
+    .re-chart-wrap {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px 20px 14px;
+      margin-bottom: 22px;
+      position: relative;
+    }
+    .re-chart-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .re-chart-title {
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .re-chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-soft);
+      align-items: center;
+    }
+    .re-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .re-legend-line {
+      width: 16px;
+      height: 3px;
+      border-radius: 2px;
+    }
+    .re-legend-line.city { background: var(--teal); }
+    .re-legend-line.national { background: var(--amber); border-top: 2px dashed var(--amber); height: 0; }
+    .re-legend-line.overlap { background: var(--muted); border-top: 2px dotted var(--muted); height: 0; }
+    .re-svg-box {
+      width: 100%;
+      height: auto;
+      display: block;
+      overflow: visible;
+    }
+    .re-chart-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(24, 38, 32, 0.94);
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.45;
+      box-shadow: 0 8px 20px rgba(0,0,0,.25);
+      z-index: 20;
+      display: none;
+      min-width: 180px;
+      transition: opacity .1s ease, transform .1s ease;
+      backdrop-filter: blur(4px);
+    }
+    .re-chart-tooltip strong { color: #8fe0cd; display: block; margin-bottom: 3px; }
+
+    /* Leaderboard Table Specifics */
+    .re-table-interactive tbody tr {
+      cursor: pointer;
+      transition: background .12s ease;
+    }
+    .re-table-interactive tbody tr:hover td {
+      background: var(--teal-soft) !important;
+    }
+    .re-table-interactive tbody tr.active-city td {
+      background: #eef7f4 !important;
+      font-weight: 600;
+    }
+    .re-table-interactive tbody tr.active-city td:first-child {
+      border-left: 4px solid var(--teal);
+    }
+    .re-table-interactive tr.national-row td {
+      background: var(--amber-soft);
+      font-weight: 700;
+      border-top: 2px solid var(--amber);
+      border-bottom: 2px solid var(--amber);
+    }
+
+    /* Reality Check Mini-Calculator */
+    .re-calc-card {
+      background: radial-gradient(ellipse 650px 380px at 90% 10%, rgba(201,122,43,.08), transparent 70%), var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.02);
+      margin-top: 24px;
+    }
+    .re-calc-header {
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 14px;
+    }
+    .re-calc-title {
+      font-family: var(--serif);
+      font-size: 21px;
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .re-calc-desc {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin: 4px 0 0;
+      line-height: 1.45;
+    }
+    .re-calc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .re-calc-inputs-pane {
+      background: #fafbfa;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .re-calc-results-pane {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .re-slider-group {
+      margin-bottom: 18px;
+    }
+    .re-slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .re-slider-label {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .re-slider-value-badge {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--teal);
+      background: var(--teal-soft);
+      padding: 2px 8px;
+      border-radius: 5px;
+    }
+    .re-range-input {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--line);
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      cursor: pointer;
+    }
+    .re-range-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--teal);
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(31,122,108,.35);
+      cursor: pointer;
+      transition: transform .12s ease;
+    }
+    .re-range-input::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: var(--teal-deep);
+    }
+    .re-range-input::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--teal);
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(31,122,108,.35);
+      cursor: pointer;
+    }
+    .re-calc-rates-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .re-rate-box {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px 14px;
+      background: #fafbfa;
+    }
+    .re-rate-box.broker {
+      border-color: rgba(201,122,43,.35);
+      background: var(--amber-soft);
+    }
+    .re-rate-box.carpet {
+      border-color: rgba(31,122,108,.35);
+      background: var(--teal-soft);
+    }
+    .re-rate-lbl {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--muted);
+    }
+    .re-rate-box.broker .re-rate-lbl { color: #82470e; font-weight: 700; }
+    .re-rate-box.carpet .re-rate-lbl { color: var(--teal-deep); font-weight: 700; }
+    .re-rate-val {
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-top: 4px;
+    }
+    .re-rate-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .re-breakdown-list {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      margin-bottom: 14px;
+      font-size: 13px;
+    }
+    .re-breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      color: var(--ink-soft);
+    }
+    .re-breakdown-row.total {
+      border-top: 1.5px solid var(--ink);
+      margin-top: 6px;
+      padding-top: 8px;
+      font-weight: 700;
+      font-size: 14.5px;
+      color: var(--ink);
+    }
+    .re-breakdown-row.total .val {
+      font-family: var(--mono);
+      font-size: 18px;
+      color: var(--teal-deep);
+    }
+    .re-calc-insight-callout {
+      background: #f7ede2;
+      border: 1px solid rgba(201,122,43,.35);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #5a3206;
+      line-height: 1.45;
+      margin-top: 12px;
+    }
+
+    /* ========================================================
+       RESPONSIVE & ADAPTIVE STYLES (TABLET, MOBILE & SHORT WINDOWS)
+       ======================================================== */
+
     @media (max-width: 900px) {
       .nav-links { display: none; }
       .controls-shelf { flex-direction: column; align-items: stretch; }
       .search-input-wrap { width: 100%; }
-      .jump-nav { display: none; }
-
-      /* Single-Row Sticky Toolbar on Mobile/Tablet */
-      .hl-desktop { display: none; }
-      .hl-tablet { display: inline; }
-      .hl-mobile { display: none; }
-      .horizon-toolbar { padding: 9px 0; }
-      .horizon-inner {
-        flex-direction: row; justify-content: space-between; align-items: center;
-        flex-wrap: nowrap; gap: 8px;
-      }
-      .horizon-label-group {
-        display: flex; align-items: center; gap: 8px; flex-shrink: 0; width: auto;
-      }
-      .horizon-sub-group {
-        display: flex; align-items: center; gap: 8px; flex-shrink: 0; width: auto;
-      }
-      .horizon-pill { padding: 5px 11px; font-size: 11.5px; }
-      .as-of-badge { font-size: 11px; padding: 4px 10px; }
 
       /* Table column compaction to eliminate horizontal scroll */
       table.data-table th, table.data-table td {
@@ -623,20 +1184,71 @@
       .rank-cell { width: 34px; padding-left: 6px; padding-right: 4px; }
       .price-col, .price-cell { width: 85px; }
       .ret-col, .ret-cell { width: 85px; }
+
+      /* Real Estate Responsive (Tablet) */
+      .re-calc-grid { grid-template-columns: 1fr; gap: 16px; }
+      .re-anchor-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .re-calc-rates-row { grid-template-columns: 1fr; }
     }
 
-    @media (max-width: 600px) {
+    /* Short Viewports (<=700px height) or Mobile/Tablet (<=768px width):
+       Unpin main header to preserve vertical viewing space, stack toolbars at top: 0 and top: 35px */
+    @media (max-height: 700px), (max-width: 768px) {
+      .nav {
+        position: relative !important;
+        top: auto !important;
+      }
+      .section-nav-toolbar {
+        top: 0 !important;
+        padding: 6px 0 !important;
+      }
+      .horizon-toolbar {
+        top: 35px !important;
+        padding: 6px 0 !important;
+      }
+      .macro-section, .re-section {
+        scroll-margin-top: 48px !important;
+      }
+      .section-wrap {
+        scroll-margin-top: 84px !important;
+      }
+    }
+
+    /* Tablet Portrait & Mobile (<=768px):
+       Compact labels, smooth overflow fade mask, compact date badge */
+    @media (max-width: 768px) {
+      /* Short responsive labels for section links (Realty, Funds, Stocks) */
+      .sec-lbl-full { display: none; }
+      .sec-lbl-short { display: inline; }
+      .sec-nav-link { padding: 4px 8px; font-size: 11px; }
+
+      /* Edge fade gradient mask so overflowing links fade smoothly */
+      .section-jump-links {
+        mask-image: linear-gradient(to right, black calc(100% - 16px), transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 16px), transparent 100%);
+      }
+
+      /* Compact As-Of Badge */
+      .as-of-badge { padding: 4px 8px; font-size: 10.5px; flex-shrink: 0; }
+      .as-of-prefix { display: none; }
+      .as-of-mobile-icon { display: inline; }
+
+      /* Compact Horizon Toolbar */
       .hl-desktop { display: none; }
       .hl-tablet { display: none; }
       .hl-mobile { display: inline; }
-      .as-of-prefix { display: none; }
-      .as-of-mobile-icon { display: inline; }
-      .horizon-toolbar { padding: 7px 0; }
-      .horizon-inner { gap: 6px; }
-      .horizon-label-group { gap: 6px; }
-      .horizon-pill { padding: 4px 8px; font-size: 11px; }
-      .as-of-badge { font-size: 10.5px; padding: 3px 6px; }
+      .horizon-window-desc { display: none; }
+      .horizon-inner {
+        flex-direction: row; justify-content: space-between; align-items: center;
+        flex-wrap: nowrap; gap: 8px;
+      }
+      .horizon-label-group {
+        display: flex; align-items: center; gap: 6px; flex-shrink: 0; width: auto;
+      }
+      .horizon-pill { padding: 4px 10px; font-size: 11px; }
+    }
 
+    @media (max-width: 600px) {
       /* Macro & Metals cards */
       .section-share-btn { padding: 2px 7px; font-size: 10px; margin-left: 6px; }
       .share-modal-box { padding: 16px; }
@@ -648,6 +1260,22 @@
       .rate-box .r-val { font-size: 17px; }
       .rates-list { grid-template-columns: repeat(2, 1fr); gap: 8px; }
       .metals-grid { grid-template-columns: 1fr; gap: 10px; }
+
+      /* Real Estate Responsive (Mobile) */
+      .re-card { padding: 16px; }
+      .re-anchor-grid { grid-template-columns: 1fr; gap: 8px; }
+      .re-stat-box .re-val { font-size: 19px; }
+      .re-hero-strip { padding: 14px 16px; }
+      .re-hero-stats-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .re-hero-stat-val { font-size: 15px; }
+      .re-tier-pills-row { flex-direction: column; align-items: flex-start; }
+      .re-toolbar { flex-direction: column; align-items: stretch; }
+      .re-view-pills { width: 100%; display: flex; }
+      .re-view-pill { flex: 1; text-align: center; font-size: 10.5px; padding: 6px 8px; }
+      .re-calc-inputs-pane, .re-calc-results-pane { padding: 14px; }
+      .re-chart-wrap { padding: 14px 12px; }
+      .re-chart-title { font-size: 13px; }
+      .re-chart-legend { font-size: 10px; gap: 8px; }
 
       /* Mobile Table sizing */
       table.data-table { font-size: 12.5px; }
@@ -661,6 +1289,14 @@
       .price-col, .price-cell { width: 72px; font-size: 12px; }
       .ret-col, .ret-cell { width: 72px; font-size: 12px; }
       .ret-badge { font-size: 11px; padding: 2px 5px; }
+    }
+
+    /* Small Mobile Devices (<=480px) */
+    @media (max-width: 480px) {
+      .sec-nav-link { padding: 3px 6px; font-size: 10.5px; }
+      .section-jump-links { gap: 2px; }
+      .as-of-badge { padding: 3px 6px; font-size: 10px; }
+      .horizon-pill { padding: 3px 8px; font-size: 10.5px; }
     }
   </style>
 </head>
@@ -697,6 +1333,34 @@
     </div>
   </section>
 
+  <!-- SECTION STICKY NAVIGATION TOOLBAR (ABOVE SOVEREIGN YIELDS) -->
+  <nav class="section-nav-toolbar" id="sectionNavToolbar" aria-label="Asset Class Jump Navigation">
+    <div class="wrap section-nav-inner">
+      <div class="section-jump-links" id="sectionJumpLinks">
+        <a href="#section-macro" class="sec-nav-link active" data-sec="macro">Macro</a>
+        <a href="#section-realestate" class="sec-nav-link" data-sec="realestate">
+          <span class="sec-lbl-full">Real Estate</span>
+          <span class="sec-lbl-short">Realty</span>
+        </a>
+        <a href="#section-metals" class="sec-nav-link" data-sec="metals">Metals</a>
+        <a href="#section-indices" class="sec-nav-link" data-sec="indices">Indices</a>
+        <a href="#section-mf" class="sec-nav-link" data-sec="mf">
+          <span class="sec-lbl-full">Mutual Funds</span>
+          <span class="sec-lbl-short">Funds</span>
+        </a>
+        <a href="#section-equities" class="sec-nav-link" data-sec="equities">
+          <span class="sec-lbl-full">Equities</span>
+          <span class="sec-lbl-short">Stocks</span>
+        </a>
+      </div>
+      <div class="as-of-badge" id="asOfBadge" title="Official market benchmark closing date">
+        <span class="as-of-prefix">📅 As of:</span>
+        <span class="as-of-mobile-icon">📅</span>
+        <strong id="asOfDateText">Loading...</strong>
+      </div>
+    </div>
+  </nav>
+
   <!-- ECONOMIC DATA & SOVEREIGN BENCHMARK (HORIZON AGNOSTIC) -->
   <section class="macro-section" id="section-macro">
     <div class="wrap">
@@ -725,6 +1389,207 @@
     </div>
   </section>
 
+  <!-- REAL ESTATE BENCHMARK & PROPERTY DYNAMICS (NHB RESIDEX) -->
+  <section class="re-section" id="section-realestate">
+    <div class="wrap">
+      <div class="re-card">
+        <!-- Section Header -->
+        <div class="re-strip-header">
+          <div>
+            <h2 class="re-strip-title">
+              <span>🏡 Real Estate &amp; Housing Price Index (NHB RESIDEX)</span>
+              <button type="button" class="section-share-btn" data-section="realestate" aria-label="Share Real Estate &amp; Housing Price Index on X and other platforms" title="Share on X / Social">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                <span>Share</span>
+              </button>
+            </h2>
+            <p class="re-strip-desc">Official National Housing Bank housing price index (FY 2024-25 = 100), RERA carpet area price benchmarks, and spliced 33-quarter growth curves (2018–2026).</p>
+          </div>
+          <span class="re-badge-national">🇮🇳 50-City National Composite Baseline</span>
+        </div>
+
+        <!-- 50-City National Composite Anchor Grid -->
+        <div class="re-anchor-grid" id="reAnchorGrid">
+          <!-- Populated via JS -->
+        </div>
+
+        <!-- City Explorer Toolbar -->
+        <div class="re-toolbar">
+          <div class="re-toolbar-left">
+            <span class="control-label">📍 Select Metro / City:</span>
+            <select id="reCitySelect" class="re-city-dropdown" aria-label="Select City for Housing Price Index">
+              <!-- Populated via JS -->
+            </select>
+          </div>
+          <div class="re-toolbar-right">
+            <span class="control-label">View Mode:</span>
+            <div class="re-view-pills" role="tablist">
+              <button type="button" class="re-view-pill active" id="reViewModeHpi" role="tab" aria-selected="true">📈 33-Quarter HPI Trend (2018–2026)</button>
+              <button type="button" class="re-view-pill" id="reViewModeTiers" role="tab" aria-selected="false">🏢 Carpet Price by Unit Tier (₹/sq.ft.)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected City Hero Strip -->
+        <div class="re-hero-strip" id="reHeroStrip">
+          <!-- Populated via JS -->
+        </div>
+
+        <!-- Interactive SVG Chart Container -->
+        <div class="re-chart-wrap" id="reChartWrap">
+          <div class="re-chart-header">
+            <div class="re-chart-title" id="reChartTitle">Historical Spliced Growth Curve (FY 2024-25 = 100)</div>
+            <div class="re-chart-legend" id="reChartLegend">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+          <div id="reSvgContainer" style="position: relative; width: 100%; min-height: 280px;">
+            <!-- SVG rendered via JS -->
+          </div>
+          <div id="reChartTooltip" class="re-chart-tooltip" role="tooltip"></div>
+        </div>
+
+        <!-- Multi-City Leaderboard Table -->
+        <div style="margin-top: 28px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <h3 style="font-family: var(--serif); font-size: 19px; font-weight: 600; margin: 0; color: var(--ink);">
+              📊 Multi-City Real Estate Leaderboard &amp; Comp Table
+            </h3>
+            <span style="font-family: var(--mono); font-size: 11px; color: var(--muted);">Click any city row to view historical chart</span>
+          </div>
+          <div class="table-container">
+            <table class="data-table re-table-interactive" id="reLeaderboardTable">
+              <thead>
+                <tr>
+                  <th style="width: 40px; text-align: center;">#</th>
+                  <th>City &amp; State</th>
+                  <th style="text-align: right;">Latest HPI</th>
+                  <th style="text-align: right;">1Y YoY %</th>
+                  <th style="text-align: right;">3Y CAGR</th>
+                  <th style="text-align: right;">5Y CAGR</th>
+                  <th style="text-align: right;">8Y Total Growth</th>
+                  <th style="text-align: right;">Carpet Price (₹/sq.ft.)</th>
+                </tr>
+              </thead>
+              <tbody id="reLeaderboardBody">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- "Carpet vs. Super Built-Up" Reality Check Mini-Calculator -->
+        <div class="re-calc-card" id="reRealityCheckCalc">
+          <div class="re-calc-header">
+            <h3 class="re-calc-title">
+              <span>📐 "Carpet vs. Super Built-Up" Reality Check</span>
+              <span class="spot-rate-badge" style="font-size:10.5px; padding:2px 8px;">KYF Educational Mini-Calc</span>
+            </h3>
+            <p class="re-calc-desc">
+              Brokers quote low <strong>Super Built-Up rates</strong> that include common lobby, lift shafts, and corridors. See the real livable <strong>RERA Carpet Area</strong> price you actually pay, plus statutory transaction friction (~7% Stamp Duty &amp; Registration).
+            </p>
+          </div>
+          <div class="re-calc-grid">
+            <!-- Left inputs pane -->
+            <div class="re-calc-inputs-pane">
+              <div style="margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                  <label class="control-label" style="display:block; margin-bottom: 6px;">Target City</label>
+                  <select id="reCalcCity" class="segment-select" style="width:100%;">
+                    <!-- Populated via JS -->
+                  </select>
+                </div>
+                <div>
+                  <label class="control-label" style="display:block; margin-bottom: 6px;">Unit Size Tier</label>
+                  <select id="reCalcTier" class="segment-select" style="width:100%;">
+                    <option value="composite">Overall Composite</option>
+                    <option value="compact_lte_646_sqft">Compact (&le; 646 sq.ft.)</option>
+                    <option value="mid_646_to_1184_sqft">Mid-Size (646–1,184 sq.ft.)</option>
+                    <option value="large_gt_1184_sqft">Large (&gt; 1,184 sq.ft.)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Usable Carpet Area Slider -->
+              <div class="re-slider-group">
+                <div class="re-slider-header">
+                  <span class="re-slider-label">Usable RERA Carpet Area</span>
+                  <span class="re-slider-value-badge" id="reCalcCarpetVal">1,000 sq.ft.</span>
+                </div>
+                <input type="range" id="reCalcCarpetSlider" class="re-range-input" min="400" max="2500" step="25" value="1000">
+                <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:4px;">
+                  <span>400 sq.ft. (1BHK)</span>
+                  <span>1,000 sq.ft. (2/3BHK)</span>
+                  <span>2,500 sq.ft. (Luxury 4BHK)</span>
+                </div>
+              </div>
+
+              <!-- Builder Super Built-Up Loading Slider -->
+              <div class="re-slider-group" style="margin-bottom: 8px;">
+                <div class="re-slider-header">
+                  <span class="re-slider-label">Builder Super Built-Up Loading %</span>
+                  <span class="re-slider-value-badge" id="reCalcLoadingVal" style="color:var(--amber); background:var(--amber-soft);">35%</span>
+                </div>
+                <input type="range" id="reCalcLoadingSlider" class="re-range-input" min="20" max="45" step="1" value="35">
+                <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:4px;">
+                  <span>20% (Low Loading)</span>
+                  <span>35% (Typical Metro)</span>
+                  <span>45% (High Loading)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right results pane -->
+            <div class="re-calc-results-pane">
+              <div>
+                <div class="re-calc-rates-row">
+                  <div class="re-rate-box broker">
+                    <div class="re-rate-lbl">Brochure Quoted Rate (SBUA)</div>
+                    <div class="re-rate-val" id="reCalcBrokerRate">₹10,852 / sq.ft.</div>
+                    <div class="re-rate-sub" id="reCalcBrokerSub">Quoted on 1,350 sq.ft. gross area</div>
+                  </div>
+                  <div class="re-rate-box carpet">
+                    <div class="re-rate-lbl">True Livable Carpet Rate</div>
+                    <div class="re-rate-val" id="reCalcCarpetRate">₹14,650 / sq.ft.</div>
+                    <div class="re-rate-sub" id="reCalcCarpetSub">Paid for 1,000 sq.ft. usable space</div>
+                  </div>
+                </div>
+
+                <div class="re-breakdown-list">
+                  <div class="re-breakdown-row">
+                    <span>Usable Living Space:</span>
+                    <strong id="reCalcLivingAreaText">1,000 sq.ft.</strong>
+                  </div>
+                  <div class="re-breakdown-row">
+                    <span>Common Area "Air / Loading Billed":</span>
+                    <strong id="reCalcCommonAreaText" style="color:#82470e;">+350 sq.ft. (₹37.98 L)</strong>
+                  </div>
+                  <div class="re-breakdown-row">
+                    <span>Base Agreement Cost:</span>
+                    <strong id="reCalcBaseCostText">₹1.465 Cr</strong>
+                  </div>
+                  <div class="re-breakdown-row">
+                    <span>Stamp Duty &amp; Registration Friction (~7.0%):</span>
+                    <strong id="reCalcFrictionText" style="color:var(--rose);">+₹10.26 L</strong>
+                  </div>
+                  <div class="re-breakdown-row total">
+                    <span>Total All-In Acquisition Outlay:</span>
+                    <span class="val" id="reCalcTotalCostText">₹1.568 Cr</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="re-calc-insight-callout" id="reCalcInsightText">
+                <!-- Dynamic insight populated via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
   <!-- STICKY HORIZON CONTROLLER -->
   <aside class="horizon-toolbar" aria-label="Horizon Filter Toolbar">
     <div class="wrap horizon-inner">
@@ -741,19 +1606,8 @@
           <button type="button" class="horizon-pill active" data-horizon="1y" role="tab" aria-selected="true">1Y</button>
         </div>
       </div>
-      <div class="horizon-sub-group">
-        <div class="jump-nav">
-          <a href="#section-macro">Macro</a>
-          <a href="#section-metals">Metals</a>
-          <a href="#section-indices">Indices</a>
-          <a href="#section-mf">Mutual Funds</a>
-          <a href="#section-equities">Equities</a>
-        </div>
-        <div class="as-of-badge" id="asOfBadge" title="Official market benchmark closing date">
-          <span class="as-of-prefix">📅 As of:</span>
-          <span class="as-of-mobile-icon">📅</span>
-          <strong id="asOfDateText">Loading...</strong>
-        </div>
+      <div class="horizon-meta-info">
+        <span class="horizon-window-desc" id="horizonWindowDesc">1-Year Trailing Cumulative Return (Annual Benchmark)</span>
       </div>
     </div>
   </aside>
@@ -1001,6 +1855,7 @@
   <script src="data/market-corporate-actions.js"></script>
   <script src="data/market-equities.js"></script>
   <script src="data/market-mf.js"></script>
+  <script src="data/market-realestate.js"></script>
 
   <!-- APP SCRIPT -->
   <script>
@@ -1021,7 +1876,12 @@
       const equitiesData = window.KYF_MARKET_EQUITIES || {};
       const mfData = window.KYF_MARKET_MF || {};
       const caData = window.KYF_CORPORATE_ACTIONS || {};
+      const residexData = window.KYF_RESIDEX || {};
       const caMap = new Map((caData.actions || []).map(a => [a[0], a]));
+
+      // Real Estate State
+      let activeReCity = "Bengaluru";
+      let activeReViewMode = "hpi"; // 'hpi' or 'tiers'
 
       // Initialize As-Of Date
       if (pulseData.asOf) {
@@ -1048,6 +1908,18 @@
         const sign = num > 0 ? "+" : "";
         const cls = num > 0 ? "pos" : (num < 0 ? "neg" : "neutral");
         return `<span class="ret-badge ${cls}">${sign}${num.toFixed(2)}%</span>`;
+      }
+
+      function formatInrLakhCrore(amount) {
+        if (amount === null || amount === undefined || isNaN(amount)) return "—";
+        const val = Math.abs(amount);
+        const sign = amount < 0 ? "-" : "";
+        if (val >= 10000000) {
+          return `${sign}₹${(val / 10000000).toFixed(2)} Cr`;
+        } else if (val >= 100000) {
+          return `${sign}₹${(val / 100000).toFixed(2)} L`;
+        }
+        return `${sign}₹${formatNumber(Math.round(val), 0)}`;
       }
 
       function getHorizonMeta(h) {
@@ -1209,6 +2081,687 @@
             realSpreadEl.previousElementSibling.textContent = "Real EPF Spread over CPI:";
           }
         }
+      }
+
+      // ==========================================
+      // REAL ESTATE (NHB RESIDEX) BENCHMARK MODULE
+      // ==========================================
+      function renderRealEstateAnchor() {
+        const grid = document.getElementById("reAnchorGrid");
+        if (!grid) return;
+        const nat = residexData.national_composite_50_cities?.summary || {};
+        const qtr = nat.latest_quarter || "Jun 2026";
+
+        grid.innerHTML = `
+          <div class="re-stat-box amber-highlight">
+            <div class="re-lbl">
+              <span>National HPI Benchmark</span>
+              <span>${escapeHtml(qtr)}</span>
+            </div>
+            <div class="re-val">${formatNumber(nat.hpi_index, 2)}</div>
+            <div class="re-subtext">
+              ${formatReturnBadge(nat.hpi_yoy_pct)}
+              <span>YoY (FY25=100 Rebased)</span>
+            </div>
+          </div>
+
+          <div class="re-stat-box">
+            <div class="re-lbl">
+              <span>Composite Carpet Price</span>
+              <span>50-City National</span>
+            </div>
+            <div class="re-val">₹${formatNumber(nat.carpet_price_sqft, 0)} <span style="font-size:12px; font-weight:400; color:var(--muted);">/sq.ft.</span></div>
+            <div class="re-subtext">
+              ${formatReturnBadge(nat.carpet_price_yoy_pct)}
+              <span>YoY Composite Floor Rate</span>
+            </div>
+          </div>
+
+          <div class="re-stat-box highlight">
+            <div class="re-lbl">
+              <span>5-Year Annualized CAGR</span>
+              <span>2021–2026</span>
+            </div>
+            <div class="re-val" style="color:var(--teal-deep);">${nat.hpi_cagr_5y !== undefined ? nat.hpi_cagr_5y.toFixed(2) : '4.83'}% <span style="font-size:12px; font-weight:400; color:var(--muted);">p.a.</span></div>
+            <div class="re-subtext">
+              <span style="color:var(--ink-soft); font-weight:600;">Hedged against CPI Inflation (~4.5–5%)</span>
+            </div>
+          </div>
+
+          <div class="re-stat-box">
+            <div class="re-lbl">
+              <span>8-Year Total Appreciation</span>
+              <span>33 Quarters</span>
+            </div>
+            <div class="re-val">${nat.hpi_total_growth_8y !== undefined ? (nat.hpi_total_growth_8y > 0 ? '+' : '') + nat.hpi_total_growth_8y.toFixed(2) + '%' : '+10.02%'}</div>
+            <div class="re-subtext">
+              <span>Continuous Spliced Curve (2018–2026)</span>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderRealEstateHero(cityName) {
+        const strip = document.getElementById("reHeroStrip");
+        if (!strip) return;
+        const cities = residexData.cities || {};
+        const city = cities[cityName];
+        if (!city) return;
+
+        const s = city.summary || {};
+        const tiers = city.carpet_price_sqft_by2024 || {};
+        const qtr = s.latest_quarter || "Jun 2026";
+        const latestTierCompact = tiers.compact_lte_646_sqft ? tiers.compact_lte_646_sqft[qtr] : null;
+        const latestTierMid = tiers.mid_646_to_1184_sqft ? tiers.mid_646_to_1184_sqft[qtr] : null;
+        const latestTierLarge = tiers.large_gt_1184_sqft ? tiers.large_gt_1184_sqft[qtr] : null;
+
+        strip.innerHTML = `
+          <div class="re-hero-top">
+            <div class="re-hero-city-name">
+              <span>${escapeHtml(cityName)}</span>
+              <span class="re-hero-state-pill">${escapeHtml(city.state || '')}</span>
+              <span style="font-family:var(--mono); font-size:11px; color:var(--teal); font-weight:600; margin-left:6px;">NHB Overlap: ${escapeHtml(residexData.metadata?.overlap_quarter || 'Jun 2025')}</span>
+            </div>
+            <div style="font-family:var(--mono); font-size:11.5px; color:var(--muted);">
+              Splicing Linking Factor: <b>${city.linking_factors?.assessment_forward || 1.36}x</b> (Assessment)
+            </div>
+          </div>
+
+          <div class="re-hero-stats-row">
+            <div class="re-hero-stat-card">
+              <div class="re-hero-stat-lbl">Latest HPI Index</div>
+              <div class="re-hero-stat-val">
+                <span>${formatNumber(s.hpi_index, 2)}</span>
+                ${formatReturnBadge(s.hpi_yoy_pct)}
+              </div>
+            </div>
+
+            <div class="re-hero-stat-card">
+              <div class="re-hero-stat-lbl">Composite Carpet Price</div>
+              <div class="re-hero-stat-val">
+                <span>₹${formatNumber(s.carpet_price_sqft, 0)}</span>
+                <span style="font-size:11px; color:var(--muted); font-weight:400;">/sq.ft.</span>
+              </div>
+            </div>
+
+            <div class="re-hero-stat-card">
+              <div class="re-hero-stat-lbl">3Y / 5Y CAGR</div>
+              <div class="re-hero-stat-val" style="color:var(--teal-deep);">
+                <span>${s.hpi_cagr_3y ? s.hpi_cagr_3y.toFixed(1) + '%' : '—'}</span>
+                <span style="font-size:11.5px; color:var(--muted); font-weight:400;">/</span>
+                <span>${s.hpi_cagr_5y ? s.hpi_cagr_5y.toFixed(1) + '%' : '—'}</span>
+              </div>
+            </div>
+
+            <div class="re-hero-stat-card">
+              <div class="re-hero-stat-lbl">8-Year Total Gain (2018–26)</div>
+              <div class="re-hero-stat-val" style="color:${(s.hpi_total_growth_8y || 0) >= 50 ? 'var(--green)' : 'var(--ink)'};">
+                <span>${s.hpi_total_growth_8y !== undefined ? (s.hpi_total_growth_8y > 0 ? '+' : '') + s.hpi_total_growth_8y.toFixed(1) + '%' : '—'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="re-tier-pills-row">
+            <span class="re-tier-label">Carpet Area Rates by Unit Size:</span>
+            <span class="re-tier-pill">Compact (&le;646 sq.ft.): <b>${latestTierCompact ? '₹' + formatNumber(latestTierCompact, 0) : '—'} /sq.ft.</b></span>
+            <span class="re-tier-pill">Mid-Size (646–1,184 sq.ft.): <b>${latestTierMid ? '₹' + formatNumber(latestTierMid, 0) : '—'} /sq.ft.</b></span>
+            <span class="re-tier-pill">Large (&gt;1,184 sq.ft.): <b>${latestTierLarge ? '₹' + formatNumber(latestTierLarge, 0) : '—'} /sq.ft.</b></span>
+          </div>
+        `;
+      }
+
+      function renderRealEstateChart(cityName, mode) {
+        const container = document.getElementById("reSvgContainer");
+        const titleEl = document.getElementById("reChartTitle");
+        const legendEl = document.getElementById("reChartLegend");
+        const tooltip = document.getElementById("reChartTooltip");
+        if (!container) return;
+
+        const cityObj = residexData.cities?.[cityName];
+        const natObj = residexData.national_composite_50_cities;
+        if (!cityObj || !natObj) {
+          container.innerHTML = `<div style="padding:40px; text-align:center; color:var(--muted); font-family:var(--mono);">Real estate chart data unavailable for ${escapeHtml(cityName)}</div>`;
+          return;
+        }
+
+        const width = 860;
+        const height = 310;
+        const padLeft = 60;
+        const padRight = 30;
+        const padTop = 25;
+        const padBottom = 42;
+        const plotW = width - padLeft - padRight;
+        const plotH = height - padTop - padBottom;
+
+        if (mode === "hpi") {
+          if (titleEl) titleEl.textContent = `33-Quarter Historical HPI Trend: ${cityName} vs 50-City National (FY 2024-25 = 100)`;
+          if (legendEl) {
+            legendEl.innerHTML = `
+              <span class="re-legend-item"><span class="re-legend-line city"></span> <b>${escapeHtml(cityName)} Spliced HPI</b></span>
+              <span class="re-legend-item"><span class="re-legend-line national"></span> <b>50-City National Composite</b></span>
+              <span class="re-legend-item"><span class="re-legend-line overlap"></span> <span>Jun 2025 Rebase Overlap</span></span>
+            `;
+          }
+
+          const splicedCity = cityObj.spliced_continuous_hpi || {};
+          const splicedNat = natObj.spliced_continuous_hpi || {};
+          const quarters = Object.keys(splicedCity);
+          if (quarters.length === 0) return;
+
+          const cityVals = quarters.map(q => Number(splicedCity[q] || 0));
+          const natVals = quarters.map(q => Number(splicedNat[q] || 0));
+
+          const allVals = cityVals.concat(natVals);
+          let rawMin = Math.min(...allVals);
+          let rawMax = Math.max(...allVals);
+          let yMin = Math.floor(rawMin / 10) * 10 - 10;
+          if (yMin < 0) yMin = 0;
+          let yMax = Math.ceil(rawMax / 10) * 10 + 10;
+          if (yMax - yMin < 40) yMax = yMin + 50;
+
+          function getX(idx) {
+            return padLeft + (idx / (quarters.length - 1)) * plotW;
+          }
+          function getY(val) {
+            return padTop + plotH - ((val - yMin) / (yMax - yMin)) * plotH;
+          }
+
+          let gridSvg = "";
+          const yStep = (yMax - yMin) > 80 ? 20 : 10;
+          for (let yv = yMin; yv <= yMax; yv += yStep) {
+            const yPos = getY(yv);
+            const isBase100 = yv === 100;
+            const strokeColor = isBase100 ? "#1f7a6c" : "#e2e7df";
+            const strokeDash = isBase100 ? "4 3" : "2 2";
+            const strokeWidth = isBase100 ? "1.5" : "1";
+            gridSvg += `
+              <line x1="${padLeft}" y1="${yPos.toFixed(1)}" x2="${width - padRight}" y2="${yPos.toFixed(1)}" stroke="${strokeColor}" stroke-dasharray="${strokeDash}" stroke-width="${strokeWidth}" />
+              <text x="${padLeft - 8}" y="${(yPos + 4).toFixed(1)}" text-anchor="end" font-family="var(--mono)" font-size="10.5" fill="${isBase100 ? '#1f7a6c' : '#8ea89d'}" font-weight="${isBase100 ? '700' : '500'}">${yv}</text>
+            `;
+          }
+
+          const base100Y = getY(100);
+          gridSvg += `
+            <text x="${width - padRight - 6}" y="${(base100Y - 5).toFixed(1)}" text-anchor="end" font-family="var(--mono)" font-size="9.5" fill="#1f7a6c" font-weight="700">BASE 100</text>
+          `;
+
+          const overlapIdx = quarters.indexOf("Jun 2025");
+          let overlapSvg = "";
+          if (overlapIdx !== -1) {
+            const ovX = getX(overlapIdx);
+            overlapSvg = `
+              <line x1="${ovX.toFixed(1)}" y1="${padTop}" x2="${ovX.toFixed(1)}" y2="${padTop + plotH}" stroke="#8ea89d" stroke-dasharray="3 3" stroke-width="1.2" />
+              <rect x="${(ovX - 42).toFixed(1)}" y="${(padTop + 6).toFixed(1)}" width="84" height="18" rx="4" fill="rgba(24,38,32,.75)" />
+              <text x="${ovX.toFixed(1)}" y="${(padTop + 18).toFixed(1)}" text-anchor="middle" font-family="var(--mono)" font-size="9" fill="#8fe0cd" font-weight="700">Jun '25 Rebase</text>
+            `;
+          }
+
+          let xTicksSvg = "";
+          quarters.forEach((q, idx) => {
+            if (q.startsWith("Jun") || idx === quarters.length - 1) {
+              const xPos = getX(idx);
+              const shortYear = q.replace("Jun ", "'");
+              xTicksSvg += `
+                <line x1="${xPos.toFixed(1)}" y1="${(padTop + plotH).toFixed(1)}" x2="${xPos.toFixed(1)}" y2="${(padTop + plotH + 5).toFixed(1)}" stroke="#6d786f" stroke-width="1" />
+                <text x="${xPos.toFixed(1)}" y="${(padTop + plotH + 18).toFixed(1)}" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="#6d786f" font-weight="600">${shortYear}</text>
+              `;
+            }
+          });
+
+          const natPoints = natVals.map((v, i) => `${getX(i).toFixed(1)},${getY(v).toFixed(1)}`).join(" ");
+          const natPathSvg = `<polyline points="${natPoints}" fill="none" stroke="#c97a2b" stroke-width="2.2" stroke-dasharray="5 4" stroke-linecap="round" stroke-linejoin="round" />`;
+
+          const cityCoords = cityVals.map((v, i) => ({ x: getX(i), y: getY(v) }));
+          const cityPoints = cityCoords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
+          const areaPath = `M ${cityCoords[0].x.toFixed(1)} ${cityCoords[0].y.toFixed(1)} ` +
+            cityCoords.slice(1).map(c => `L ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(" ") +
+            ` L ${cityCoords[cityCoords.length - 1].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} L ${cityCoords[0].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} Z`;
+
+          const cityAreaSvg = `
+            <defs>
+              <linearGradient id="reCityGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1f7a6c" stop-opacity="0.22" />
+                <stop offset="100%" stop-color="#1f7a6c" stop-opacity="0.01" />
+              </linearGradient>
+            </defs>
+            <path d="${areaPath}" fill="url(#reCityGrad)" />
+            <polyline points="${cityPoints}" fill="none" stroke="#1f7a6c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+          `;
+
+          const dotsSvg = cityCoords.map((c, idx) =>
+            `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3" fill="#ffffff" stroke="#1f7a6c" stroke-width="2" class="re-point" data-idx="${idx}" style="cursor:pointer;" />`
+          ).join("");
+
+          container.innerHTML = `
+            <svg class="re-svg-box" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" id="reInteractiveSvg">
+              ${gridSvg}
+              ${overlapSvg}
+              ${xTicksSvg}
+              ${natPathSvg}
+              ${cityAreaSvg}
+              <line id="reCrosshairLine" x1="0" y1="${padTop}" x2="0" y2="${padTop + plotH}" stroke="#1f7a6c" stroke-width="1.2" stroke-dasharray="2 2" style="display:none;" />
+              <circle id="reCityHoverCircle" cx="0" cy="0" r="5.5" fill="#1f7a6c" stroke="#ffffff" stroke-width="2" style="display:none;" />
+              <circle id="reNatHoverCircle" cx="0" cy="0" r="4.5" fill="#c97a2b" stroke="#ffffff" stroke-width="1.5" style="display:none;" />
+              ${dotsSvg}
+            </svg>
+          `;
+
+          const svgEl = document.getElementById("reInteractiveSvg");
+          const crosshair = document.getElementById("reCrosshairLine");
+          const cityHoverDot = document.getElementById("reCityHoverCircle");
+          const natHoverDot = document.getElementById("reNatHoverCircle");
+
+          if (svgEl) {
+            svgEl.addEventListener("mousemove", function (e) {
+              const rect = svgEl.getBoundingClientRect();
+              const scaleX = width / rect.width;
+              const mouseSvgX = (e.clientX - rect.left) * scaleX;
+
+              let closestIdx = 0;
+              let minDist = Infinity;
+              cityCoords.forEach((c, i) => {
+                const dist = Math.abs(c.x - mouseSvgX);
+                if (dist < minDist) {
+                  minDist = dist;
+                  closestIdx = i;
+                }
+              });
+
+              const qName = quarters[closestIdx];
+              const cVal = cityVals[closestIdx];
+              const nVal = natVals[closestIdx];
+              const spread = (cVal - nVal).toFixed(2);
+              const spreadSign = Number(spread) > 0 ? "+" : "";
+
+              const cx = cityCoords[closestIdx].x;
+              const cy = cityCoords[closestIdx].y;
+              const ny = getY(nVal);
+
+              if (crosshair) {
+                crosshair.setAttribute("x1", cx.toFixed(1));
+                crosshair.setAttribute("x2", cx.toFixed(1));
+                crosshair.style.display = "block";
+              }
+              if (cityHoverDot) {
+                cityHoverDot.setAttribute("cx", cx.toFixed(1));
+                cityHoverDot.setAttribute("cy", cy.toFixed(1));
+                cityHoverDot.style.display = "block";
+              }
+              if (natHoverDot) {
+                natHoverDot.setAttribute("cx", cx.toFixed(1));
+                natHoverDot.setAttribute("cy", ny.toFixed(1));
+                natHoverDot.style.display = "block";
+              }
+
+              if (tooltip) {
+                tooltip.innerHTML = `
+                  <strong>🗓️ ${escapeHtml(qName)}</strong>
+                  <div>${escapeHtml(cityName)}: <b style="color:#8fe0cd;">${formatNumber(cVal, 2)}</b></div>
+                  <div>National 50-City: <b style="color:#f3bc85;">${formatNumber(nVal, 2)}</b></div>
+                  <div style="margin-top:3px; border-top:1px dashed rgba(255,255,255,.2); padding-top:3px; font-size:10.5px;">
+                    Spread: <b style="color:${Number(spread) >= 0 ? '#34d399' : '#f87171'}">${spreadSign}${spread} pts</b> vs National
+                  </div>
+                `;
+
+                const containerRect = container.getBoundingClientRect();
+                let tipX = e.clientX - containerRect.left + 15;
+                let tipY = e.clientY - containerRect.top - 20;
+                if (tipX + 200 > containerRect.width) tipX -= 220;
+                if (tipY < 10) tipY = 10;
+
+                tooltip.style.left = `${tipX}px`;
+                tooltip.style.top = `${tipY}px`;
+                tooltip.style.display = "block";
+              }
+            });
+
+            svgEl.addEventListener("mouseleave", function () {
+              if (crosshair) crosshair.style.display = "none";
+              if (cityHoverDot) cityHoverDot.style.display = "none";
+              if (natHoverDot) natHoverDot.style.display = "none";
+              if (tooltip) tooltip.style.display = "none";
+            });
+          }
+        }
+
+        else if (mode === "tiers") {
+          if (titleEl) titleEl.textContent = `Carpet Area Rates (₹/sq.ft.) by Unit Size: ${cityName} (FY 2024-25 = 100)`;
+          if (legendEl) {
+            legendEl.innerHTML = `
+              <span class="re-legend-item"><span class="re-legend-line" style="background:#1f7a6c;"></span> <b>Overall Composite</b></span>
+              <span class="re-legend-item"><span class="re-legend-line" style="background:#2e7d32;"></span> <b>Compact (&le;646 sq.ft.)</b></span>
+              <span class="re-legend-item"><span class="re-legend-line" style="background:#c97a2b;"></span> <b>Mid-Size (646–1,184 sq.ft.)</b></span>
+              <span class="re-legend-item"><span class="re-legend-line" style="background:#4f46e5;"></span> <b>Large (&gt;1,184 sq.ft.)</b></span>
+            `;
+          }
+
+          const tierData = cityObj.carpet_price_sqft_by2024 || {};
+          const tierKeys = [
+            { key: "composite", label: "Composite", color: "#1f7a6c" },
+            { key: "compact_lte_646_sqft", label: "Compact (≤646 sq.ft.)", color: "#2e7d32" },
+            { key: "mid_646_to_1184_sqft", label: "Mid-Size (646–1184 sq.ft.)", color: "#c97a2b" },
+            { key: "large_gt_1184_sqft", label: "Large (>1184 sq.ft.)", color: "#4f46e5" }
+          ];
+
+          const quarters = Object.keys(tierData.composite || {});
+          if (quarters.length === 0) return;
+
+          let allPrices = [];
+          tierKeys.forEach(t => {
+            const series = tierData[t.key] || {};
+            quarters.forEach(q => {
+              if (series[q]) allPrices.push(Number(series[q]));
+            });
+          });
+
+          if (allPrices.length === 0) return;
+
+          let rawMin = Math.min(...allPrices);
+          let rawMax = Math.max(...allPrices);
+          let yMin = Math.floor(rawMin / 1000) * 1000 - 500;
+          if (yMin < 0) yMin = 0;
+          let yMax = Math.ceil(rawMax / 1000) * 1000 + 1000;
+          if (yMax - yMin < 2000) yMax = yMin + 3000;
+
+          function getX(idx) {
+            return padLeft + (idx / (quarters.length - 1)) * plotW;
+          }
+          function getY(val) {
+            return padTop + plotH - ((val - yMin) / (yMax - yMin)) * plotH;
+          }
+
+          let gridSvg = "";
+          const yRange = yMax - yMin;
+          const yStep = yRange > 10000 ? 5000 : (yRange > 5000 ? 2000 : 1000);
+          for (let yv = yMin; yv <= yMax; yv += yStep) {
+            const yPos = getY(yv);
+            gridSvg += `
+              <line x1="${padLeft}" y1="${yPos.toFixed(1)}" x2="${width - padRight}" y2="${yPos.toFixed(1)}" stroke="#e2e7df" stroke-dasharray="2 2" stroke-width="1" />
+              <text x="${padLeft - 8}" y="${(yPos + 4).toFixed(1)}" text-anchor="end" font-family="var(--mono)" font-size="10" fill="#8ea89d">₹${formatNumber(yv, 0)}</text>
+            `;
+          }
+
+          let xTicksSvg = "";
+          quarters.forEach((q, idx) => {
+            const xPos = getX(idx);
+            xTicksSvg += `
+              <line x1="${xPos.toFixed(1)}" y1="${(padTop + plotH).toFixed(1)}" x2="${xPos.toFixed(1)}" y2="${(padTop + plotH + 5).toFixed(1)}" stroke="#6d786f" stroke-width="1" />
+              <text x="${xPos.toFixed(1)}" y="${(padTop + plotH + 18).toFixed(1)}" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="#6d786f" font-weight="600">${escapeHtml(q)}</text>
+            `;
+          });
+
+          let linesSvg = "";
+          let dotsSvg = "";
+          tierKeys.forEach(t => {
+            const series = tierData[t.key] || {};
+            const coords = quarters.map((q, idx) => ({
+              q: q,
+              val: Number(series[q] || 0),
+              x: getX(idx),
+              y: getY(Number(series[q] || 0))
+            }));
+
+            const pointsStr = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
+            linesSvg += `<polyline points="${pointsStr}" fill="none" stroke="${t.color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />`;
+
+            coords.forEach(c => {
+              dotsSvg += `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3.5" fill="#ffffff" stroke="${t.color}" stroke-width="2" />`;
+            });
+          });
+
+          container.innerHTML = `
+            <svg class="re-svg-box" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" id="reInteractiveTiersSvg">
+              ${gridSvg}
+              ${xTicksSvg}
+              ${linesSvg}
+              ${dotsSvg}
+              <line id="reTierCrosshair" x1="0" y1="${padTop}" x2="0" y2="${padTop + plotH}" stroke="#1f7a6c" stroke-width="1.2" stroke-dasharray="2 2" style="display:none;" />
+            </svg>
+          `;
+
+          const svgEl = document.getElementById("reInteractiveTiersSvg");
+          const crosshair = document.getElementById("reTierCrosshair");
+          if (svgEl) {
+            svgEl.addEventListener("mousemove", function (e) {
+              const rect = svgEl.getBoundingClientRect();
+              const scaleX = width / rect.width;
+              const mouseSvgX = (e.clientX - rect.left) * scaleX;
+
+              let closestIdx = 0;
+              let minDist = Infinity;
+              quarters.forEach((q, i) => {
+                const dist = Math.abs(getX(i) - mouseSvgX);
+                if (dist < minDist) {
+                  minDist = dist;
+                  closestIdx = i;
+                }
+              });
+
+              const qName = quarters[closestIdx];
+              const cx = getX(closestIdx);
+
+              if (crosshair) {
+                crosshair.setAttribute("x1", cx.toFixed(1));
+                crosshair.setAttribute("x2", cx.toFixed(1));
+                crosshair.style.display = "block";
+              }
+
+              if (tooltip) {
+                let tierLines = "";
+                tierKeys.forEach(t => {
+                  const p = tierData[t.key]?.[qName];
+                  tierLines += `<div><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${t.color}; margin-right:4px;"></span> ${t.label}: <b>₹${formatNumber(p, 0)}/sq.ft.</b></div>`;
+                });
+
+                tooltip.innerHTML = `
+                  <strong>🗓️ ${escapeHtml(qName)} Rates (${escapeHtml(cityName)})</strong>
+                  <div style="margin-top:4px; font-size:11px; line-height:1.5;">${tierLines}</div>
+                `;
+
+                const containerRect = container.getBoundingClientRect();
+                let tipX = e.clientX - containerRect.left + 15;
+                let tipY = e.clientY - containerRect.top - 20;
+                if (tipX + 220 > containerRect.width) tipX -= 240;
+                if (tipY < 10) tipY = 10;
+
+                tooltip.style.left = `${tipX}px`;
+                tooltip.style.top = `${tipY}px`;
+                tooltip.style.display = "block";
+              }
+            });
+
+            svgEl.addEventListener("mouseleave", function () {
+              if (crosshair) crosshair.style.display = "none";
+              if (tooltip) tooltip.style.display = "none";
+            });
+          }
+        }
+      }
+
+      function renderRealEstateLeaderboard() {
+        const tbody = document.getElementById("reLeaderboardBody");
+        if (!tbody) return;
+        const cities = residexData.cities || {};
+        const nat = residexData.national_composite_50_cities?.summary || {};
+
+        const cityEntries = Object.entries(cities).map(([name, data]) => {
+          return {
+            name: name,
+            state: data.state || '',
+            summary: data.summary || {}
+          };
+        });
+
+        // Sort descending by 1Y YoY %
+        cityEntries.sort((a, b) => Number(b.summary.hpi_yoy_pct || 0) - Number(a.summary.hpi_yoy_pct || 0));
+
+        let html = "";
+        cityEntries.forEach((c, idx) => {
+          const s = c.summary;
+          const isActive = c.name === activeReCity;
+          const activeClass = isActive ? "active-city" : "";
+          const rankClass = idx < 3 ? "rank-cell top-3" : "rank-cell";
+
+          html += `
+            <tr class="${activeClass}" data-city="${escapeHtml(c.name)}" title="Click to view ${escapeHtml(c.name)} historical chart">
+              <td class="${rankClass}">#${idx + 1}</td>
+              <td class="name-col">
+                <div class="stock-symbol" style="display:flex; align-items:center; gap:6px;">
+                  <span>${escapeHtml(c.name)}</span>
+                  ${isActive ? '<span style="font-size:10px; background:var(--teal); color:#fff; padding:1px 6px; border-radius:4px;">ACTIVE</span>' : ''}
+                </div>
+                <div class="stock-name">${escapeHtml(c.state)}</div>
+              </td>
+              <td class="price-cell" style="font-size:13.5px;">${formatNumber(s.hpi_index, 2)}</td>
+              <td class="ret-cell">${formatReturnBadge(s.hpi_yoy_pct)}</td>
+              <td class="ret-cell">${formatReturnBadge(s.hpi_cagr_3y)}</td>
+              <td class="ret-cell">${formatReturnBadge(s.hpi_cagr_5y)}</td>
+              <td class="ret-cell">${formatReturnBadge(s.hpi_total_growth_8y)}</td>
+              <td class="price-cell" style="color:var(--ink); font-weight:700;">₹${formatNumber(s.carpet_price_sqft, 0)}</td>
+            </tr>
+          `;
+        });
+
+        // National Benchmark Anchor Row
+        html += `
+          <tr class="national-row" data-city="NATIONAL" title="50-City National Composite Benchmark">
+            <td class="rank-cell" style="color:#82470e;">🇮🇳</td>
+            <td class="name-col">
+              <div class="stock-symbol" style="color:#82470e;">50-City National Composite</div>
+              <div class="stock-name" style="color:#82470e;">National Baseline (NHB Residex)</div>
+            </td>
+            <td class="price-cell" style="color:#82470e; font-weight:700;">${formatNumber(nat.hpi_index, 2)}</td>
+            <td class="ret-cell">${formatReturnBadge(nat.hpi_yoy_pct)}</td>
+            <td class="ret-cell">${formatReturnBadge(nat.hpi_cagr_3y)}</td>
+            <td class="ret-cell">${formatReturnBadge(nat.hpi_cagr_5y)}</td>
+            <td class="ret-cell">${formatReturnBadge(nat.hpi_total_growth_8y)}</td>
+            <td class="price-cell" style="color:#82470e; font-weight:700;">₹${formatNumber(nat.carpet_price_sqft, 0)}</td>
+          </tr>
+        `;
+
+        tbody.innerHTML = html;
+
+        tbody.querySelectorAll("tr[data-city]").forEach(tr => {
+          tr.addEventListener("click", function () {
+            const cName = this.dataset.city;
+            if (cName && cName !== "NATIONAL" && residexData.cities?.[cName]) {
+              setActiveReCity(cName);
+              const hero = document.getElementById("reHeroStrip");
+              if (hero) hero.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+          });
+        });
+      }
+
+      function updateRealEstateCalculator() {
+        const citySelect = document.getElementById("reCalcCity");
+        const tierSelect = document.getElementById("reCalcTier");
+        const carpetSlider = document.getElementById("reCalcCarpetSlider");
+        const loadingSlider = document.getElementById("reCalcLoadingSlider");
+
+        if (!citySelect || !tierSelect || !carpetSlider || !loadingSlider) return;
+
+        const cityName = citySelect.value || activeReCity || "Bengaluru";
+        const tierKey = tierSelect.value || "composite";
+        const carpetArea = Number(carpetSlider.value) || 1000;
+        const loadingPct = Number(loadingSlider.value) || 35;
+
+        const carpetBadge = document.getElementById("reCalcCarpetVal");
+        if (carpetBadge) carpetBadge.textContent = `${formatNumber(carpetArea, 0)} sq.ft.`;
+        const loadingBadge = document.getElementById("reCalcLoadingVal");
+        if (loadingBadge) loadingBadge.textContent = `${loadingPct}%`;
+
+        const cityObj = residexData.cities?.[cityName] || {};
+        const qtr = cityObj.summary?.latest_quarter || "Jun 2026";
+        let carpetRate = 0;
+
+        if (tierKey === "composite") {
+          carpetRate = cityObj.summary?.carpet_price_sqft || 0;
+        } else {
+          carpetRate = cityObj.carpet_price_sqft_by2024?.[tierKey]?.[qtr] || cityObj.summary?.carpet_price_sqft || 0;
+        }
+
+        if (!carpetRate) carpetRate = 10000;
+
+        const L = loadingPct / 100;
+        const sbuaArea = Math.round(carpetArea * (1 + L));
+        const brokerRate = Math.round(carpetRate / (1 + L));
+        const commonArea = sbuaArea - carpetArea;
+        const baseCost = carpetArea * carpetRate;
+        const commonCost = Math.round(baseCost * (L / (1 + L)));
+        const frictionCost = Math.round(baseCost * 0.07);
+        const totalCost = baseCost + frictionCost;
+        const effectiveCarpetRate = Math.round(totalCost / carpetArea);
+        const realityGapPct = (((effectiveCarpetRate - brokerRate) / brokerRate) * 100).toFixed(1);
+
+        const brokerRateEl = document.getElementById("reCalcBrokerRate");
+        if (brokerRateEl) brokerRateEl.textContent = `₹${formatNumber(brokerRate, 0)} / sq.ft.`;
+        const brokerSubEl = document.getElementById("reCalcBrokerSub");
+        if (brokerSubEl) brokerSubEl.textContent = `Quoted on ${formatNumber(sbuaArea, 0)} sq.ft. gross area`;
+
+        const carpetRateEl = document.getElementById("reCalcCarpetRate");
+        if (carpetRateEl) carpetRateEl.textContent = `₹${formatNumber(carpetRate, 0)} / sq.ft.`;
+        const carpetSubEl = document.getElementById("reCalcCarpetSub");
+        if (carpetSubEl) carpetSubEl.textContent = `Paid for ${formatNumber(carpetArea, 0)} sq.ft. usable space`;
+
+        const livingAreaEl = document.getElementById("reCalcLivingAreaText");
+        if (livingAreaEl) livingAreaEl.textContent = `${formatNumber(carpetArea, 0)} sq.ft. (${formatInrLakhCrore(baseCost - commonCost)})`;
+
+        const commonAreaEl = document.getElementById("reCalcCommonAreaText");
+        if (commonAreaEl) commonAreaEl.textContent = `+${formatNumber(commonArea, 0)} sq.ft. (${formatInrLakhCrore(commonCost)})`;
+
+        const baseCostEl = document.getElementById("reCalcBaseCostText");
+        if (baseCostEl) baseCostEl.textContent = formatInrLakhCrore(baseCost);
+
+        const frictionEl = document.getElementById("reCalcFrictionText");
+        if (frictionEl) frictionEl.textContent = `+${formatInrLakhCrore(frictionCost)}`;
+
+        const totalCostEl = document.getElementById("reCalcTotalCostText");
+        if (totalCostEl) totalCostEl.textContent = formatInrLakhCrore(totalCost);
+
+        const insightEl = document.getElementById("reCalcInsightText");
+        if (insightEl) {
+          insightEl.innerHTML = `
+            💡 <strong>KYF Reality Check:</strong> The builder brochure quotes <strong>₹${formatNumber(brokerRate, 0)}/sq.ft.</strong> on paper. But after absorbing <strong>${loadingPct}% common area loading</strong> (${formatNumber(commonArea, 0)} sq.ft. of corridors/lifts) and <strong>7% statutory registration friction</strong>, your true all-in cost per livable square foot is <strong>₹${formatNumber(effectiveCarpetRate, 0)}/sq.ft.</strong> &mdash; an effective <strong>+${realityGapPct}% premium</strong> over the headline advertisement!
+          `;
+        }
+      }
+
+      function setActiveReCity(cityName) {
+        if (!residexData.cities?.[cityName]) return;
+        activeReCity = cityName;
+
+        const citySelect = document.getElementById("reCitySelect");
+        if (citySelect && citySelect.value !== cityName) citySelect.value = cityName;
+        const calcCitySelect = document.getElementById("reCalcCity");
+        if (calcCitySelect && calcCitySelect.value !== cityName) calcCitySelect.value = cityName;
+
+        renderRealEstateHero(cityName);
+        renderRealEstateChart(cityName, activeReViewMode);
+        renderRealEstateLeaderboard();
+        updateRealEstateCalculator();
+      }
+
+      function renderRealEstate() {
+        if (!residexData.cities) return;
+
+        renderRealEstateAnchor();
+
+        const citySelect = document.getElementById("reCitySelect");
+        const calcCitySelect = document.getElementById("reCalcCity");
+        const cityNames = Object.keys(residexData.cities);
+
+        if (citySelect) {
+          citySelect.innerHTML = cityNames.map(c => `<option value="${escapeHtml(c)}" ${c === activeReCity ? 'selected' : ''}>${escapeHtml(c)} (${escapeHtml(residexData.cities[c].state || '')})</option>`).join("");
+        }
+        if (calcCitySelect) {
+          calcCitySelect.innerHTML = cityNames.map(c => `<option value="${escapeHtml(c)}" ${c === activeReCity ? 'selected' : ''}>${escapeHtml(c)}</option>`).join("");
+        }
+
+        renderRealEstateHero(activeReCity);
+        renderRealEstateChart(activeReCity, activeReViewMode);
+        renderRealEstateLeaderboard();
+        updateRealEstateCalculator();
       }
 
       // Outlier detection for corporate action anomalies & illiquid penny spikes
@@ -1498,6 +3051,7 @@
       function getSectionDisplayName(sectionKey) {
         switch (sectionKey) {
           case "macro": return "🏛️ Sovereign Yields & Economic Baseline";
+          case "realestate": return "🏡 Real Estate & Housing Price Index";
           case "metals": return "🪙 Precious Metals";
           case "indices": return "📊 Market Indices & Valuations";
           case "mf": return "🌱 Top 10 Mutual Funds";
@@ -1509,6 +3063,22 @@
       function getSectionShareText(sectionKey) {
         const meta = getHorizonMeta(selectedHorizon);
         const asOf = getFormattedAsOf();
+
+        if (sectionKey === "realestate") {
+          const nat = residexData.national_composite_50_cities?.summary || {};
+          const cityKey = activeReCity || "Bengaluru";
+          const cityObj = (residexData.cities || {})[cityKey] || {};
+          const citySummary = cityObj.summary || {};
+          const cYoy = citySummary.hpi_yoy_pct !== undefined ? (citySummary.hpi_yoy_pct > 0 ? "+" : "") + citySummary.hpi_yoy_pct.toFixed(2) + "%" : "—";
+          const cPrice = citySummary.carpet_price_sqft ? "₹" + formatNumber(citySummary.carpet_price_sqft, 0) + "/sq.ft." : "—";
+          const cCagr5 = citySummary.hpi_cagr_5y !== undefined ? citySummary.hpi_cagr_5y.toFixed(2) + "% p.a." : "—";
+          return `🏡 Real Estate & Housing Price Index (${nat.latest_quarter || "NHB RESIDEX"}):\n` +
+            `• 50-City National Composite: ${nat.hpi_index || 101.96} HPI (+${nat.hpi_yoy_pct || 1.56}% YoY) | ₹${formatNumber(nat.carpet_price_sqft || 5495, 0)}/sq.ft.\n` +
+            `• ${cityKey}: ${citySummary.hpi_index || "—"} HPI (${cYoy} YoY) | Carpet: ${cPrice}\n` +
+            `• 5Y Annualized CAGR: ${cCagr5} (vs National: ${nat.hpi_cagr_5y || 4.83}%)\n` +
+            `• 8Y Total Appreciation: +${citySummary.hpi_total_growth_8y || "—"}% (2018–2026 spliced)\n\n` +
+            `More at vividnova.com/kyf/market-performance.html`;
+        }
 
         if (sectionKey === "macro") {
           const m = pulseData.macro || {};
@@ -1671,6 +3241,7 @@
 
         if (sectionKey === "metals") height = 500;
         else if (sectionKey === "macro") height = 650;
+        else if (sectionKey === "realestate") height = 740;
         else if (sectionKey === "indices") height = 640;
         else if (sectionKey === "mf" || sectionKey === "equities") height = 820;
 
@@ -1719,7 +3290,7 @@
         ctx.fillStyle = "#8fe0cd";
         ctx.fillText(dateStr, width - 48 - dateW + 12, 59);
 
-        if (sectionKey !== "macro") {
+        if (sectionKey !== "macro" && sectionKey !== "realestate") {
           const horizonStr = `⏱️ ${meta.short}`;
           const horizW = ctx.measureText(horizonStr).width + 24;
           ctx.fillStyle = "#1f7a6c";
@@ -1727,6 +3298,15 @@
           ctx.fill();
           ctx.fillStyle = "#ffffff";
           ctx.fillText(horizonStr, width - 48 - dateW - horizW - 10 + 12, 59);
+        } else if (sectionKey === "realestate") {
+          const nat = residexData.national_composite_50_cities?.summary || {};
+          const qtrStr = `🏡 ${nat.latest_quarter || 'Jun 2026'}`;
+          const qtrW = ctx.measureText(qtrStr).width + 24;
+          ctx.fillStyle = "#1f7a6c";
+          drawCanvasRoundedRect(ctx, width - 48 - dateW - qtrW - 10, 42, qtrW, 26, 13);
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText(qtrStr, width - 48 - dateW - qtrW - 10 + 12, 59);
         }
 
         // Section Title & Subtitle
@@ -1735,6 +3315,9 @@
         if (sectionKey === "macro") {
           secTitle = "🏛️ Sovereign Yields & Economic Baseline";
           secSubtitle = "Spot inflation benchmarks, tax-free sovereign yields, and liquid hurdle rates (% p.a. • horizon agnostic)";
+        } else if (sectionKey === "realestate") {
+          secTitle = "🏡 Real Estate Benchmark & Housing Price Index";
+          secSubtitle = "National Housing Bank (NHB RESIDEX) 50-city benchmark, spliced 33-quarter growth & RERA carpet rates";
         } else if (sectionKey === "metals") {
           secTitle = "🪙 Precious Metals Benchmark";
           secSubtitle = `Retail spot bullion prices and ${meta.label} returns (via ETFs)`;
@@ -1822,6 +3405,82 @@
           ctx.fillStyle = "#34d399";
           ctx.font = "bold 16px 'SF Mono', Cascadia Code, monospace";
           ctx.fillText(`+${spread}% tax-free real yield over CPI`, 270, bannerY + 32);
+        }
+
+        else if (sectionKey === "realestate") {
+          const nat = residexData.national_composite_50_cities?.summary || {};
+          const cityKey = activeReCity || "Bengaluru";
+          const cityObj = (residexData.cities || {})[cityKey] || {};
+          const citySummary = cityObj.summary || {};
+
+          const boxes = [
+            { lbl: "50-CITY NATIONAL HPI", val: `${nat.hpi_index || 101.96}`, sub: `YoY: ${(nat.hpi_yoy_pct || 0) > 0 ? '+' : ''}${nat.hpi_yoy_pct || 1.56}%`, isBench: true },
+            { lbl: "COMPOSITE CARPET RATE", val: `₹${formatNumber(nat.carpet_price_sqft || 5495, 0)}`, sub: "50-City National Average /sq.ft.", isBench: false },
+            { lbl: "5Y ANNUALIZED CAGR", val: `${nat.hpi_cagr_5y !== undefined ? nat.hpi_cagr_5y.toFixed(2) : '4.83'}%`, sub: "National Housing Return (2021–26)", isBench: false },
+            { lbl: "8Y SPLICED APPRECIATION", val: `+${nat.hpi_total_growth_8y || '10.02'}%`, sub: "33-Quarter Continuous Curve", isBench: false }
+          ];
+
+          const colW = 260;
+          const rowH = 120;
+          const gapX = 20;
+          const startY = 185;
+
+          boxes.forEach((b, idx) => {
+            const bx = 48 + idx * (colW + gapX);
+            const by = startY;
+
+            ctx.fillStyle = b.isBench ? "rgba(201, 122, 43, 0.12)" : "rgba(255, 255, 255, 0.04)";
+            drawCanvasRoundedRect(ctx, bx, by, colW, rowH, 12);
+            ctx.fill();
+            ctx.strokeStyle = b.isBench ? "rgba(201, 122, 43, 0.4)" : "rgba(255, 255, 255, 0.1)";
+            ctx.stroke();
+
+            ctx.fillStyle = b.isBench ? "#dca368" : "#8ea89d";
+            ctx.font = "bold 11px 'SF Mono', Cascadia Code, monospace";
+            ctx.fillText(b.lbl, bx + 16, by + 30);
+
+            ctx.fillStyle = b.isBench ? "#f3bc85" : "#ffffff";
+            ctx.font = "bold 24px 'SF Mono', Cascadia Code, monospace";
+            ctx.fillText(b.val, bx + 16, by + 74);
+
+            ctx.fillStyle = "#8ea89d";
+            ctx.font = "11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            ctx.fillText(b.sub, bx + 16, by + 102);
+          });
+
+          // Focus Metro Panel
+          const cityCardY = 330;
+          ctx.fillStyle = "rgba(31, 122, 108, 0.14)";
+          drawCanvasRoundedRect(ctx, 48, cityCardY, width - 96, 175, 14);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(31, 122, 108, 0.45)";
+          ctx.stroke();
+
+          ctx.fillStyle = "#8fe0cd";
+          ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+          ctx.fillText(`📍 City Focus: ${cityKey} (${cityObj.state || ''})`, 72, cityCardY + 36);
+
+          ctx.font = "bold 13px 'SF Mono', Cascadia Code, monospace";
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText(`• Latest HPI: ${citySummary.hpi_index || '—'} (${(citySummary.hpi_yoy_pct || 0) > 0 ? '+' : ''}${citySummary.hpi_yoy_pct || 0}% YoY)`, 72, cityCardY + 76);
+          ctx.fillText(`• Usable Carpet Price: ₹${formatNumber(citySummary.carpet_price_sqft || 0, 0)}/sq.ft. (${(citySummary.carpet_price_yoy_pct || 0) > 0 ? '+' : ''}${citySummary.carpet_price_yoy_pct || 0}% YoY)`, 72, cityCardY + 106);
+          ctx.fillText(`• 3Y / 5Y CAGR: ${citySummary.hpi_cagr_3y || 0}% / ${citySummary.hpi_cagr_5y || 0}% p.a.  |  8-Year Total Gain: +${citySummary.hpi_total_growth_8y || 0}%`, 72, cityCardY + 136);
+
+          // Reality Check Banner
+          const bannerY = 530;
+          ctx.fillStyle = "rgba(201, 122, 43, 0.16)";
+          drawCanvasRoundedRect(ctx, 48, bannerY, width - 96, 70, 10);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(201, 122, 43, 0.4)";
+          ctx.stroke();
+
+          ctx.fillStyle = "#f3bc85";
+          ctx.font = "bold 13.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+          ctx.fillText("💡 Carpet vs. Super Built-Up Reality Check:", 70, bannerY + 28);
+
+          ctx.fillStyle = "#eef1ea";
+          ctx.font = "12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+          ctx.fillText("Brokers market gross Super Built-Up area. Factoring 35% common area loading + 7% stamp duty friction expands actual livable space cost by +44.5%.", 70, bannerY + 50);
         }
 
         else if (sectionKey === "metals") {
@@ -2140,6 +3799,17 @@
             this.setAttribute("aria-selected", "true");
             selectedHorizon = this.dataset.horizon;
 
+            const horizonWindowDesc = document.getElementById("horizonWindowDesc");
+            const horizonDescMap = {
+              "1m": "1-Month Trailing Return (Short-term momentum & sentiment)",
+              "3m": "3-Month Trailing Return (Quarterly trend review)",
+              "6m": "6-Month Trailing Return (Mid-term trend & recovery)",
+              "1y": "1-Year Trailing Cumulative Return (Annual benchmark)"
+            };
+            if (horizonWindowDesc) {
+              horizonWindowDesc.textContent = horizonDescMap[selectedHorizon] || "";
+            }
+
             renderPreciousMetals();
             renderIndices();
             renderMutualFunds();
@@ -2428,15 +4098,127 @@
             }
           });
         }
+
+        // Real Estate Bindings
+        const reCitySelect = document.getElementById("reCitySelect");
+        if (reCitySelect) {
+          reCitySelect.addEventListener("change", function () {
+            setActiveReCity(this.value);
+          });
+        }
+
+        const reHpiBtn = document.getElementById("reViewModeHpi");
+        const reTiersBtn = document.getElementById("reViewModeTiers");
+        if (reHpiBtn && reTiersBtn) {
+          reHpiBtn.addEventListener("click", function () {
+            activeReViewMode = "hpi";
+            this.classList.add("active");
+            this.setAttribute("aria-selected", "true");
+            reTiersBtn.classList.remove("active");
+            reTiersBtn.setAttribute("aria-selected", "false");
+            renderRealEstateChart(activeReCity, "hpi");
+          });
+          reTiersBtn.addEventListener("click", function () {
+            activeReViewMode = "tiers";
+            this.classList.add("active");
+            this.setAttribute("aria-selected", "true");
+            reHpiBtn.classList.remove("active");
+            reHpiBtn.setAttribute("aria-selected", "false");
+            renderRealEstateChart(activeReCity, "tiers");
+          });
+        }
+
+        const calcCity = document.getElementById("reCalcCity");
+        const calcTier = document.getElementById("reCalcTier");
+        const calcCarpet = document.getElementById("reCalcCarpetSlider");
+        const calcLoading = document.getElementById("reCalcLoadingSlider");
+
+        if (calcCity) {
+          calcCity.addEventListener("change", function () {
+            if (this.value !== activeReCity) {
+              setActiveReCity(this.value);
+            } else {
+              updateRealEstateCalculator();
+            }
+          });
+        }
+        if (calcTier) {
+          calcTier.addEventListener("change", updateRealEstateCalculator);
+        }
+        if (calcCarpet) {
+          calcCarpet.addEventListener("input", updateRealEstateCalculator);
+        }
+        if (calcLoading) {
+          calcLoading.addEventListener("input", updateRealEstateCalculator);
+        }
+      }
+
+      // ==========================================
+      // SCROLLSPY FOR SECTION NAVIGATION TOOLBAR
+      // ==========================================
+      function initScrollSpy() {
+        const sections = [
+          { id: "section-macro", key: "macro" },
+          { id: "section-realestate", key: "realestate" },
+          { id: "section-metals", key: "metals" },
+          { id: "section-indices", key: "indices" },
+          { id: "section-mf", key: "mf" },
+          { id: "section-equities", key: "equities" }
+        ];
+
+        const links = document.querySelectorAll(".sec-nav-link");
+        const jumpLinksContainer = document.getElementById("sectionJumpLinks");
+        if (links.length === 0) return;
+
+        function onScroll() {
+          const isCompact = window.innerHeight <= 700 || window.innerWidth <= 768;
+          const scrollPos = window.scrollY + (isCompact ? 90 : 170);
+          let currentSec = "macro";
+
+          for (let i = 0; i < sections.length; i++) {
+            const el = document.getElementById(sections[i].id);
+            if (el && el.offsetTop <= scrollPos) {
+              currentSec = sections[i].key;
+            }
+          }
+
+          links.forEach(link => {
+            if (link.dataset.sec === currentSec) {
+              const wasActive = link.classList.contains("active");
+              link.classList.add("active");
+              if (!wasActive && window.innerWidth <= 768 && jumpLinksContainer) {
+                link.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+              }
+            } else {
+              link.classList.remove("active");
+            }
+          });
+        }
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+
+        // Smooth scroll link into view on click in horizontal scroller
+        links.forEach(link => {
+          link.addEventListener("click", () => {
+            if (window.innerWidth <= 768 && jumpLinksContainer) {
+              setTimeout(() => {
+                link.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+              }, 60);
+            }
+          });
+        });
       }
 
       // Initial Render
       renderMacroRates();
+      renderRealEstate();
       renderPreciousMetals();
       renderIndices();
       renderMutualFunds();
       renderEquities();
       bindEvents();
+      initScrollSpy();
     })();
   </script>
 </body>

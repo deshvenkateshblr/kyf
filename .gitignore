@@ -365,3 +365,7 @@ FodyWeavers.xsd
 # Admin market data downloader cache
 .cache/
 FodyWeavers.xsd
+
+# KYF Daily Sync Task Log
+admin/daily_sync.log
+FodyWeavers.xsd
