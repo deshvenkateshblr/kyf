@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Calculate true livable carpet area rates, builder super built-up loading, and total acquisition outlay using official National Housing Bank (NHB RESIDEX) real estate benchmarks.">
+  <meta name="theme-color" content="#1f7a6c">
+  <title>Carpet vs. Super Built-Up Reality Check | Know Your Finance (KYF)</title>
+  <link rel="icon" href="css/kyf_logo.png">
+  <link rel="stylesheet" href="css/real-estate-calculator.css">
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <div class="nav-left">
+        <a href="index.html" aria-label="KYF home"><img src="css/kyf_logo.png" alt="KYF — Know Your Finance"></a>
+        <a href="market-performance.html#section-realestate" class="back-btn">&larr; Back to Market Benchmarks</a>
+      </div>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="index.html#dimensions">3 Dimensions</a>
+        <a href="index.html#journey">How it works</a>
+        <a href="index.html#outputs">What you get</a>
+        <a href="cadence.html">Cadence</a>
+        <a href="market-performance.html">Market Benchmarks</a>
+        <a href="index.html#trust">Privacy</a>
+        <input type="file" id="kyfFileInput" accept=".kyf,.json" style="display:none;">
+        <button type="button" class="nav-btn secondary" id="navOpenFileBtn" title="Open saved .kyf data file">📂 Open</button>
+        <button type="button" class="nav-btn primary" id="navSaveDataBtn" title="Save data as .kyf file">💾 Save Data</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="calc-hero">
+    <div class="wrap">
+      <div class="hero-content">
+        <p class="eyebrow"><span class="badge-dot"></span> Real Estate Decision Tool &bull; NHB RESIDEX Benchmarks</p>
+        <h1>"Carpet vs. Super Built-Up" Reality Check</h1>
+        <p class="lede">Brokers market gross Super Built-Up area rates that inflate common space. Quantify builder loading, convert headline quotes to true RERA usable carpet pricing, and factor statutory acquisition friction (~7% Stamp Duty &amp; Registration) using official National Housing Bank benchmark data.</p>
+        <div class="hero-meta-row">
+          <span class="hero-badge">🏛️ Source: <strong>National Housing Bank (NHB RESIDEX)</strong></span>
+          <span class="hero-badge">📐 Standard: <strong>RERA Net Livable Carpet Area</strong></span>
+          <span class="hero-badge">📍 Baseline: <strong>50-City National Composite</strong></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN CALCULATOR -->
+  <main class="wrap calc-section">
+    <div class="re-calc-card" id="reRealityCheckCalc">
+      <div class="re-calc-header">
+        <div>
+          <h2 class="re-calc-title">
+            <span>📐 Interactive Living Space &amp; Total Acquisition Outlay</span>
+          </h2>
+          <p class="re-calc-desc">
+            Adjust the carpet area and builder loading percentage. Rates automatically update from live NHB RESIDEX carpet benchmarks across 11 major metropolitan areas and 4 unit size tiers.
+          </p>
+        </div>
+      </div>
+
+      <div class="re-calc-grid">
+        <!-- Left inputs pane -->
+        <div class="re-calc-inputs-pane">
+          <div style="margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label class="control-label" for="reCalcCity">Target City</label>
+              <select id="reCalcCity" class="segment-select">
+                <!-- Populated via JS -->
+              </select>
+            </div>
+            <div>
+              <label class="control-label" for="reCalcTier">Unit Size Tier</label>
+              <select id="reCalcTier" class="segment-select">
+                <option value="composite">Overall Composite</option>
+                <option value="compact_lte_646_sqft">Compact (&le; 646 sq.ft.)</option>
+                <option value="mid_646_to_1184_sqft">Mid-Size (646–1,184 sq.ft.)</option>
+                <option value="large_gt_1184_sqft">Large (&gt; 1,184 sq.ft.)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Usable Carpet Area Slider -->
+          <div class="re-slider-group">
+            <div class="re-slider-header">
+              <span class="re-slider-label">Usable RERA Carpet Area</span>
+              <span class="re-slider-value-badge" id="reCalcCarpetVal">1,000 sq.ft.</span>
+            </div>
+            <input type="range" id="reCalcCarpetSlider" class="re-range-input" min="400" max="2500" step="25" value="1000" aria-label="Usable RERA Carpet Area">
+            <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:4px;">
+              <span>400 sq.ft. (1BHK)</span>
+              <span>1,000 sq.ft. (2/3BHK)</span>
+              <span>2,500 sq.ft. (Luxury 4BHK)</span>
+            </div>
+          </div>
+
+          <!-- Builder Super Built-Up Loading Slider -->
+          <div class="re-slider-group" style="margin-bottom: 8px;">
+            <div class="re-slider-header">
+              <span class="re-slider-label">Builder Super Built-Up Loading %</span>
+              <span class="re-slider-value-badge" id="reCalcLoadingVal" style="color:var(--amber); background:var(--amber-soft);">35%</span>
+            </div>
+            <input type="range" id="reCalcLoadingSlider" class="re-range-input" min="20" max="45" step="1" value="35" aria-label="Builder Super Built-Up Loading percentage">
+            <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:4px;">
+              <span>20% (Low Loading)</span>
+              <span>35% (Typical Metro)</span>
+              <span>45% (High Loading)</span>
+            </div>
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="preset-chips-row">
+            <span style="font-family:var(--mono); font-size:10.5px; color:var(--muted); width:100%; margin-bottom:2px;">Quick Unit Presets:</span>
+            <button type="button" class="preset-chip" data-carpet="550" data-loading="30" data-tier="compact_lte_646_sqft">1BHK (550 sq.ft. &bull; 30%)</button>
+            <button type="button" class="preset-chip" data-carpet="1000" data-loading="35" data-tier="mid_646_to_1184_sqft">2/3BHK (1000 sq.ft. &bull; 35%)</button>
+            <button type="button" class="preset-chip" data-carpet="1500" data-loading="38" data-tier="large_gt_1184_sqft">Spacious 3BHK (1500 sq.ft. &bull; 38%)</button>
+            <button type="button" class="preset-chip" data-carpet="2200" data-loading="40" data-tier="large_gt_1184_sqft">Luxury 4BHK (2200 sq.ft. &bull; 40%)</button>
+          </div>
+        </div>
+
+        <!-- Right results pane -->
+        <div class="re-calc-results-pane">
+          <div>
+            <div class="re-calc-rates-row">
+              <div class="re-rate-box broker">
+                <div class="re-rate-lbl">Brochure Quoted Rate (SBUA)</div>
+                <div class="re-rate-val" id="reCalcBrokerRate">₹10,852 / sq.ft.</div>
+                <div class="re-rate-sub" id="reCalcBrokerSub">Quoted on 1,350 sq.ft. gross area</div>
+              </div>
+              <div class="re-rate-box carpet">
+                <div class="re-rate-lbl">True Livable Carpet Rate</div>
+                <div class="re-rate-val" id="reCalcCarpetRate">₹14,650 / sq.ft.</div>
+                <div class="re-rate-sub" id="reCalcCarpetSub">Paid for 1,000 sq.ft. usable space</div>
+              </div>
+            </div>
+
+            <div class="re-breakdown-list">
+              <div class="re-breakdown-row">
+                <span>Usable Living Space:</span>
+                <strong id="reCalcLivingAreaText">1,000 sq.ft.</strong>
+              </div>
+              <div class="re-breakdown-row">
+                <span>Common Area "Air / Loading Billed":</span>
+                <strong id="reCalcCommonAreaText" style="color:#82470e;">+350 sq.ft. (₹37.98 L)</strong>
+              </div>
+              <div class="re-breakdown-row">
+                <span>Base Agreement Cost:</span>
+                <strong id="reCalcBaseCostText">₹1.465 Cr</strong>
+              </div>
+              <div class="re-breakdown-row">
+                <span>Stamp Duty &amp; Registration Friction (~7.0%):</span>
+                <strong id="reCalcFrictionText" style="color:var(--rose);">+₹10.26 L</strong>
+              </div>
+              <div class="re-breakdown-row total">
+                <span>Total All-In Acquisition Outlay:</span>
+                <span class="val" id="reCalcTotalCostText">₹1.568 Cr</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="re-calc-insight-callout" id="reCalcInsightText">
+            <!-- Dynamic insight populated via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Educational Explainer Cards -->
+    <section class="edu-section">
+      <div class="edu-header">
+        <h3 class="edu-title">Understanding Property Pricing Reality</h3>
+        <p class="edu-desc">Key principles every residential homebuyer must evaluate before signing an agreement to sell.</p>
+      </div>
+
+      <div class="edu-grid">
+        <div class="edu-card">
+          <div class="edu-card-icon">📐</div>
+          <h4>RERA Carpet Area Standard</h4>
+          <p>Under Section 2(k) of the Real Estate (Regulation and Development) Act 2016, <strong>Carpet Area</strong> is the net usable floor area of an apartment, excluding the area covered by external walls and balcony. By law, builders must disclose carpet area.</p>
+        </div>
+
+        <div class="edu-card">
+          <div class="edu-card-icon">🏢</div>
+          <h4>Super Built-Up Area (SBUA) Loading</h4>
+          <p>Builders calculate Super Built-Up area by adding common spaces (elevators, staircases, generator rooms, corridors, and clubhouses). A 35% loading means that out of every 1,350 sq.ft. billed, 350 sq.ft. is external shared infrastructure.</p>
+        </div>
+
+        <div class="edu-card">
+          <div class="edu-card-icon">⚖️</div>
+          <h4>The Headline Rate Mirage</h4>
+          <p>A builder quoting ₹8,000/sq.ft. with 40% loading has a true livable carpet rate of <strong>₹11,200/sq.ft.</strong> That is more expensive than a competitor quoting ₹9,000/sq.ft. with 20% loading (₹10,800/sq.ft. carpet area).</p>
+        </div>
+
+        <div class="edu-card">
+          <div class="edu-card-icon">🏛️</div>
+          <h4>Sunk Statutory Friction</h4>
+          <p>Stamp Duty (5% to 7% state-dependent) and Registration (1%) are non-recoverable transaction friction. On a ₹1.5 Cr agreement, over ₹10 Lakhs is paid upfront before home loan disbursement or interior fitout expenses.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- STICKY FEEDBACK FOOTER -->
+  <footer class="sticky-footer" role="contentinfo">
+    <span>Comments, questions, feedback? Write to</span>
+    <a href="mailto:info@vividnova.com">info@vividnova.com</a>
+  </footer>
+
+  <!-- DATASETS -->
+  <script src="data/market-realestate.js"></script>
+
+  <!-- CALCULATOR SCRIPT -->
+  <script src="js/real-estate-calculator.js"></script>
+</body>
+</html>
+
