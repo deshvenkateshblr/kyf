@@ -14,6 +14,12 @@
     <File Path="data/market-realestate.js" />
     <File Path="data/nhb_residex_kyf.json" />
   </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/cadence-todo.md" />
+    <File Path="docs/data.md" />
+    <File Path="docs/kyf_family_portfolio_tracker_architecture_roadmap.md" />
+    <File Path="docs/todo.md" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path="cadence.html" />
     <File Path="index.html" />

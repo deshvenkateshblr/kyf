@@ -4,6 +4,8 @@
 
 ---
 
+AD1:  Change Pyramid to Goals, Cadence and Freedom
+
 ## 🚀 Immediate Next Implementation: Review Market Performance
 
 > **Status:** 🟡 In Design & Architecture (First Priority)  
