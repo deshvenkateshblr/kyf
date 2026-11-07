@@ -561,7 +561,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const groupIsPositive = group.horizonReturnPct >= 0;
       const groupReturnClass = groupIsPositive ? "positive" : "negative";
 
-      // Goal Specific Sub-Header (Progress Bar & Horizon Badge)
+      // Goal Specific Sub-Header (Progress Bar, Dual-Unit Accumulation, Divergence & Horizon Badge)
       let goalHeaderExtra = "";
       if (activeDimension === "goal" && group.goalMeta) {
         const meta = group.goalMeta;
@@ -583,10 +583,31 @@ document.addEventListener("DOMContentLoaded", async () => {
           `;
         }
 
+        let dualUnitHTML = "";
+        if (group.dualUnit && group.dualUnit.enabled) {
+          const du = group.dualUnit;
+          const icon = du.unitType === "GRAMS_GOLD" ? "🪙" : "🏠";
+          dualUnitHTML = `
+            <div class="dual-unit-row">
+              <span class="dual-unit-badge mono-num" title="Physical Accumulation: ${du.accumulatedUnits.toLocaleString("en-IN")} of ${du.targetUnits.toLocaleString("en-IN")} ${escapeHTML(du.unitLabel)} (${du.progressPct}%)">
+                ${icon} ${du.accumulatedUnits.toLocaleString("en-IN")} / ${du.targetUnits.toLocaleString("en-IN")} ${escapeHTML(du.unitLabel)} &bull; ${du.progressPct}%
+              </span>
+              ${du.hasDivergence ? `
+                <span class="divergence-alert-pill" title="${escapeHTML(du.divergenceMessage)}">
+                  ⚠️ Price Divergence: +${du.divergencePct}%
+                </span>
+              ` : ""}
+            </div>
+          `;
+        }
+
         goalHeaderExtra = `
           <div class="goal-summary-meta">
-            <span class="goal-horizon-tag">⏳ ${yearsRemaining === 0 ? "Target Met" : `${yearsRemaining} yrs (${targetYear})`}</span>
-            ${progressBarHTML}
+            <div class="goal-meta-top">
+              <span class="goal-horizon-tag">⏳ ${yearsRemaining === 0 ? "Target Met" : `${yearsRemaining} yrs (${targetYear})`}</span>
+              ${progressBarHTML}
+            </div>
+            ${dualUnitHTML}
           </div>
         `;
       }
@@ -601,6 +622,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <span class="tree-group-title">
                   ${escapeHTML(group.label)}
                   <span class="tree-group-count">${group.holdings.length}</span>
+                  ${group.physicalSummary ? `<span class="physical-summary-badge mono-num" title="Aggregated Physical Units">${escapeHTML(group.physicalSummary.label)}</span>` : ""}
                 </span>
                 <span class="tree-group-mobile-sub mono-num">
                   ${group.allocationPct.toFixed(1)}% alloc &bull; Inv: ${formatINR(group.totalInvested, true)}
@@ -755,23 +777,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (isChecked) {
       // User turned ON Demo Data: stash any current user holdings so they are never lost
       if (rawHoldings && rawHoldings.length > 0 && userHoldings.length === 0) {
-        userHoldings = rawHoldings;
-        userGoals = rawGoals;
+        userHoldings = [...rawHoldings];
+        userGoals = [...rawGoals];
         localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
         localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
       }
+      // Keep demo data in memory only — DO NOT overwrite user's IndexedDB!
       rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
       rawGoals = window.KYF_PORTFOLIO_DATA.getDemoGoals();
-      await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
-      await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
       handleResetSelections();
       showToast("✓ Filled with demo family data", "success");
     } else {
-      // User turned OFF Demo Data: reset back to user's personal data
-      rawHoldings = Array.isArray(userHoldings) ? [...userHoldings] : [];
-      rawGoals = Array.isArray(userGoals) ? [...userGoals] : [];
-      await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
-      await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
+      // User turned OFF Demo Data: restore from IndexedDB or userHoldings cache
+      const storedHoldings = await window.KYF_PORTFOLIO_DATA.loadHoldingsFromDB();
+      const storedGoals = await window.KYF_PORTFOLIO_DATA.loadGoalsFromDB();
+
+      if (storedHoldings && storedHoldings.length > 0) {
+        rawHoldings = storedHoldings;
+        userHoldings = storedHoldings;
+      } else if (userHoldings && userHoldings.length > 0) {
+        rawHoldings = [...userHoldings];
+        await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+      } else {
+        rawHoldings = [];
+      }
+
+      if (storedGoals && storedGoals.length > 0) {
+        rawGoals = storedGoals;
+        userGoals = storedGoals;
+      } else if (userGoals && userGoals.length > 0) {
+        rawGoals = [...userGoals];
+        await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
+      } else {
+        rawGoals = [];
+      }
+
       handleResetSelections();
       if (rawHoldings.length > 0) {
         showToast(`✓ Switched to your portfolio (${rawHoldings.length} holdings)`, "success");
@@ -974,22 +1014,28 @@ document.addEventListener("DOMContentLoaded", async () => {
       els.demoDataToggle.checked = isDemoMode;
     }
 
+    // Always inspect IndexedDB for user's stored holdings & goals
+    const storedHoldings = await window.KYF_PORTFOLIO_DATA.loadHoldingsFromDB();
+    const storedGoals = await window.KYF_PORTFOLIO_DATA.loadGoalsFromDB();
+
+    if (storedHoldings && storedHoldings.length > 0 && userHoldings.length === 0) {
+      userHoldings = storedHoldings;
+    }
+    if (storedGoals && storedGoals.length > 0 && userGoals.length === 0) {
+      userGoals = storedGoals;
+    }
+
     if (isDemoMode) {
-      // Demo Data mode active: populate demo family dataset
+      // Demo Data mode active: populate demo family dataset strictly in memory (DO NOT overwrite IndexedDB)
       rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
       rawGoals = window.KYF_PORTFOLIO_DATA.getDemoGoals();
-      await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
-      await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
     } else {
       // User Data mode: restore user's stored holdings or start with clean slate
-      const storedHoldings = await window.KYF_PORTFOLIO_DATA.loadHoldingsFromDB();
-      const storedGoals = await window.KYF_PORTFOLIO_DATA.loadGoalsFromDB();
-
       if (storedHoldings && storedHoldings.length > 0) {
         rawHoldings = storedHoldings;
         userHoldings = storedHoldings;
       } else if (userHoldings && userHoldings.length > 0) {
-        rawHoldings = userHoldings;
+        rawHoldings = [...userHoldings];
         await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
       } else {
         rawHoldings = [];
@@ -999,7 +1045,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         rawGoals = storedGoals;
         userGoals = storedGoals;
       } else if (userGoals && userGoals.length > 0) {
-        rawGoals = userGoals;
+        rawGoals = [...userGoals];
         await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
       } else {
         rawGoals = [];

@@ -449,7 +449,21 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           calculatedValue = sqft * livePrice;
           priceLabel = `₹${livePrice.toLocaleString("en-IN")}/sq.ft (NHB)`;
           physicalUnitsLabel = `${sqft.toLocaleString("en-IN")} sq.ft (${city})`;
-          ret1y = 9.8;
+
+          // Real Estate Returns from NHB RESIDEX City Summary
+          const residexCity = window.KYF_RESIDEX && window.KYF_RESIDEX.cities && window.KYF_RESIDEX.cities[city];
+          const citySum = residexCity && residexCity.summary ? residexCity.summary : null;
+          const yoy = citySum && citySum.carpet_price_yoy_pct != null
+            ? Number(citySum.carpet_price_yoy_pct)
+            : (citySum && citySum.hpi_yoy_pct != null ? Number(citySum.hpi_yoy_pct) : 9.8);
+          const qoq = citySum && citySum.carpet_price_qoq_pct != null
+            ? Number(citySum.carpet_price_qoq_pct)
+            : (citySum && citySum.hpi_qoq_pct != null ? Number(citySum.hpi_qoq_pct) : 2.5);
+
+          ret1y = Number(yoy.toFixed(1));
+          ret3m = Number(qoq.toFixed(1));
+          ret6m = Number((((1 + qoq / 100) ** 2 - 1) * 100).toFixed(1));
+          ret1m = Number((((1 + qoq / 100) ** (1 / 3) - 1) * 100).toFixed(1));
           break;
         }
 
