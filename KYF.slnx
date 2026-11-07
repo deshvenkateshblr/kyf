@@ -19,5 +19,6 @@
     <File Path="index.html" />
     <File Path="index_bkup.html" />
     <File Path="market-performance.html" />
+    <File Path="portfolio.html" />
   </Folder>
 </Solution>

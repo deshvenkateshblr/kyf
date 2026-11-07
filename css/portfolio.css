@@ -324,6 +324,82 @@ button {
   color: #ffffff;
 }
 
+/* Demo Data Toggle in Hero Member Panel */
+.hero-member-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(215, 221, 210, 0.7);
+}
+
+.demo-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink);
+  transition: color 0.15s ease;
+}
+
+.demo-checkbox-label:hover {
+  color: var(--teal);
+}
+
+.demo-checkbox-label input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--muted);
+  border-radius: 4px;
+  background: var(--paper);
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  transition: all 0.15s ease;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.demo-checkbox-label input[type="checkbox"]:hover {
+  border-color: var(--teal);
+}
+
+.demo-checkbox-label input[type="checkbox"]:checked {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+
+.demo-checkbox-label input[type="checkbox"]:checked::before {
+  content: "";
+  width: 8px;
+  height: 4px;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+
+.demo-checkbox-text {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--teal-deep);
+}
+
+.demo-checkbox-hint {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
 .eyebrow {
   font-family: var(--mono);
   font-size: 11.5px;
@@ -425,13 +501,43 @@ button {
 }
 
 /* ==========================================================================
-   KPI Summary Ribbon Cards
+   KPI Summary Header & Ribbon Cards (Net Worth, Invested, Gain)
    ========================================================================== */
+.kpi-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 22px 0 12px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.kpi-header-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--teal-deep);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kpi-header-title::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+
 .kpi-ribbon {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
-  margin: 28px 0 24px;
+  margin: 0 0 24px;
 }
 
 .kpi-card {
@@ -639,22 +745,21 @@ button {
   border-color: var(--rose);
 }
 
-/* Secondary Row: 1-Click Multi-Select Pill Strip & Search */
+/* Secondary Row: 1-Click Multi-Select Pill Strip (Row 2, Full Width) */
 .toolbar-pill-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  width: 100%;
   padding-top: 12px;
   border-top: 1px dashed var(--line);
-  flex-wrap: wrap;
 }
 
 .view-pill-strip-wrap {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 1 1 auto;
+  width: 100%;
+  flex: 1 1 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -710,6 +815,20 @@ button {
   padding: 1px 6px;
   border-radius: 999px;
   letter-spacing: -0.01em;
+}
+
+.toolbar-right-utils {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.btn-collapse-util {
+  padding: 5px 12px;
+  font-size: 10.5px;
+  height: 30px;
+  background: var(--paper);
 }
 
 .search-box-wrap {
@@ -1236,6 +1355,10 @@ button {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .kpi-ribbon .accent-networth {
+    grid-column: 1 / -1;
+  }
+
   :root {
     --tree-cols: minmax(200px, 2fr) 1fr 1fr 1fr 90px;
   }
@@ -1320,6 +1443,29 @@ button {
     padding: 1px 5px;
   }
 
+  .hero-member-footer {
+    margin-top: 8px;
+    padding-top: 6px;
+  }
+
+  .demo-checkbox-label {
+    font-size: 11px;
+    gap: 6px;
+  }
+
+  .demo-checkbox-label input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+  }
+
+  .demo-checkbox-text {
+    font-size: 10px;
+  }
+
+  .demo-checkbox-hint {
+    font-size: 9.5px;
+  }
+
   .hero-member-chips::-webkit-scrollbar,
   .nav-links::-webkit-scrollbar,
   .view-tabs-segmented::-webkit-scrollbar,
@@ -1388,11 +1534,25 @@ button {
     flex-shrink: 0;
   }
 
-  /* Compact 2x2 KPI Ribbon on Mobile */
+  .kpi-header-bar {
+    margin: 14px 0 10px;
+    gap: 8px;
+    justify-content: space-between;
+  }
+
+  .kpi-header-title {
+    font-size: 10px;
+  }
+
+  /* Compact 3-Card KPI Ribbon on Mobile (Net Worth full width, Invested & Gain 50/50) */
   .kpi-ribbon {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
-    margin: 12px 0 16px;
+    margin: 0 0 14px;
+  }
+
+  .kpi-ribbon .accent-networth {
+    grid-column: 1 / -1;
   }
 
   .kpi-card {
@@ -1477,10 +1637,21 @@ button {
   }
 
   .toolbar-pill-row {
-    flex-direction: column;
-    align-items: stretch;
+    width: 100%;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line);
+  }
+
+  .toolbar-right-utils {
+    display: flex;
+    align-items: center;
     gap: 8px;
-    padding-top: 10px;
+    width: 100%;
+  }
+
+  .toolbar-right-utils .search-box-wrap {
+    flex: 1 1 auto;
+    width: auto;
   }
 
   .view-pill-strip-wrap {
@@ -1498,11 +1669,6 @@ button {
     white-space: nowrap;
     font-size: 11px;
     padding: 4px 10px;
-  }
-
-  .search-box-wrap {
-    flex: 0 0 auto;
-    width: 100%;
   }
 
   .search-input {

@@ -10,6 +10,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Application State
   let rawHoldings = [];
   let rawGoals = [];
+  let isDemoMode = localStorage.getItem("kyf_demo_mode") !== "false";
+  let userHoldings = [];
+  let userGoals = [];
+  try {
+    const rawUserH = localStorage.getItem("kyf_user_holdings");
+    if (rawUserH) userHoldings = JSON.parse(rawUserH);
+    const rawUserG = localStorage.getItem("kyf_user_goals");
+    if (rawUserG) userGoals = JSON.parse(rawUserG);
+  } catch (e) {
+    userHoldings = [];
+    userGoals = [];
+  }
+
   let activeMemberScope = "ALL";       // "ALL" or Set of string names (e.g. Set(["Rajesh", "Priya"]))
   let activeDimension = "assetClass"; // "assetClass" | "goal" | "custodian" | "member"
   let selectedPills = "ALL";          // "ALL" or Set of string keys within active view
@@ -23,19 +36,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   const els = {
     treegrid: document.getElementById("portfolio-treegrid"),
     heroMemberChips: document.getElementById("hero-member-chips"),
+    demoDataToggle: document.getElementById("demo-data-toggle"),
     kpiNetWorth: document.getElementById("kpi-net-worth"),
     kpiNetWorthSub: document.getElementById("kpi-net-worth-sub"),
     kpiInvested: document.getElementById("kpi-invested"),
     kpiReturnPct: document.getElementById("kpi-return-pct"),
     kpiGainLoss: document.getElementById("kpi-gain-loss"),
-    kpiTopAlloc: document.getElementById("kpi-top-alloc"),
-    kpiTopSub: document.getElementById("kpi-top-sub"),
+    kpiGainSub: document.getElementById("kpi-gain-sub"),
     pillStrip: document.getElementById("view-pill-strip"),
     searchInput: document.getElementById("search-holdings-input"),
     searchClearBtn: document.getElementById("search-clear-btn"),
     toggleExpandBtn: document.getElementById("btn-toggle-expand"),
-    btnLoadDemo: document.getElementById("btn-load-demo"),
-    btnClearPortfolio: document.getElementById("btn-clear-portfolio"),
     thSecondaryHeader: document.getElementById("th-secondary-header"),
     thSecondaryTitle: document.getElementById("th-secondary-title"),
     thReturnHeader: document.getElementById("th-return-header"),
@@ -171,24 +182,48 @@ document.addEventListener("DOMContentLoaded", async () => {
       memberTotals.set(mName, (memberTotals.get(mName) || 0) + (h.currentValue || 0));
     }
 
-    // Build unique list of individuals only (no combination names)
-    const knownNames = new Set(baseMembers.map((m) => m.name));
-    const memberList = baseMembers.map((m) => ({
-      name: m.name,
-      avatar: m.avatar || "👤",
-      role: m.role,
-      totalVal: memberTotals.get(m.name) || 0
-    }));
+    if (allHoldings.length === 0) {
+      els.heroMemberChips.innerHTML = `
+        <button type="button" class="member-chip active" data-name="ALL" title="Your portfolio has 0 holdings">
+          <span>👨‍👩‍👧‍👦 All Family</span>
+          <span class="chip-amount">₹0</span>
+        </button>
+      `;
+      return;
+    }
 
-    // Dynamically discover any custom family members from an opened .kyf file
-    for (const [mName, val] of memberTotals.entries()) {
-      if (!knownNames.has(mName) && mName !== "Unassigned" && !mName.includes("&")) {
+    // Build unique list of individuals only (no combination names)
+    const memberList = [];
+    if (isDemoMode) {
+      const knownNames = new Set(baseMembers.map((m) => m.name));
+      for (const m of baseMembers) {
         memberList.push({
-          name: mName,
-          avatar: "👤",
-          role: "Family",
-          totalVal: val
+          name: m.name,
+          avatar: m.avatar || "👤",
+          role: m.role,
+          totalVal: memberTotals.get(m.name) || 0
         });
+      }
+      for (const [mName, val] of memberTotals.entries()) {
+        if (!knownNames.has(mName) && mName !== "Unassigned" && !mName.includes("&")) {
+          memberList.push({
+            name: mName,
+            avatar: "👤",
+            role: "Family",
+            totalVal: val
+          });
+        }
+      }
+    } else {
+      for (const [mName, val] of memberTotals.entries()) {
+        if (mName !== "Unassigned" && !mName.includes("&")) {
+          memberList.push({
+            name: mName,
+            avatar: "👤",
+            role: "Family",
+            totalVal: val
+          });
+        }
       }
     }
 
@@ -476,11 +511,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       els.kpiReturnPct.textContent = formatPct(kpis.activeHorizonReturnPct);
       els.kpiGainLoss.textContent = `${gainSign}${formatINR(kpis.totalPortfolioGainLoss, true)}`;
       els.kpiReturnPct.className = `return-badge ${isPositive ? "positive" : "negative"}`;
-    }
-
-    if (els.kpiTopAlloc && els.kpiTopSub) {
-      els.kpiTopAlloc.textContent = kpis.topAllocationLabel;
-      els.kpiTopSub.textContent = `${kpis.topAllocationPct}% of Active Selection`;
+      if (els.kpiGainSub) {
+        const hLabel = activeHorizon === "all" ? "All-Time" : activeHorizon.toUpperCase();
+        els.kpiGainSub.textContent = `${hLabel} return`;
+      }
     }
 
     // 9. Update Sort Indicators in Header
@@ -490,13 +524,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (rawHoldings.length === 0) {
       els.treegrid.innerHTML = `
         <div class="treegrid-empty-state">
-          <h3>No Holdings Found</h3>
-          <p>Your portfolio is currently empty. Click "Load Demo Family" to view live NSE, AMFI, and NHB RESIDEX valuations in action, or click "Open" in the top bar to load a saved <code>.kyf</code> data file.</p>
-          <button class="action-pill-btn btn-load-demo" id="empty-state-load-demo-btn" style="padding: 9px 20px;">🧪 Load Demo Family</button>
+          <h3>Your Private Portfolio is Clean</h3>
+          <p>No investment records in your personal portfolio yet. Click <strong>📂 Open</strong> in the top navigation to load your <code>.kyf</code> file, or check <strong>Demo Data</strong> above to explore sample family holdings.</p>
+          <button class="action-pill-btn" id="empty-state-load-demo-btn" style="padding: 9px 22px; font-weight:700;">🎲 Fill Demo Data</button>
         </div>
       `;
       const emptyBtn = document.getElementById("empty-state-load-demo-btn");
-      if (emptyBtn) emptyBtn.addEventListener("click", handleLoadDemo);
+      if (emptyBtn) {
+        emptyBtn.addEventListener("click", () => {
+          if (els.demoDataToggle) {
+            els.demoDataToggle.checked = true;
+          }
+          handleDemoToggle({ target: { checked: true } });
+        });
+      }
       return;
     }
 
@@ -706,33 +747,44 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================================================
   // Action Handlers
   // ==========================================================================
-  async function handleLoadDemo() {
-    rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
-    rawGoals = window.KYF_PORTFOLIO_DATA.getDemoGoals();
-    await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
-    await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
-    activeMemberScope = "ALL";
-    selectedPills = "ALL";
-    searchQuery = "";
-    if (els.searchInput) els.searchInput.value = "";
-    showToast("✓ Demo family portfolio & goals loaded", "success");
+  async function handleDemoToggle(e) {
+    const isChecked = e.target.checked;
+    isDemoMode = isChecked;
+    localStorage.setItem("kyf_demo_mode", isChecked ? "true" : "false");
+
+    if (isChecked) {
+      // User turned ON Demo Data: stash any current user holdings so they are never lost
+      if (rawHoldings && rawHoldings.length > 0 && userHoldings.length === 0) {
+        userHoldings = rawHoldings;
+        userGoals = rawGoals;
+        localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
+        localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
+      }
+      rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
+      rawGoals = window.KYF_PORTFOLIO_DATA.getDemoGoals();
+      await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+      await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
+      handleResetSelections();
+      showToast("✓ Filled with demo family data", "success");
+    } else {
+      // User turned OFF Demo Data: reset back to user's personal data
+      rawHoldings = Array.isArray(userHoldings) ? [...userHoldings] : [];
+      rawGoals = Array.isArray(userGoals) ? [...userGoals] : [];
+      await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+      await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
+      handleResetSelections();
+      if (rawHoldings.length > 0) {
+        showToast(`✓ Switched to your portfolio (${rawHoldings.length} holdings)`, "success");
+      } else {
+        showToast("✓ Reset to your data (clean slate)", "info");
+      }
+    }
     renderApp();
   }
 
   function handleSaveAppData() {
     const fileName = window.KYF_PORTFOLIO_DATA.exportAppData(rawHoldings, rawGoals);
     showToast(`✓ Data saved & exported to ${fileName}`, "success");
-  }
-
-  async function handleClearPortfolio() {
-    if (confirm("Reset portfolio to clean slate? This will clear active holdings and goals from memory and IndexedDB.")) {
-      await window.KYF_PORTFOLIO_DATA.clearDatabase();
-      rawHoldings = [];
-      rawGoals = [];
-      handleResetSelections();
-      showToast("✓ Portfolio reset to clean slate", "success");
-      renderApp();
-    }
   }
 
   function handleResetSelections() {
@@ -825,9 +877,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-    // 6. Action Buttons
-    if (els.btnLoadDemo) els.btnLoadDemo.addEventListener("click", handleLoadDemo);
-    if (els.btnClearPortfolio) els.btnClearPortfolio.addEventListener("click", handleClearPortfolio);
+    // 6. Demo Data Checkbox Toggle
+    if (els.demoDataToggle) {
+      els.demoDataToggle.addEventListener("change", handleDemoToggle);
+    }
 
     // 7. App-Level Toolbar: Open & Save Data Buttons
     if (els.navOpenFileBtn && els.kyfFileInput) {
@@ -845,19 +898,24 @@ document.addEventListener("DOMContentLoaded", async () => {
           const text = await file.text();
           const result = window.KYF_PORTFOLIO_DATA.parseAndExtractKyfData(text);
           if (result.holdings && result.holdings.length) {
-            rawHoldings = result.holdings;
+            isDemoMode = false;
+            localStorage.setItem("kyf_demo_mode", "false");
+            userHoldings = result.holdings;
+            userGoals = result.goals || [];
+            localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
+            localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
+            rawHoldings = userHoldings;
+            rawGoals = userGoals;
+            if (els.demoDataToggle) els.demoDataToggle.checked = false;
             await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
-          }
-          if (result.goals && result.goals.length) {
-            rawGoals = result.goals;
             await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
-          } else if (rawGoals.length === 0) {
-            rawGoals = window.KYF_PORTFOLIO_DATA.getDemoGoals();
+          } else if (result.goals && result.goals.length) {
+            userGoals = result.goals;
+            rawGoals = userGoals;
             await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
           }
 
-          activeMemberScope = "ALL";
-          selectedPills = "ALL";
+          handleResetSelections();
           showToast(`✓ Loaded ${file.name} (${rawHoldings.length} holdings)`, "success");
           renderApp();
         } catch (err) {
@@ -912,22 +970,40 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderMarketPulse();
     setupEventListeners();
 
-    // Check IndexedDB for existing session
-    const storedHoldings = await window.KYF_PORTFOLIO_DATA.loadHoldingsFromDB();
-    const storedGoals = await window.KYF_PORTFOLIO_DATA.loadGoalsFromDB();
-
-    if (storedHoldings && storedHoldings.length > 0) {
-      rawHoldings = storedHoldings;
-    } else {
-      rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
-      await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+    if (els.demoDataToggle) {
+      els.demoDataToggle.checked = isDemoMode;
     }
 
-    if (storedGoals && storedGoals.length > 0) {
-      rawGoals = storedGoals;
-    } else {
+    if (isDemoMode) {
+      // Demo Data mode active: populate demo family dataset
+      rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
       rawGoals = window.KYF_PORTFOLIO_DATA.getDemoGoals();
+      await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
       await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
+    } else {
+      // User Data mode: restore user's stored holdings or start with clean slate
+      const storedHoldings = await window.KYF_PORTFOLIO_DATA.loadHoldingsFromDB();
+      const storedGoals = await window.KYF_PORTFOLIO_DATA.loadGoalsFromDB();
+
+      if (storedHoldings && storedHoldings.length > 0) {
+        rawHoldings = storedHoldings;
+        userHoldings = storedHoldings;
+      } else if (userHoldings && userHoldings.length > 0) {
+        rawHoldings = userHoldings;
+        await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+      } else {
+        rawHoldings = [];
+      }
+
+      if (storedGoals && storedGoals.length > 0) {
+        rawGoals = storedGoals;
+        userGoals = storedGoals;
+      } else if (userGoals && userGoals.length > 0) {
+        rawGoals = userGoals;
+        await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
+      } else {
+        rawGoals = [];
+      }
     }
 
     renderApp();

@@ -13,8 +13,8 @@
   <title>Family Portfolio Tracker | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
 
-  <!-- Application Stylesheet with v1.4.3 Cache-Busting -->
-  <link rel="stylesheet" href="css/portfolio.css?v=1.4.3">
+  <!-- Application Stylesheet with v1.4.6 Cache-Busting -->
+  <link rel="stylesheet" href="css/portfolio.css?v=1.4.6">
 </head>
 <body>
 
@@ -64,6 +64,15 @@
         <div class="hero-member-chips" id="hero-member-chips">
           <!-- Dynamically populated with individual names and live totals by js/portfolio-app.js -->
         </div>
+        <!-- Demo Data Checkbox Toggle (Just below Family Member Scope) -->
+        <div class="hero-member-footer">
+          <label class="demo-checkbox-label" for="demo-data-toggle" title="Check to fill sample demo data; uncheck to reset to your own data">
+            <input type="checkbox" id="demo-data-toggle" checked>
+            <span class="demo-checkbox-custom" aria-hidden="true"></span>
+            <span class="demo-checkbox-text">Demo Data</span>
+          </label>
+          <span class="demo-checkbox-hint">Uncheck to reset to your own data</span>
+        </div>
       </div>
     </div>
   </section>
@@ -85,42 +94,55 @@
 
   <main class="wrap">
     <!-- ==========================================================================
-         TOP KPI CARDS
+         TOP KPI HEADER BAR: HORIZON SELECTOR (Controls Gain & Trailing Returns)
+         ========================================================================== -->
+    <div class="kpi-header-bar">
+      <div class="kpi-header-title">Portfolio Overview</div>
+
+      <!-- Return Horizon Toggle (1M | 3M | 6M | 1Y | All-Time) -->
+      <div class="horizon-control">
+        <span class="toolbar-label">Horizon:</span>
+        <div class="horizon-segmented" role="radiogroup" aria-label="Return Horizon">
+          <button type="button" class="horizon-btn" data-horizon="1m">1M</button>
+          <button type="button" class="horizon-btn" data-horizon="3m">3M</button>
+          <button type="button" class="horizon-btn" data-horizon="6m">6M</button>
+          <button type="button" class="horizon-btn active" data-horizon="1y">1Y</button>
+          <button type="button" class="horizon-btn" data-horizon="all">All</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         TOP KPI CARDS (3 Lean Cards: Net Worth, Invested, Gain)
          ========================================================================== -->
     <div class="kpi-ribbon" role="region" aria-label="Portfolio Key Metrics">
       <div class="kpi-card accent-networth">
-        <div class="kpi-label">Active Family Net Worth</div>
+        <div class="kpi-label">Net Worth</div>
         <div class="kpi-val mono-num" id="kpi-net-worth">₹0</div>
         <div class="kpi-sub" id="kpi-net-worth-sub">Mark-to-market live valuation</div>
       </div>
 
       <div class="kpi-card accent-invested">
-        <div class="kpi-label">Active Capital Invested</div>
+        <div class="kpi-label">Invested</div>
         <div class="kpi-val mono-num" id="kpi-invested">₹0</div>
         <div class="kpi-sub">Cost basis for active selection</div>
       </div>
 
       <div class="kpi-card accent-gain">
-        <div class="kpi-label">Performance &amp; Gain</div>
+        <div class="kpi-label">Gain</div>
         <div class="kpi-val mono-num" id="kpi-gain-loss">₹0</div>
         <div class="kpi-sub">
           <span class="return-badge positive mono-num" id="kpi-return-pct">+0.0%</span>
-          <span>active return</span>
+          <span id="kpi-gain-sub">active return</span>
         </div>
-      </div>
-
-      <div class="kpi-card accent-top">
-        <div class="kpi-label">Top Allocation</div>
-        <div class="kpi-val" id="kpi-top-alloc" style="font-size:22px;">—</div>
-        <div class="kpi-sub mono-num" id="kpi-top-sub">0% of Active Selection</div>
       </div>
     </div>
 
     <!-- ==========================================================================
-         TOOLBAR: VIEW SWITCHER TABS, RETURN HORIZON & PILL MULTI-SELECT STRIP
+         TOOLBAR: VIEW SWITCHER TABS & PILL MULTI-SELECT STRIP (EXACTLY 2 ROWS)
          ========================================================================== -->
     <div class="toolbar-container" role="region" aria-label="Portfolio Controls and Slicers">
-      <!-- Row 1: View Lenses & Return Horizon Toggle -->
+      <!-- Row 1: View Lenses (Left) + Collapse All & Search (Right) -->
       <div class="toolbar-primary-row">
         <div class="view-switch-control">
           <span class="toolbar-label">View Lens:</span>
@@ -134,54 +156,32 @@
             <button type="button" class="view-tab-btn" data-dimension="custodian" role="tab" aria-selected="false">
               Custodian / Broker
             </button>
-            <button type="button" class="view-tab-btn" data-dimension="member" role="tab" aria-selected="false">
-              Family Member
-            </button>
           </div>
         </div>
 
-        <!-- Return Horizon Toggle (1M | 3M | 6M | 1Y | All-Time) -->
-        <div class="horizon-control">
-          <span class="toolbar-label">Horizon:</span>
-          <div class="horizon-segmented" role="radiogroup" aria-label="Return Horizon">
-            <button type="button" class="horizon-btn" data-horizon="1m">1M</button>
-            <button type="button" class="horizon-btn" data-horizon="3m">3M</button>
-            <button type="button" class="horizon-btn" data-horizon="6m">6M</button>
-            <button type="button" class="horizon-btn active" data-horizon="1y">1Y</button>
-            <button type="button" class="horizon-btn" data-horizon="all">All</button>
-          </div>
-        </div>
-
-        <div class="toolbar-actions">
-          <button type="button" class="action-pill-btn btn-load-demo" id="btn-load-demo" title="Load sample Indian family portfolio">
-            🧪 Load Demo Family
-          </button>
-          <button type="button" class="action-pill-btn" id="btn-toggle-expand">
+        <!-- Toolbar Right Utilities: Collapse All & Search Box -->
+        <div class="toolbar-right-utils">
+          <button type="button" class="action-pill-btn btn-collapse-util" id="btn-toggle-expand" title="Collapse or Expand all accordion groups">
             Collapse All
           </button>
-          <button type="button" class="action-pill-btn btn-reset" id="btn-clear-portfolio" title="Reset portfolio to clean slate">
-            Reset
-          </button>
+          <div class="search-box-wrap">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input
+              type="text"
+              id="search-holdings-input"
+              class="search-input"
+              placeholder="Search holdings..."
+              aria-label="Search Holdings"
+            >
+            <button type="button" class="search-clear-btn" id="search-clear-btn" aria-label="Clear Search">✕</button>
+          </div>
         </div>
       </div>
 
-      <!-- Row 2: 1-Click Multi-Select Pill Strip (Active View Entities) -->
+      <!-- Row 2: 1-Click Multi-Select Pill Strip (Active View Entities, Full Width) -->
       <div class="toolbar-pill-row">
         <div class="view-pill-strip-wrap" id="view-pill-strip" role="group" aria-label="Filter Entities in Active View">
           <!-- Dynamically populated by js/portfolio-app.js -->
-        </div>
-
-        <!-- Compact Search Box -->
-        <div class="search-box-wrap">
-          <span class="search-icon" aria-hidden="true">🔍</span>
-          <input
-            type="text"
-            id="search-holdings-input"
-            class="search-input"
-            placeholder="Search holdings..."
-            aria-label="Search Holdings"
-          >
-          <button type="button" class="search-clear-btn" id="search-clear-btn" aria-label="Clear Search">✕</button>
         </div>
       </div>
     </div>
@@ -231,19 +231,19 @@
   <!-- ==========================================================================
        DATASETS (Auto-Generated Daily by admin/sync_market_data.py)
        ========================================================================== -->
-  <script src="data/market-pulse.js?v=1.4.3"></script>
-  <script src="data/market-corporate-actions.js?v=1.4.3"></script>
-  <script src="data/market-equities.js?v=1.4.3"></script>
-  <script src="data/market-mf.js?v=1.4.3"></script>
-  <script src="data/market-realestate.js?v=1.4.3"></script>
-  <script src="data/market-holidays.js?v=1.4.3"></script>
+  <script src="data/market-pulse.js?v=1.4.6"></script>
+  <script src="data/market-corporate-actions.js?v=1.4.6"></script>
+  <script src="data/market-equities.js?v=1.4.6"></script>
+  <script src="data/market-mf.js?v=1.4.6"></script>
+  <script src="data/market-realestate.js?v=1.4.6"></script>
+  <script src="data/market-holidays.js?v=1.4.6"></script>
 
   <!-- ==========================================================================
-       PORTFOLIO MODULE SCRIPTS (with ?v=1.4.3 Cache-Busting)
+       PORTFOLIO MODULE SCRIPTS (with ?v=1.4.6 Cache-Busting)
        ========================================================================== -->
-  <script src="js/portfolio-data.js?v=1.4.3"></script>
-  <script src="js/portfolio-engine.js?v=1.4.3"></script>
-  <script src="js/portfolio-app.js?v=1.4.3"></script>
+  <script src="js/portfolio-data.js?v=1.4.6"></script>
+  <script src="js/portfolio-engine.js?v=1.4.6"></script>
+  <script src="js/portfolio-app.js?v=1.4.6"></script>
 </body>
 </html>
 
