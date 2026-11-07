@@ -4,8 +4,15 @@
     <File Path="admin/sync_market_data.py" />
   </Folder>
   <Folder Name="/data/">
+    <File Path="data/kyf-curriculum.js.js" />
+    <File Path="data/kyf-dictionary.js" />
+    <File Path="data/market-corporate-actions.js" />
+    <File Path="data/market-equities.js" />
     <File Path="data/market-holidays.js" />
+    <File Path="data/market-mf.js" />
     <File Path="data/market-pulse.js" />
+    <File Path="data/market-realestate.js" />
+    <File Path="data/nhb_residex_kyf.json" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path="cadence.html" />

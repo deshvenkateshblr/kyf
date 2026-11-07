@@ -98,7 +98,19 @@
 
         let html = "";
         for (const [key, idx] of Object.entries(pulseData.indices)) {
-          const retVal = idx[meta.idxKey];
+          let retVal = idx[meta.idxKey];
+          if (retVal === null || retVal === undefined) {
+            if (selectedHorizon === "1m") retVal = idx.ret1m;
+            else if (selectedHorizon === "3m") retVal = idx.ret3m;
+            else if (selectedHorizon === "6m") retVal = idx.ret6m;
+            else if (selectedHorizon === "1y") retVal = idx.ret1y != null ? idx.ret1y : idx.cagr1y;
+          }
+          if ((retVal === null || retVal === undefined) && (key === "NIFTY50" || idx.name === "Nifty 50") && equitiesData && equitiesData.stocks) {
+            const bees = equitiesData.stocks.find(s => s[0] === "NIFTYBEES");
+            if (bees && bees[meta.eqCol] !== undefined) {
+              retVal = bees[meta.eqCol];
+            }
+          }
           const pe = idx.pe ? idx.pe.toFixed(1) : "—";
           const tag = getValuationTag(idx.pe);
 
@@ -1234,7 +1246,14 @@
 
         if (sectionKey === "indices") {
           const lines = Object.values(pulseData.indices || {}).map(idx => {
-            const r = Number(idx[meta.idxKey] || 0);
+            let ret = idx[meta.idxKey];
+            if (ret === null || ret === undefined) {
+              if (selectedHorizon === "1m") ret = idx.ret1m;
+              else if (selectedHorizon === "3m") ret = idx.ret3m;
+              else if (selectedHorizon === "6m") ret = idx.ret6m;
+              else if (selectedHorizon === "1y") ret = idx.ret1y != null ? idx.ret1y : idx.cagr1y;
+            }
+            const r = Number(ret || 0);
             const sign = r > 0 ? "+" : "";
             const pe = idx.pe ? ` | P/E ${idx.pe.toFixed(1)}` : "";
             const shortName = idx.name.replace("Nifty Midcap 150", "Midcap 150").replace("Nifty Smallcap 250", "Smallcap 250");
@@ -1720,7 +1739,14 @@
             ctx.fillText(peText, 868, ry + 41);
 
             // Return badge
-            drawCanvasReturnBadge(ctx, idx[meta.idxKey], 1020, ry + 22, 88, 30);
+            let canvasRet = idx[meta.idxKey];
+            if (canvasRet === null || canvasRet === undefined) {
+              if (selectedHorizon === "1m") canvasRet = idx.ret1m;
+              else if (selectedHorizon === "3m") canvasRet = idx.ret3m;
+              else if (selectedHorizon === "6m") canvasRet = idx.ret6m;
+              else if (selectedHorizon === "1y") canvasRet = idx.ret1y != null ? idx.ret1y : idx.cagr1y;
+            }
+            drawCanvasReturnBadge(ctx, canvasRet, 1020, ry + 22, 88, 30);
           });
         }
 

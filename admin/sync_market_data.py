@@ -152,17 +152,22 @@ def fetch_nse_index_csv(opener, dt: datetime.date) -> str:
         with open(cache_file, "r", encoding="utf-8") as f:
             return f.read()
 
-    url = f"https://nsearchives.nseindia.com/content/indices/ind_close_all_{ddmmyyyy}.csv"
-    try:
-        print(f"  [Downloading Index CSV] {url} ...")
-        resp = opener.open(url, timeout=15)
-        csv_text = resp.read().decode("utf-8", errors="replace")
-        if "Index Name" in csv_text:
-            with open(cache_file, "w", encoding="utf-8") as f:
-                f.write(csv_text)
-            return csv_text
-    except Exception as e:
-        print(f"  [Info] NSE Index CSV unavailable for {dt.isoformat()} ({e})")
+    urls = [
+        f"https://nsearchives.nseindia.com/content/indices/ind_close_all_{ddmmyyyy}.csv",
+        f"https://archives.nseindia.com/content/indices/ind_close_all_{ddmmyyyy}.csv",
+    ]
+    for url in urls:
+        try:
+            print(f"  [Downloading Index CSV] {url} ...")
+            resp = opener.open(url, timeout=15)
+            csv_text = resp.read().decode("utf-8", errors="replace")
+            if "Index Name" in csv_text:
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    f.write(csv_text)
+                return csv_text
+        except Exception as e:
+            print(f"  [Info] NSE Index CSV mirror unavailable ({e})")
+    print(f"  [Warn] NSE Index CSV unavailable for {dt.isoformat()} across all mirrors")
     return ""
 
 
@@ -434,11 +439,11 @@ DEFAULT_PULSE_CONFIG = {
             "nseCsvName": "Nifty 50",
             "name": "Nifty 50",
             "role": "Large-Cap Core Engine (Top 50 Indian Companies)",
-            "level": 24480.50,
-            "pe": 22.10,
-            "pb": 3.55,
-            "divYield": 1.25,
-            "cagr1y": 13.80,
+            "level": 25030.35,
+            "pe": 20.66,
+            "pb": 3.07,
+            "divYield": 1.39,
+            "cagr1y": -2.22,
             "cagr5y": 14.90,
             "cagr10y": 13.40,
         },
@@ -599,26 +604,47 @@ def build_pulse_js(opener, horizons: dict):
     with open(PULSE_CONFIG_PATH, "r", encoding="utf-8") as f:
         cfg = json.load(f)
 
+    # Load existing pulse payload if available to prevent wiping out verified returns on transient download drops
+    existing_pulse = {}
+    out_path = os.path.join(DATA_DIR, "market-pulse.js")
+    if os.path.exists(out_path):
+        try:
+            with open(out_path, "r", encoding="utf-8") as f:
+                content = f.read()
+                m = re.search(r"window\.KYF_MARKET_PULSE\s*=\s*(\{.*\});", content, re.DOTALL)
+                if m:
+                    existing_pulse = json.loads(m.group(1))
+        except Exception:
+            existing_pulse = {}
+
     # Fetch NSE Index CSV across all 5 horizons to compute live index 1M, 3M, 6M, 1Y returns
     idx_snapshots = {}
     for key, dt in horizons.items():
         csv_txt = fetch_nse_index_csv(opener, dt)
         idx_snapshots[key] = parse_nse_index_csv(csv_txt)
 
+    has_live_latest = bool(idx_snapshots.get("latest"))
+
     indices_out = {}
     for key, base_obj in cfg["indicesBaseline"].items():
         lookup_name = base_obj.get("nseCsvName", base_obj["name"]).lower()
         latest_live = idx_snapshots.get("latest", {}).get(lookup_name, {})
+        existing_idx = existing_pulse.get("indices", {}).get(key, {})
 
-        level = latest_live.get("level") or base_obj["level"]
-        pe = latest_live.get("pe") or base_obj["pe"]
-        pb = latest_live.get("pb") or base_obj["pb"]
-        div_yield = latest_live.get("divYield") or base_obj["divYield"]
+        level = latest_live.get("level") or existing_idx.get("level") or base_obj["level"]
+        pe = latest_live.get("pe") or existing_idx.get("pe") or base_obj["pe"]
+        pb = latest_live.get("pb") or existing_idx.get("pb") or base_obj["pb"]
+        div_yield = latest_live.get("divYield") or existing_idx.get("divYield") or base_obj["divYield"]
 
-        r1m = calc_pct(level, idx_snapshots.get("m1", {}).get(lookup_name, {}).get("level"))
-        r3m = calc_pct(level, idx_snapshots.get("m3", {}).get(lookup_name, {}).get("level"))
-        r6m = calc_pct(level, idx_snapshots.get("m6", {}).get(lookup_name, {}).get("level"))
-        r1y = calc_pct(level, idx_snapshots.get("y1", {}).get(lookup_name, {}).get("level"))
+        m1_lvl = idx_snapshots.get("m1", {}).get(lookup_name, {}).get("level")
+        m3_lvl = idx_snapshots.get("m3", {}).get(lookup_name, {}).get("level")
+        m6_lvl = idx_snapshots.get("m6", {}).get(lookup_name, {}).get("level")
+        y1_lvl = idx_snapshots.get("y1", {}).get(lookup_name, {}).get("level")
+
+        r1m = calc_pct(level, m1_lvl) if has_live_latest else existing_idx.get("ret1m")
+        r3m = calc_pct(level, m3_lvl) if has_live_latest else existing_idx.get("ret3m")
+        r6m = calc_pct(level, m6_lvl) if has_live_latest else existing_idx.get("ret6m")
+        r1y = calc_pct(level, y1_lvl) if has_live_latest else (existing_idx.get("ret1y") or existing_idx.get("cagr1y"))
 
         indices_out[key] = {
             "name": base_obj["name"],
@@ -627,19 +653,22 @@ def build_pulse_js(opener, horizons: dict):
             "pe": pe,
             "pb": pb,
             "divYield": div_yield,
-            "ret1m": r1m,
-            "ret3m": r3m,
-            "ret6m": r6m,
-            "cagr1y": r1y if r1y is not None else base_obj["cagr1y"],
+            "ret1m": r1m if r1m is not None else existing_idx.get("ret1m"),
+            "ret3m": r3m if r3m is not None else existing_idx.get("ret3m"),
+            "ret6m": r6m if r6m is not None else existing_idx.get("ret6m"),
+            "ret1y": r1y if r1y is not None else existing_idx.get("ret1y"),
+            "cagr1y": r1y if r1y is not None else (existing_idx.get("cagr1y") or base_obj.get("cagr1y")),
             "cagr5y": base_obj["cagr5y"],
             "cagr10y": base_obj["cagr10y"],
         }
 
     live_pm = compute_live_precious_metals(opener, horizons, cfg.get("preciousMetals", {}))
 
+    effective_as_of = horizons["latest"].isoformat() if has_live_latest else existing_pulse.get("asOf", horizons["latest"].isoformat())
+
     pulse_payload = {
-        "asOf": horizons["latest"].isoformat(),
-        "lastTradingDay": horizons["latest"].isoformat(),
+        "asOf": effective_as_of,
+        "lastTradingDay": effective_as_of,
         "horizons": {k: v.isoformat() for k, v in horizons.items()},
         "macro": cfg["macro"],
         "preciousMetals": live_pm,

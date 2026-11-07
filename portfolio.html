@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <meta name="description" content="KYF Family Portfolio Tracker — Multi-dimensional wealth ledger mark-to-market against live NSE equities, AMFI mutual funds, gold rates, and NHB RESIDEX property prices. 100% private, zero-knowledge local storage.">
+  <meta name="theme-color" content="#1f7a6c">
+
+  <title>Family Portfolio Tracker | Know Your Finance (KYF)</title>
+  <link rel="icon" href="css/kyf_logo.png">
+
+  <!-- Application Stylesheet with v1.4.3 Cache-Busting -->
+  <link rel="stylesheet" href="css/portfolio.css?v=1.4.3">
+</head>
+<body>
+
+  <!-- ==========================================================================
+       APP-LEVEL UNIFIED NAVIGATION TOOLBAR
+       ========================================================================== -->
+  <header class="nav" role="banner">
+    <div class="wrap nav-inner">
+      <div class="nav-left">
+        <a href="index.html" aria-label="KYF home"><img src="css/kyf_logo.png" alt="KYF — Know Your Finance"></a>
+        <a href="cadence.html" class="back-btn">&larr; Back to Cadence</a>
+      </div>
+
+      <nav class="nav-links" aria-label="Primary">
+        <a href="index.html#dimensions">3 Dimensions</a>
+        <a href="index.html#journey">How it works</a>
+        <a href="cadence.html">Cadence</a>
+        <a href="market-performance.html">Market Benchmarks</a>
+        <a href="portfolio.html" class="active">Portfolio</a>
+        <a href="index.html#trust">Privacy</a>
+        <input type="file" id="kyfFileInput" accept=".kyf,.json" style="display:none;">
+        <button type="button" class="nav-btn secondary" id="navOpenFileBtn" title="Open saved .kyf data file">📂 Open</button>
+        <button type="button" class="nav-btn primary" id="navSaveDataBtn" title="Save data as .kyf file">💾 Save Data</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       HERO & FAMILY MEMBER SCOPE SELECTOR
+       Desktop: 2-column layout (Text left, Family Scope right)
+       Mobile: Stacked layout (Family Scope directly below Hero text)
+       ========================================================================== -->
+  <section class="market-hero">
+    <div class="wrap hero-layout">
+      <div class="hero-content">
+        <p class="eyebrow"><span class="badge-dot"></span> Multi-Dimensional Family Wealth &bull; Mark-to-Market</p>
+        <h1>Family Portfolio Tracker</h1>
+        <p class="lede">Track family holdings across asset classes, members, and custodians with live daily mark-to-market valuations from NSE equities, AMFI mutual funds, bullion rates, and NHB RESIDEX residential prices. 100% private, runs locally in your browser.</p>
+      </div>
+
+      <!-- Top-Level Family Scope Selector -->
+      <div class="hero-member-panel" role="region" aria-label="Family Member Scope">
+        <div class="hero-member-header">
+          <span class="hero-member-title">👤 Family Member Scope</span>
+          <span class="hero-member-hint">Filter dashboard by individual or multi-select</span>
+        </div>
+        <div class="hero-member-chips" id="hero-member-chips">
+          <!-- Dynamically populated with individual names and live totals by js/portfolio-app.js -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       MARKET PULSE STATUS RIBBON
+       ========================================================================== -->
+  <div class="market-pulse-bar" role="region" aria-label="Live Market Pulse Ticker">
+    <div class="wrap market-pulse-inner">
+      <div class="pulse-items" id="pulse-ticker">
+        <!-- Injected dynamically by js/portfolio-app.js -->
+        <span style="color:var(--muted);">Loading live market benchmarks...</span>
+      </div>
+      <div class="as-of-badge" id="pulse-asof-pill">
+        <span>🗓️ Market Synced EOD</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <!-- ==========================================================================
+         TOP KPI CARDS
+         ========================================================================== -->
+    <div class="kpi-ribbon" role="region" aria-label="Portfolio Key Metrics">
+      <div class="kpi-card accent-networth">
+        <div class="kpi-label">Active Family Net Worth</div>
+        <div class="kpi-val mono-num" id="kpi-net-worth">₹0</div>
+        <div class="kpi-sub" id="kpi-net-worth-sub">Mark-to-market live valuation</div>
+      </div>
+
+      <div class="kpi-card accent-invested">
+        <div class="kpi-label">Active Capital Invested</div>
+        <div class="kpi-val mono-num" id="kpi-invested">₹0</div>
+        <div class="kpi-sub">Cost basis for active selection</div>
+      </div>
+
+      <div class="kpi-card accent-gain">
+        <div class="kpi-label">Performance &amp; Gain</div>
+        <div class="kpi-val mono-num" id="kpi-gain-loss">₹0</div>
+        <div class="kpi-sub">
+          <span class="return-badge positive mono-num" id="kpi-return-pct">+0.0%</span>
+          <span>active return</span>
+        </div>
+      </div>
+
+      <div class="kpi-card accent-top">
+        <div class="kpi-label">Top Allocation</div>
+        <div class="kpi-val" id="kpi-top-alloc" style="font-size:22px;">—</div>
+        <div class="kpi-sub mono-num" id="kpi-top-sub">0% of Active Selection</div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         TOOLBAR: VIEW SWITCHER TABS, RETURN HORIZON & PILL MULTI-SELECT STRIP
+         ========================================================================== -->
+    <div class="toolbar-container" role="region" aria-label="Portfolio Controls and Slicers">
+      <!-- Row 1: View Lenses & Return Horizon Toggle -->
+      <div class="toolbar-primary-row">
+        <div class="view-switch-control">
+          <span class="toolbar-label">View Lens:</span>
+          <div class="view-tabs-segmented" role="tablist" aria-label="Portfolio View Dimensions">
+            <button type="button" class="view-tab-btn active" data-dimension="assetClass" role="tab" aria-selected="true">
+              Asset Class
+            </button>
+            <button type="button" class="view-tab-btn" data-dimension="goal" role="tab" aria-selected="false">
+              🎯 Goals
+            </button>
+            <button type="button" class="view-tab-btn" data-dimension="custodian" role="tab" aria-selected="false">
+              Custodian / Broker
+            </button>
+            <button type="button" class="view-tab-btn" data-dimension="member" role="tab" aria-selected="false">
+              Family Member
+            </button>
+          </div>
+        </div>
+
+        <!-- Return Horizon Toggle (1M | 3M | 6M | 1Y | All-Time) -->
+        <div class="horizon-control">
+          <span class="toolbar-label">Horizon:</span>
+          <div class="horizon-segmented" role="radiogroup" aria-label="Return Horizon">
+            <button type="button" class="horizon-btn" data-horizon="1m">1M</button>
+            <button type="button" class="horizon-btn" data-horizon="3m">3M</button>
+            <button type="button" class="horizon-btn" data-horizon="6m">6M</button>
+            <button type="button" class="horizon-btn active" data-horizon="1y">1Y</button>
+            <button type="button" class="horizon-btn" data-horizon="all">All</button>
+          </div>
+        </div>
+
+        <div class="toolbar-actions">
+          <button type="button" class="action-pill-btn btn-load-demo" id="btn-load-demo" title="Load sample Indian family portfolio">
+            🧪 Load Demo Family
+          </button>
+          <button type="button" class="action-pill-btn" id="btn-toggle-expand">
+            Collapse All
+          </button>
+          <button type="button" class="action-pill-btn btn-reset" id="btn-clear-portfolio" title="Reset portfolio to clean slate">
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Row 2: 1-Click Multi-Select Pill Strip (Active View Entities) -->
+      <div class="toolbar-pill-row">
+        <div class="view-pill-strip-wrap" id="view-pill-strip" role="group" aria-label="Filter Entities in Active View">
+          <!-- Dynamically populated by js/portfolio-app.js -->
+        </div>
+
+        <!-- Compact Search Box -->
+        <div class="search-box-wrap">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input
+            type="text"
+            id="search-holdings-input"
+            class="search-input"
+            placeholder="Search holdings..."
+            aria-label="Search Holdings"
+          >
+          <button type="button" class="search-clear-btn" id="search-clear-btn" aria-label="Clear Search">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         SORTABLE TREEGRID CONTAINER
+         ========================================================================== -->
+    <div class="treegrid-container" role="table" aria-label="Portfolio Holdings TreeGrid">
+      <!-- Fixed Header Row with Sortable Columns -->
+      <div class="treegrid-header" role="row">
+        <div class="th-sortable" data-sort="name" role="columnheader" title="Click to sort by Holding / Group Name">
+          <span>Holding / Instrument</span>
+          <span class="sort-arrow">⇅</span>
+        </div>
+
+        <div class="th-sortable th-hide-mobile" id="th-secondary-header" data-sort="member" role="columnheader" title="Click to sort">
+          <span id="th-secondary-title">Family Member / Units</span>
+          <span class="sort-arrow">⇅</span>
+        </div>
+
+        <div class="th-sortable tree-col-right th-hide-mobile" data-sort="investedValue" role="columnheader" title="Click to sort by Invested Value">
+          <span>Invested (₹)</span>
+          <span class="sort-arrow">⇅</span>
+        </div>
+
+        <div class="th-sortable tree-col-right sorted" data-sort="currentValue" role="columnheader" title="Click to sort by Current Live Value">
+          <span>Current Value (₹)</span>
+          <span class="sort-arrow">▼</span>
+        </div>
+
+        <div class="th-sortable tree-col-right" id="th-return-header" data-sort="returnPct" role="columnheader" title="Click to sort by Return %">
+          <span>Return (1Y)</span>
+          <span class="sort-arrow">⇅</span>
+        </div>
+      </div>
+
+      <!-- Dynamic Group Accordions & Leaf Rows Container -->
+      <div id="portfolio-treegrid">
+        <!-- Populated by js/portfolio-app.js -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification Pill -->
+  <div id="kyf-toast" class="toast-notice" role="alert" aria-live="polite"></div>
+
+  <!-- ==========================================================================
+       DATASETS (Auto-Generated Daily by admin/sync_market_data.py)
+       ========================================================================== -->
+  <script src="data/market-pulse.js?v=1.4.3"></script>
+  <script src="data/market-corporate-actions.js?v=1.4.3"></script>
+  <script src="data/market-equities.js?v=1.4.3"></script>
+  <script src="data/market-mf.js?v=1.4.3"></script>
+  <script src="data/market-realestate.js?v=1.4.3"></script>
+  <script src="data/market-holidays.js?v=1.4.3"></script>
+
+  <!-- ==========================================================================
+       PORTFOLIO MODULE SCRIPTS (with ?v=1.4.3 Cache-Busting)
+       ========================================================================== -->
+  <script src="js/portfolio-data.js?v=1.4.3"></script>
+  <script src="js/portfolio-engine.js?v=1.4.3"></script>
+  <script src="js/portfolio-app.js?v=1.4.3"></script>
+</body>
+</html>
+
