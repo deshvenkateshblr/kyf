@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Know Your Finance (KYF) helps you understand your money across Goals, Assess, and Freedom—then act with clarity. 100% educational, private, runs in your browser.">
+  <meta name="description" content="Know Your Finance (KYF) helps you understand your money across Goals, Cadence, and Freedom—then act with clarity. 100% educational, private, runs in your browser.">
   <meta name="theme-color" content="#1f7a6c">
   <title>KYF — Know Your Finance</title>
   <link rel="icon" href="css/kyf_logo.png">
@@ -85,9 +85,77 @@
     }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 0; }
     .nav img { height: 40px; width: auto; }
-    .nav-links { display: flex; align-items: center; gap: 28px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    .nav-links { display: flex; align-items: center; gap: 24px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
     .nav-links a { text-decoration: none; color: var(--ink-soft); transition: color .15s ease; }
     .nav-links a:hover { color: var(--teal); }
+
+    /* Nav Dropdown */
+    .nav-dropdown {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .nav-dropdown-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--ink-soft);
+      transition: color .15s ease;
+    }
+    .nav-dropdown-toggle:hover,
+    .nav-dropdown:hover .nav-dropdown-toggle {
+      color: var(--teal);
+    }
+    .nav-dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 0;
+      min-width: 190px;
+      box-shadow: 0 12px 28px rgba(24,38,32,.12);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: all .2s cubic-bezier(.16,1,.3,1);
+      z-index: 50;
+    }
+    .nav-dropdown-menu::before {
+      content: "";
+      position: absolute;
+      top: -10px;
+      left: 0;
+      right: 0;
+      height: 10px;
+    }
+    .nav-dropdown:hover .nav-dropdown-menu,
+    .nav-dropdown:focus-within .nav-dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(4px);
+    }
+    .nav-dropdown-menu a {
+      display: block;
+      padding: 9px 18px;
+      color: var(--ink-soft);
+      font-size: 11px;
+      font-family: var(--mono);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: background .15s ease, color .15s ease;
+      white-space: nowrap;
+    }
+    .nav-dropdown-menu a:hover {
+      background: var(--teal-soft);
+      color: var(--teal);
+    }
     .nav-links a.btn,
     .nav .btn {
       padding: 9px 20px;
@@ -279,7 +347,7 @@
       .journey::before { left: 27px; right: auto; top: 0; bottom: 0; width: 2px; height: auto; background: repeating-linear-gradient(180deg, var(--ink) 0 8px, transparent 8px 16px); }
       .step { display: grid; grid-template-columns: 54px 1fr; gap: 0 18px; text-align: left; align-items: start; }
       .step .pin { margin: 0; grid-row: span 3; }
-      .nav-links a:not(.btn) { display: none; }
+      .nav-links a:not(.btn), .nav-links .nav-dropdown { display: none; }
     }
     @media (max-width: 520px) {
       .cta-row .btn { width: 100%; }
@@ -326,13 +394,19 @@
     <div class="wrap nav-inner">
       <a href="index.html" aria-label="KYF home"><img src="css/kyf_logo.png" alt="KYF — Know Your Finance"></a>
       <nav class="nav-links" aria-label="Primary">
-        <a href="#dimensions">3 Dimensions</a>
-        <a href="#journey">How it works</a>
-        <a href="#outputs">What you get</a>
+        <a href="goals.html">Goals</a>
         <a href="cadence.html">Cadence</a>
         <a href="portfolio.html">Portfolio</a>
-        <a href="#trust">Privacy</a>
-        <a class="btn" href="cadence.html" style="color: #ffffff !important; background: var(--teal); border-color: var(--teal); padding: 8px 18px; font-size: 12px; font-weight: 700; text-decoration: none;">Start &rarr;</a>
+        <div class="nav-dropdown">
+          <a href="#framework" class="nav-dropdown-toggle">Framework <span style="font-size: 8px; opacity:.7;">▼</span></a>
+          <div class="nav-dropdown-menu">
+            <a href="#dimensions">3 Dimensions</a>
+            <a href="#journey">How It Works</a>
+            <a href="#outputs">What You Get</a>
+            <a href="#trust">Privacy &amp; Limits</a>
+          </div>
+        </div>
+        <a class="btn" href="goals.html" style="color: #ffffff !important; background: var(--teal); border-color: var(--teal); padding: 8px 18px; font-size: 12px; font-weight: 700; text-decoration: none;">Start &rarr;</a>
       </nav>
     </div>
   </header>
@@ -348,14 +422,14 @@
           </h1>
           <p class="lede">Welcome to your personal, privacy-first financial field guide and pocket-calculator app that empowers you to do exactly that.</p>
           <div class="cta-row">
-            <a class="btn" href="cadence.html" aria-label="Start Finance Cadence">Start the journey &rarr;</a>
-            <a class="btn secondary" href="#journey">See how it works</a>
+            <a class="btn" href="goals.html" aria-label="Start Life Goals Planner">Start with Goals &rarr;</a>
+            <a class="btn secondary" href="#framework">Explore Framework</a>
           </div>
-          <p class="micro"><span>No sign-up</span><span>Runs locally</span><span>CFP-style Money Brief</span></p>
+          <p class="micro"><span>No sign-up</span><span>Runs locally</span><span>Goals &middot; Cadence &middot; Freedom</span></p>
         </div>
         <div class="hero-art" aria-hidden="false">
           <div class="halo"></div>
-          <svg class="pyramid" viewBox="0 0 440 400" role="img" aria-label="Pyramid of three layers: Goals at the base, Assess in the middle, Freedom at the top" xmlns="http://www.w3.org/2000/svg">
+          <svg class="pyramid" viewBox="0 0 440 400" role="img" aria-label="Pyramid of three layers: Goals at the base, Cadence in the middle, Freedom at the top" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="dL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3cb7a1"/><stop offset="1" stop-color="#1f8f7b"/></linearGradient>
               <linearGradient id="dR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c8573"/><stop offset="1" stop-color="#125a4e"/></linearGradient>
@@ -411,7 +485,7 @@
             <line x1="220" y1="50" x2="220" y2="152.6" stroke="#fff" stroke-opacity=".38" stroke-width="1.2"/>
             <!-- Layer Labels -->
             <text x="220" y="113" font-size="22" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Freedom</text>
-            <text x="220" y="192" font-size="24" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Assess</text>
+            <text x="220" y="192" font-size="24" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Cadence</text>
             <text x="220" y="301" font-size="27" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Goals</text>
             <!-- NEW Finance Layer Icons (Replaces Apple, Runner & ECG) -->
             <!-- Top Icon (Freedom): Shield / Compass Star -->
@@ -419,7 +493,7 @@
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               <path d="M9 12l2 2 4-4"/>
             </g>
-            <!-- Middle Icon (Assess): Audit Clock / Gauge -->
+            <!-- Middle Icon (Cadence): Action Rhythm / Clock -->
             <g transform="translate(220 226) scale(1.55) translate(-12 -12)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="9"/>
               <path d="M12 7v5l3.5 2"/>
@@ -437,141 +511,174 @@
       </div>
     </section>
 
-    <!-- THREE DIMENSIONS -->
-    <section id="dimensions" class="alt">
-      <div class="wrap">
-        <div class="section-head reveal">
-          <p class="eyebrow">Finance in three dimensions</p>
-          <h2>One profile. Three lenses on your money.</h2>
-          <p>Generic financial advice is written for nobody. KYF weighs your life stage, family milestones, and current money habits across three core dimensions: Goals, Assess, and Freedom.</p>
-        </div>
-        <div class="dims">
-          <article class="dim d1 reveal">
-            <div class="num">Dimension 01</div>
-            <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div>
-            <h3>Goals</h3>
-            <p>Price your next family milestones against real Indian inflation and anchor your targets with clear timelines.</p>
-            <ul><li>Live CPI (5.4%) &amp; Education (9%) repricing</li><li>Monthly SIP &amp; Step-Up calculator</li><li>Timeline matching for short &amp; long horizons</li></ul>
-          </article>
-          <article class="dim d2 reveal">
-            <div class="num">Dimension 02</div>
-            <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
-            <h3>Assess</h3>
-            <p>Audit what your money is actually doing inside Bank FDs, Gold, EPF/PPF, Mutual Funds, Stocks, and your emergency buffer.</p>
-            <ul><li>Post-tax real return vs. inflation audit</li><li>Direct vs. Regular MF commission drag X-ray</li><li>Liquidity runway &amp; loan EMI sanity check</li></ul>
-          </article>
-          <article class="dim d3 reveal">
-            <div class="num">Dimension 03</div>
-            <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-            <h3>Freedom</h3>
-            <p>Build a calm, work-optional roadmap with a balanced Equity, Debt, and Gold recipe tailored to your life stage.</p>
-            <ul><li>3-Bucket Work-Optional Freedom plan</li><li>Compounding multiplier to age 60</li><li>Systematic peace of mind &amp; drawdown protection</li></ul>
-          </article>
-        </div>
-      </div>
-    </section>
+    <!-- ==================== THE KYF FRAMEWORK ==================== -->
+    <div id="framework" class="framework-wrapper">
 
-    <!-- JOURNEY -->
-    <section id="journey">
-      <div class="wrap">
-        <div class="section-head reveal">
-          <p class="eyebrow">How it works</p>
-          <h2>From <em style="color:var(--teal)">Goals</em> to <em style="color:var(--teal)">Freedom</em> in five steps.</h2>
-          <p>Modelled on a calm first visit with a Certified Financial Planner and Norman Lewis's Word Power Made Easy.</p>
-        </div>
-        <ol class="journey" style="list-style:none;padding:0;margin:0;">
-          <li class="step start reveal"><div class="pin">1</div><h3>Goals</h3><p>Define your life milestones, timelines, and inflation reality.</p></li>
-          <li class="step reveal"><div class="pin">2</div><h3>Investment Vehicles</h3><p>Match the right containers—FDs, EPF, Mutual Funds, and Gold—to your timeline.</p></li>
-          <li class="step reveal"><div class="pin">3</div><h3>Expenses &amp; Risks</h3><p>Manage lifestyle expenses, credit cards, and loan EMIs while shielding against unseen risks.</p></li>
-          <li class="step reveal"><div class="pin">4</div><h3>Discipline</h3><p>Automate monthly SIPs, annual rebalancing, and your emergency buffer.</p></li>
-          <li class="step end reveal"><div class="pin" aria-label="Destination">★</div><h3>Freedom</h3><p>Achieve a work-optional life with peace of mind and sustainable cash flow.</p><small>Saved on your device</small></li>
-        </ol>
-      </div>
-    </section>
-
-    <!-- OUTPUTS -->
-    <section id="outputs" class="alt">
-      <div class="wrap">
-        <div class="section-head reveal">
-          <p class="eyebrow">What you walk away with</p>
-          <h2>Informed, never sold to.</h2>
-          <p>Everything you need to spot financial traps, ask sharper questions, and design your own path.</p>
-        </div>
-        <div class="outputs">
-          <article class="out feature reveal">
-            <div>
-              <span class="tag">Personalised &middot; Live Math</span>
-              <h3>Your CFP Self-Audit Brief</h3>
-              <p>Answer three simple questions in 45 seconds to unlock your tailored asset recipe, inflation-adjusted goal target, and the exact blind-spot questions to check on your existing investments.</p>
-            </div>
-            <div class="sheet" aria-hidden="true">
-              <b>Questions for my portfolio</b>
-              <div>Does my 6.8% Bank FD beat 5.4% inflation after slab tax?</div>
-              <div>Am I losing ~1% every year in Regular vs. Direct Mutual Funds?</div>
-              <div>Does my Equity : Debt : Gold mix match my goal's deadline?</div>
-            </div>
-          </article>
-          <article class="out reveal">
-            <span class="tag">Norman Lewis Method</span>
-            <h3>50 "Money Power" Terms</h3>
-            <p>Every concept explained via Human Friction &rarr; Plain Meaning &rarr; Live Context in your own rupees.</p>
-          </article>
-          <article class="out reveal">
-            <span class="tag">AMFI &amp; NSE Data</span>
-            <h3>Direct vs. Regular X-Ray</h3>
-            <p>Look up any Indian Mutual Fund or NSE Stock to see trailing returns and distributor commission drag.</p>
-          </article>
-          <article class="out reveal">
-            <span class="tag">10-Chapter Syllabus</span>
-            <h3>Guided Field Map</h3>
-            <p>Highlights the exact chapters that matter most for your life stage while keeping all 10 open.</p>
-          </article>
-          <article class="out reveal">
-            <span class="tag">India-Tuned Pulse</span>
-            <h3>Live Macro Benchmarks</h3>
-            <p>Built-in Indian CPI (5.4%), Education (9%), Medical (11.5%), EPF/PPF, 24K Gold &amp; Nifty 50 metrics.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- VIDEO -->
-    <section id="video" style="display:none;">
-      <div class="wrap video-box reveal">
-        <p class="eyebrow">Quick walkthrough</p>
-        <h2 style="margin-bottom:32px;">See KYF in action</h2>
-        <div class="video-poster" id="videoPoster">
-          <img class="logo" src="css/kyf_logo.png" alt="">
-          <button type="button" class="play" id="playBtn" aria-label="Play the walkthrough video"><span aria-hidden="true">&#9654;</span> Watch walkthrough</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- TRUST -->
-    <section id="trust" class="alt">
-      <div class="wrap">
-        <div class="section-head reveal">
-          <p class="eyebrow">Honest by design</p>
-          <h2>Private. Clear about its limits.</h2>
-        </div>
-        <div class="trust">
-          <div class="panel reveal">
-            <h3>What KYF is</h3>
-            <ul>
-              <li>A 100% educational simulator to build your personal finance vocabulary and intuition.</li>
-              <li>Pocket-Calculator Mode: runs strictly in your browser (IndexedDB) with zero servers or tracking cookies.</li>
-              <li>Equipped with a 1-click "Wipe My Vault" button to reset all numbers in 5 milliseconds.</li>
-              <li>Built to help you have a sharper conversation with a SEBI-registered advisor or your family.</li>
-            </ul>
+      <!-- Framework Intro Banner -->
+      <section class="framework-intro" style="padding: clamp(48px, 6vw, 76px) 0 32px; background: var(--paper); border-top: 1px solid var(--line);">
+        <div class="wrap">
+          <div class="section-head reveal" style="max-width: 760px; margin-bottom: 0;">
+            <p class="eyebrow">The Unified Framework</p>
+            <h2>Three Pillars. One Disciplined Rhythm.</h2>
+            <p style="font-size: 17px; line-height: 1.6; color: var(--ink-soft); margin-top: 14px;">
+              Most personal finance advice fails because it separates milestone planning from daily habits and long-term portfolio preservation. KYF connects them into an unbroken triad: <strong>Goals</strong> anchor your destination, <strong>Cadence</strong> builds your execution engine, and <strong>Freedom</strong> delivers peace of mind.
+            </p>
           </div>
-          <div class="panel warn reveal">
-            <h3>What it is not</h3>
-            <ul>
-              <li>Not investment, tax, or legal advice, and not a SEBI-registered advisory service.</li>
-              <li>Never sells insurance, mutual funds, loans, or brokerage accounts—zero affiliate links.</li>
-              <li>Historical index, stock, and mutual fund returns shown are for educational X-ray only, never a guarantee of future returns.</li>
-            </ul>
+        </div>
+      </section>
+
+      <!-- 1. THREE DIMENSIONS -->
+      <section id="dimensions" class="alt" style="padding-top: clamp(40px, 5vw, 64px);">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <p class="eyebrow">Dimension Triad</p>
+            <h2>One profile. Three interconnected lenses.</h2>
+            <p>Generic financial advice is written for nobody. KYF weighs your life stage, family milestones, and money habits across three core dimensions:</p>
           </div>
+          <div class="dims">
+            <article class="dim d1 reveal">
+              <div class="num">Dimension 01</div>
+              <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div>
+              <h3>Goals</h3>
+              <p>Price your next family milestones against real Indian inflation and calculate your required monthly SIP.</p>
+              <ul>
+                <li>Live CPI (5.4%) &amp; Higher Education (10%) compounding</li>
+                <li>Monthly SIP calculation &amp; step-up roadmap</li>
+                <li>Timeline matching: Short (&lt;3y), Medium (3-7y), Long (&gt;7y)</li>
+              </ul>
+              <a href="goals.html" style="margin-top:18px; font-family:var(--mono); font-size:12px; font-weight:700; color:var(--green); text-decoration:none; display:inline-flex; align-items:center; gap:6px;">Open Goals Planner &rarr;</a>
+            </article>
+            <article class="dim d2 reveal">
+              <div class="num">Dimension 02</div>
+              <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
+              <h3>Cadence</h3>
+              <p>Establish your disciplined financial rhythm—organize life milestone dates, SIP automation, and recurring housekeeping.</p>
+              <ul>
+                <li>Action-oriented recurring milestones with target work dates</li>
+                <li>12-Month liquid peace buffer &amp; term insurance coverage</li>
+                <li>Annual rebalancing, CIBIL audit &amp; tax routine</li>
+              </ul>
+              <a href="cadence.html" style="margin-top:18px; font-family:var(--mono); font-size:12px; font-weight:700; color:var(--amber); text-decoration:none; display:inline-flex; align-items:center; gap:6px;">Open Action Cadence &rarr;</a>
+            </article>
+            <article class="dim d3 reveal">
+              <div class="num">Dimension 03</div>
+              <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+              <h3>Freedom</h3>
+              <p>Build a calm, work-optional roadmap with a balanced Equity, Debt, and Gold recipe tailored to your life stage.</p>
+              <ul>
+                <li>3-Bucket Work-Optional Freedom architecture</li>
+                <li>Drawdown protection &amp; sequence-of-returns shield</li>
+                <li>Compounding wealth to focus on what matters most</li>
+              </ul>
+              <a href="portfolio.html" style="margin-top:18px; font-family:var(--mono); font-size:12px; font-weight:700; color:var(--teal); text-decoration:none; display:inline-flex; align-items:center; gap:6px;">Explore Portfolio Blueprint &rarr;</a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. JOURNEY (HOW IT WORKS) -->
+      <section id="journey">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <p class="eyebrow">How it works</p>
+            <h2>From <em style="color:var(--teal)">Goals</em> to <em style="color:var(--teal)">Freedom</em> in five calm steps.</h2>
+            <p>Modeled on a calm first visit with a fee-only Certified Financial Planner, designed to eliminate anxiety, product bias, and confusion.</p>
+          </div>
+          <ol class="journey" style="list-style:none;padding:0;margin:0;">
+            <li class="step start reveal"><div class="pin">1</div><h3>Anchor Goals</h3><p>Define family milestones and price them against real inflation reality.</p><small>Dimension 01 &middot; Goals</small></li>
+            <li class="step reveal"><div class="pin">2</div><h3>Match Containers</h3><p>Select the right vehicles—Liquid, FDs, PPF, Gold &amp; Index Mutual Funds—by horizon.</p><small>Asset Allocation</small></li>
+            <li class="step reveal"><div class="pin">3</div><h3>Build Cadence</h3><p>Lock in a 12-month peace buffer, automate monthly SIPs, and shield against unseen risks.</p><small>Dimension 02 &middot; Cadence</small></li>
+            <li class="step reveal"><div class="pin">4</div><h3>Stay Disciplined</h3><p>Review schedules annually, avoid emotional panic during dips, and rebalance calmly.</p><small>Systematic Habits</small></li>
+            <li class="step end reveal"><div class="pin" aria-label="Destination">★</div><h3>True Freedom</h3><p>Attain a work-optional life where money sustainably generates more money than you spend.</p><small>Dimension 03 &middot; Freedom</small></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 3. OUTPUTS (WHAT YOU GET) -->
+      <section id="outputs" class="alt">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <p class="eyebrow">What you walk away with</p>
+            <h2>Informed, empowered, never sold to.</h2>
+            <p>A complete, private toolkit to take control of your financial life without paying for biased advisory or product pitches.</p>
+          </div>
+          <div class="outputs">
+            <article class="out feature reveal">
+              <div>
+                <span class="tag">Dimension 01 &middot; Live Math</span>
+                <h3>Life Goals &amp; Monthly SIP Engine</h3>
+                <p>Calculate inflation-adjusted targets for retirement, children's higher education, and real estate down payments. View instant net funding gaps, monthly SIP requirements, and horizon-matched asset recipes.</p>
+              </div>
+              <div class="sheet" aria-hidden="true">
+                <b>Questions for my portfolio</b>
+                <div>Does my 6.8% Bank FD beat 5.4% inflation after slab tax?</div>
+                <div>Am I losing ~1% every year in Regular vs. Direct Mutual Funds?</div>
+                <div>Does my Equity : Debt : Gold mix match my goal's deadline?</div>
+              </div>
+            </article>
+            <article class="out reveal">
+              <span class="tag">Dimension 02 &middot; Action</span>
+              <h3>Financial Cadence Taskboard</h3>
+              <p>Track your complete spectrum of housekeeping: 12-month peace buffer, term insurance, CIBIL audit, and rebalancing routines with target work dates.</p>
+            </article>
+            <article class="out reveal">
+              <span class="tag">Dimension 03 &middot; Freedom</span>
+              <h3>3-Bucket Portfolio Blueprint</h3>
+              <p>Structure your assets across Liquid Runway, Stability Debt &amp; Gold, and Long-Term Compounding Equity to protect against sequence-of-returns drawdown.</p>
+            </article>
+            <article class="out reveal">
+              <span class="tag">Macro Benchmarks</span>
+              <h3>Sovereign Hurdle &amp; Market X-Ray</h3>
+              <p>Benchmark your investments against the 10Y Indian G-Sec hurdle rate, test carpet vs. super built-up property costs, and audit direct plan savings.</p>
+            </article>
+            <article class="out reveal">
+              <span class="tag">Zero Cloud Risk</span>
+              <h3>100% Private Local Vaults</h3>
+              <p>Everything runs strictly in your browser storage. Save, backup, and restore your complete goals and cadence data via portable .kyf files anytime.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. TRUST (PRIVACY & HONEST BY DESIGN) -->
+      <section id="trust">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <p class="eyebrow">Honest by design</p>
+            <h2>Private. Zero product selling. Clear limits.</h2>
+            <p>Built on the conviction that personal finance education should have zero conflicts of interest.</p>
+          </div>
+          <div class="trust">
+            <div class="panel reveal">
+              <h3>What KYF is</h3>
+              <ul>
+                <li>A 100% educational simulator and personal finance calculator designed to give you intuition and clarity.</li>
+                <li>Pocket-Calculator Mode: runs strictly in your browser (IndexedDB / localStorage) with zero tracking cookies or remote servers.</li>
+                <li>Equipped with a 1-click portable .kyf vault save/open engine and an instant data wipe reset.</li>
+                <li>Built to empower you to have sharper, confident conversations with fee-only SEBI-registered advisors and your family.</li>
+              </ul>
+            </div>
+            <div class="panel warn reveal">
+              <h3>What it is not</h3>
+              <ul>
+                <li>Not investment, tax, or legal advice, and not a SEBI-registered advisory service or brokerage.</li>
+                <li>Never sells insurance, mutual funds, loans, credit cards, or demat accounts—strictly zero affiliate links or distributor kickbacks.</li>
+                <li>Historical index, stock, and mutual fund benchmarks shown are strictly for educational illustration, never guarantees of future returns.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- FINAL CTA -->
+    <section class="final">
+      <div class="wrap reveal">
+        <h2>Ready to build calm money confidence?</h2>
+        <p>Start with your life milestones, establish a disciplined cadence, and create your roadmap to work-optional freedom.</p>
+        <div style="display:flex; justify-content:center; gap:14px; flex-wrap:wrap;">
+          <a class="btn light" href="goals.html">Start with Goals &rarr;</a>
+          <a class="btn" href="cadence.html" style="background:transparent; border-color:#fff; color:#fff;">Explore Cadence</a>
         </div>
       </div>
     </section>
@@ -580,7 +687,7 @@
   <footer>
     <div class="wrap foot">
       <span>KYF — Know Your Finance. Build Money Power at Your Own Pace. Runs entirely in your browser.</span>
-      <span class="links"><a href="cadence.html">Start</a><a href="#dimensions">3 Dimensions</a><a href="cadence.html">Cadence</a><a href="#trust">Privacy</a></span>
+      <span class="links"><a href="goals.html">Goals</a><a href="cadence.html">Cadence</a><a href="portfolio.html">Portfolio</a><a href="#framework">Framework</a><a href="#trust">Privacy</a></span>
       <span>100% Educational Simulator &middot; Not Financial Advice.</span>
     </div>
   </footer>
