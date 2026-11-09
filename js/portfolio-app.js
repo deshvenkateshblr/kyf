@@ -884,7 +884,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <div class="leaf-ident-wrap">
                       <div class="leaf-name">
                         <span>${escapeHTML(h.name)}</span>
-                        <div class="leaf-actions">
+                        <div class="leaf-actions"${isDemoMode ? " hidden" : ""}>
                           <button type="button" class="btn-leaf-action btn-edit-leaf" data-holding-id="${escapeHTML(targetHoldingId)}" title="Edit holding">✏️ Edit</button>
                           <button type="button" class="btn-leaf-action btn-delete-leaf" data-holding-id="${escapeHTML(targetHoldingId)}" title="Delete holding">✕</button>
                         </div>
@@ -1032,12 +1032,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const nameToDelete = btn.getAttribute("data-name");
         if (!nameToDelete) return;
 
-        if (isDemoMode) {
-          isDemoMode = false;
-          localStorage.setItem("kyf_demo_mode", "false");
-          if (els.demoDataToggle) els.demoDataToggle.checked = false;
-          rawMembers = window.KYF_PORTFOLIO_DATA.getDemoMembers();
-        }
+        if (blockDemoChange()) return;
 
         const holdingCount = rawHoldings.filter((h) => h.member === nameToDelete).length;
         if (holdingCount > 0) {
@@ -1076,10 +1071,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (isDemoMode) {
-      isDemoMode = false;
-      localStorage.setItem("kyf_demo_mode", "false");
-      if (els.demoDataToggle) els.demoDataToggle.checked = false;
-      rawMembers = window.KYF_PORTFOLIO_DATA.getDemoMembers();
+      await leaveDemo();
+      showToast("Demo closed — adding to your own portfolio", "info");
     }
 
     if (rawMembers.some((m) => m.name.toLowerCase() === name.toLowerCase())) {
@@ -1638,6 +1631,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================================================
   function openHoldingModal(forEdit = false, holdingData = null) {
     if (!els.holdingModal) return;
+    if (!forEdit && isDemoMode) {
+      // Adding means "my own portfolio": close the demo first, then open a clean form
+      leaveDemo().then(() => {
+        showToast("Demo closed — adding to your own portfolio", "info");
+        openHoldingModal(false, holdingData);
+      });
+      return;
+    }
     populateHoldingModalDropdowns();
     els.holdingModal.style.display = "flex";
     els.holdingModal.setAttribute("aria-hidden", "false");
@@ -1681,6 +1682,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function openHoldingModalForEdit(holdingId) {
+    if (blockDemoChange()) return;
     const holding = rawHoldings.find((h) => h.id === holdingId || h.originalHoldingId === holdingId);
     if (!holding) {
       showToast("Holding not found", "error");
@@ -1766,12 +1768,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const holding = rawHoldings.find((h) => h.id === holdingId || h.originalHoldingId === holdingId);
     const hName = holding ? holding.name : "this holding";
 
-    if (isDemoMode) {
-      isDemoMode = false;
-      localStorage.setItem("kyf_demo_mode", "false");
-      if (els.demoDataToggle) els.demoDataToggle.checked = false;
-      rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
-    }
+    if (blockDemoChange()) return;
 
     // Snapshot so the delete can be undone from the toast (no blocking confirm dialog)
     const snapshot = [...rawHoldings];
@@ -1851,12 +1848,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    if (isDemoMode) {
-      isDemoMode = false;
-      localStorage.setItem("kyf_demo_mode", "false");
-      if (els.demoDataToggle) els.demoDataToggle.checked = false;
-      rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
-    }
+    // Safety net: the form is only opened outside demo mode, but never write into demo data
+    if (blockDemoChange()) return;
 
     // Determine pricing mode and instrumentMeta
     let pricingMode = "MANUAL";
@@ -1955,6 +1948,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================================================
   // Action Handlers
   // ==========================================================================
+  // Demo data is a read-only sandbox: it is never copied into the user's own portfolio.
+  // Leaving it restores the user's real data (or an empty portfolio) before anything is added.
+  async function leaveDemo() {
+    if (!isDemoMode) return;
+    if (els.demoDataToggle) els.demoDataToggle.checked = false;
+    await handleDemoToggle({ target: { checked: false } });
+  }
+
+  // Edit/delete on demo data: explain and offer the way out instead of silently converting it
+  function blockDemoChange() {
+    if (!isDemoMode) return false;
+    showToast("This is demo data (read-only).", "warning", {
+      label: "Start my own",
+      onAction: () => { leaveDemo(); }
+    });
+    return true;
+  }
+
   async function handleDemoToggle(e) {
     const isChecked = e.target.checked;
     isDemoMode = isChecked;

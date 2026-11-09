@@ -2777,3 +2777,8 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Demo data is read-only: its row actions are hidden */
+.leaf-actions[hidden] {
+  display: none;
+}

@@ -131,6 +131,33 @@ try {
   await page.waitForFunction(() => document.querySelectorAll(".btn-edit-leaf").length === 5);
   check((await netWorth()) === before, "Undo restores the holding and the net worth");
 
+  console.log("[7] Demo mode is a read-only sandbox");
+  const demoPage = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  const demoErrors = [];
+  demoPage.on("pageerror", (e) => demoErrors.push(e.message));
+  await demoPage.goto(base);
+  await demoPage.waitForSelector("#empty-state-demo-link");
+  await demoPage.click("#empty-state-demo-link");
+  await demoPage.waitForSelector(".btn-edit-leaf", { state: "attached" });
+  const demoRows = await demoPage.locator(".btn-edit-leaf").count();
+  check(demoRows > 0, `demo family loads (${demoRows} holdings)`);
+  check(!(await demoPage.locator(".btn-edit-leaf").first().isVisible()), "edit/delete buttons are hidden on demo rows");
+  await demoPage.click("#btn-open-holding-modal");
+  await demoPage.waitForSelector("#holding-modal", { state: "visible" });
+  check((await demoPage.isChecked("#demo-data-toggle")) === false, "Add leaves demo mode");
+  check((await demoPage.locator(".btn-edit-leaf").count()) === 0, "demo holdings are not copied into the new portfolio");
+  const memberOptions = await demoPage.locator("#select-holding-member option").allTextContents();
+  check(!memberOptions.some((t) => /rajesh|priya/i.test(t)), `demo members are not offered (${memberOptions.join(", ")})`);
+  await demoPage.fill("#modal-omni-search-input", "My FD");
+  await demoPage.fill("#input-holding-curval", "50000");
+  await demoPage.click("#btn-save-holding");
+  await demoPage.waitForSelector("#holding-modal", { state: "hidden" });
+  check((await demoPage.locator(".btn-edit-leaf").count()) === 1, "only the one new holding exists");
+  await demoPage.reload();
+  await demoPage.waitForSelector(".btn-edit-leaf");
+  check((await demoPage.locator(".btn-edit-leaf").count()) === 1, "your holding survives a reload (demo stays off)");
+  check(demoErrors.length === 0, "no page errors in demo flow", demoErrors.join(" | "));
+
   check(errors.length === 0, "no uncaught page errors", errors.join(" | "));
 } catch (err) {
   failed++;
