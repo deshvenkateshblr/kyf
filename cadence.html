@@ -641,6 +641,9 @@
     <span>Comments, questions, feedback? Write to <a href="mailto:info@vividnova.com">info@vividnova.com</a></span>
   </aside>
 
+  <!-- VAULT ENGINE -->
+  <script src="js/kyf-vault.js"></script>
+
   <!-- SCRIPT -->
   <script>
     (function () {
@@ -1273,93 +1276,27 @@
           }, 3200);
         }
 
-        // Save & Export to .kyf file
-        function saveAndExportKYF() {
-          saveActivities();
-          const payload = {
-            app: "Know Your Finance",
-            version: "1.0",
-            fileType: "kyf-vault",
-            encrypted: false,
-            savedAt: new Date().toISOString(),
-            data: {
-              cadence: activities
-            }
-          };
-
-          const jsonStr = JSON.stringify(payload, null, 2);
-          const blob = new Blob([jsonStr], { type: "application/octet-stream" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          const dateStr = new Date().toISOString().slice(0, 10);
-          a.href = url;
-          a.download = `my-cadence-${dateStr}.kyf`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-
-          showToast(`✓ Data saved & exported to my-cadence-${dateStr}.kyf`);
-        }
-
-        // Open & Load .kyf file
-        function handleOpenKYFFile(file) {
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            try {
-              const parsed = JSON.parse(e.target.result);
-              let importedActivities = null;
-
-              if (parsed && parsed.data && Array.isArray(parsed.data.cadence)) {
-                importedActivities = parsed.data.cadence;
-              } else if (Array.isArray(parsed)) {
-                importedActivities = parsed;
-              } else if (parsed && Array.isArray(parsed.cadence)) {
-                importedActivities = parsed.cadence;
-              }
-
-              if (!importedActivities || !importedActivities.length) {
-                alert("Unable to load file: could not find valid KYF activities.");
-                return;
-              }
-
-              activities = importedActivities;
+        // Unified KYF Vault Integration (Cadence + Portfolio + Goals)
+        if (window.KYF_VAULT) {
+          window.KYF_VAULT.registerPageHook({
+            pageName: "cadence",
+            getLocalData: () => {
               saveActivities();
+              return { cadence: activities };
+            },
+            onAfterOpen: (vaultData, summary) => {
+              loadActivities();
               render();
-              showToast(`✓ Loaded ${file.name} (${activities.length} activities)`);
-            } catch (err) {
-              alert("Error parsing .kyf file: " + err.message);
-            }
-          };
-          reader.readAsText(file);
-        }
-
-        // File input and Open buttons
-        const kyfFileInput = document.getElementById("kyfFileInput");
-        const navOpenFileBtn = document.getElementById("navOpenFileBtn");
-        const openFileHeroBtn = document.getElementById("openFileHeroBtn");
-
-        if (navOpenFileBtn && kyfFileInput) {
-          navOpenFileBtn.addEventListener("click", () => kyfFileInput.click());
-        }
-        if (openFileHeroBtn && kyfFileInput) {
-          openFileHeroBtn.addEventListener("click", () => kyfFileInput.click());
-        }
-        if (kyfFileInput) {
-          kyfFileInput.addEventListener("change", function (e) {
-            if (e.target.files && e.target.files.length) {
-              handleOpenKYFFile(e.target.files[0]);
-              e.target.value = "";
             }
           });
+          window.KYF_VAULT.bindPageUI({
+            fileInputId: "kyfFileInput",
+            openBtnId: "navOpenFileBtn",
+            openBtnSecondaryId: "openFileHeroBtn",
+            saveBtnId: "navSaveDataBtn",
+            saveBtnSecondaryId: "exportCadenceBtn"
+          });
         }
-
-        // Save Data buttons
-        const navSaveBtn = document.getElementById("navSaveDataBtn");
-        const exportCadenceBtn = document.getElementById("exportCadenceBtn");
-        if (navSaveBtn) navSaveBtn.addEventListener("click", saveAndExportKYF);
-        if (exportCadenceBtn) exportCadenceBtn.addEventListener("click", saveAndExportKYF);
 
         // Reset data
         const resetBtn = document.getElementById("resetCadenceBtn");

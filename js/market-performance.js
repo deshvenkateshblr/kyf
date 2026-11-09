@@ -2046,65 +2046,16 @@
           });
         });
 
-        // Nav Save & Open handler bridges for app toolbar consistency
-        const kyfFileInput = document.getElementById("kyfFileInput");
-        const navOpenFileBtn = document.getElementById("navOpenFileBtn");
-        const navSaveBtn = document.getElementById("navSaveDataBtn");
-
-        if (navOpenFileBtn && kyfFileInput) {
-          navOpenFileBtn.addEventListener("click", () => kyfFileInput.click());
-        }
-
-        if (kyfFileInput) {
-          kyfFileInput.addEventListener("change", function (e) {
-            if (e.target.files && e.target.files.length) {
-              const file = e.target.files[0];
-              const reader = new FileReader();
-              reader.onload = function (evt) {
-                try {
-                  const parsed = JSON.parse(evt.target.result);
-                  if (parsed && parsed.data && parsed.data.cadence) {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed.data.cadence));
-                    alert("✓ Loaded cadence activities from " + file.name + ". Return to Cadence to view.");
-                  } else {
-                    alert("File loaded successfully.");
-                  }
-                } catch (err) {
-                  alert("Error parsing .kyf file: " + err.message);
-                }
-              };
-              reader.readAsText(file);
-              e.target.value = "";
-            }
+        // Unified KYF Vault Integration (Cadence + Portfolio + Goals)
+        if (window.KYF_VAULT) {
+          window.KYF_VAULT.registerPageHook({
+            pageName: "market-performance",
+            getLocalData: () => ({ marketReviewDate: new Date().toISOString() })
           });
-        }
-
-        if (navSaveBtn) {
-          navSaveBtn.addEventListener("click", function () {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            const activities = raw ? JSON.parse(raw) : [];
-            const payload = {
-              app: "Know Your Finance",
-              version: "1.0",
-              fileType: "kyf-vault",
-              encrypted: false,
-              savedAt: new Date().toISOString(),
-              data: {
-                cadence: activities,
-                marketReviewDate: new Date().toISOString()
-              }
-            };
-            const jsonStr = JSON.stringify(payload, null, 2);
-            const blob = new Blob([jsonStr], { type: "application/octet-stream" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            const dateStr = new Date().toISOString().slice(0, 10);
-            a.href = url;
-            a.download = `my-cadence-${dateStr}.kyf`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+          window.KYF_VAULT.bindPageUI({
+            fileInputId: "kyfFileInput",
+            openBtnId: "navOpenFileBtn",
+            saveBtnId: "navSaveDataBtn"
           });
         }
 

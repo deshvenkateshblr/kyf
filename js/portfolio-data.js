@@ -469,32 +469,34 @@ window.KYF_PORTFOLIO_DATA = (() => {
 
   // ==========================================================================
   // App-Level Unified .kyf Vault Import / Export (Cadence + Portfolio + Goals)
+  // Routed through shared js/kyf-vault.js
   // ==========================================================================
-  function createUnifiedVaultPayload(holdings, goals) {
+  function exportAppData(holdings, goals) {
+    if (window.KYF_VAULT) {
+      return window.KYF_VAULT.save({
+        portfolio: holdings,
+        portfolioGoals: goals
+      });
+    }
+
     let cadenceData = null;
     try {
       const rawCadence = localStorage.getItem(CADENCE_STORAGE_KEY);
       if (rawCadence) cadenceData = JSON.parse(rawCadence);
-    } catch {
-      // pass
-    }
+    } catch {}
 
-    return {
+    const payload = {
       app: "Know Your Finance",
-      version: "1.3.0",
+      version: "2.0.0",
       fileType: "kyf-vault",
       encrypted: false,
       savedAt: new Date().toISOString(),
       data: {
         cadence: cadenceData || [],
         portfolio: holdings,
-        goals: goals || []
+        portfolioGoals: goals || []
       }
     };
-  }
-
-  function exportAppData(holdings, goals) {
-    const payload = createUnifiedVaultPayload(holdings, goals);
     const jsonStr = JSON.stringify(payload, null, 2);
     const blob = new Blob([jsonStr], { type: "application/octet-stream" });
     const url = URL.createObjectURL(blob);
@@ -512,21 +514,23 @@ window.KYF_PORTFOLIO_DATA = (() => {
   }
 
   function parseAndExtractKyfData(text) {
-    const parsed = JSON.parse(text);
+    if (window.KYF_VAULT && typeof window.KYF_VAULT.parseAndExtractKyfData === "function") {
+      return window.KYF_VAULT.parseAndExtractKyfData(text);
+    }
+
+    const parsed = typeof text === "string" ? JSON.parse(text) : text;
     let importedHoldings = null;
     let importedGoals = null;
     let importedCadence = null;
 
     if (parsed && parsed.data) {
-      if (Array.isArray(parsed.data.portfolio)) {
-        importedHoldings = parsed.data.portfolio;
-      }
-      if (Array.isArray(parsed.data.goals)) {
-        importedGoals = parsed.data.goals;
-      }
-      if (Array.isArray(parsed.data.cadence)) {
-        importedCadence = parsed.data.cadence;
-      }
+      if (Array.isArray(parsed.data.portfolio)) importedHoldings = parsed.data.portfolio;
+      else if (Array.isArray(parsed.data.holdings)) importedHoldings = parsed.data.holdings;
+
+      if (Array.isArray(parsed.data.portfolioGoals)) importedGoals = parsed.data.portfolioGoals;
+      else if (Array.isArray(parsed.data.goals)) importedGoals = parsed.data.goals;
+
+      if (Array.isArray(parsed.data.cadence)) importedCadence = parsed.data.cadence;
     } else if (parsed && Array.isArray(parsed.holdings)) {
       importedHoldings = parsed.holdings;
       if (Array.isArray(parsed.goals)) importedGoals = parsed.goals;
@@ -534,13 +538,10 @@ window.KYF_PORTFOLIO_DATA = (() => {
       importedHoldings = parsed;
     }
 
-    // If cadence was present, preserve it into localStorage
     if (importedCadence && importedCadence.length) {
       try {
         localStorage.setItem(CADENCE_STORAGE_KEY, JSON.stringify(importedCadence));
-      } catch {
-        // pass
-      }
+      } catch {}
     }
 
     return {

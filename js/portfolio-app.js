@@ -823,8 +823,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function handleSaveAppData() {
-    const fileName = window.KYF_PORTFOLIO_DATA.exportAppData(rawHoldings, rawGoals);
-    showToast(`✓ Data saved & exported to ${fileName}`, "success");
+    if (window.KYF_VAULT) {
+      window.KYF_VAULT.save({
+        portfolio: rawHoldings,
+        portfolioGoals: rawGoals
+      });
+    } else {
+      const fileName = window.KYF_PORTFOLIO_DATA.exportAppData(rawHoldings, rawGoals);
+      showToast(`✓ Data saved & exported to ${fileName}`, "success");
+    }
   }
 
   function handleResetSelections() {
@@ -922,26 +929,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       els.demoDataToggle.addEventListener("change", handleDemoToggle);
     }
 
-    // 7. App-Level Toolbar: Open & Save Data Buttons
-    if (els.navOpenFileBtn && els.kyfFileInput) {
-      els.navOpenFileBtn.addEventListener("click", () => {
-        els.kyfFileInput.click();
-      });
-    }
-
-    if (els.kyfFileInput) {
-      els.kyfFileInput.addEventListener("change", async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-
-        try {
-          const text = await file.text();
-          const result = window.KYF_PORTFOLIO_DATA.parseAndExtractKyfData(text);
-          if (result.holdings && result.holdings.length) {
+    // 7. App-Level Toolbar: Open & Save Data Buttons backed by shared KYF Vault
+    if (window.KYF_VAULT) {
+      window.KYF_VAULT.registerPageHook({
+        pageName: "portfolio",
+        getLocalData: () => ({
+          portfolio: rawHoldings,
+          portfolioGoals: rawGoals
+        }),
+        onAfterOpen: async (vaultData, summary) => {
+          if (vaultData.portfolio && vaultData.portfolio.length) {
             isDemoMode = false;
             localStorage.setItem("kyf_demo_mode", "false");
-            userHoldings = result.holdings;
-            userGoals = result.goals || [];
+            userHoldings = vaultData.portfolio;
+            userGoals = vaultData.portfolioGoals || [];
             localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
             localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
             rawHoldings = userHoldings;
@@ -949,25 +950,67 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (els.demoDataToggle) els.demoDataToggle.checked = false;
             await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
             await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
-          } else if (result.goals && result.goals.length) {
-            userGoals = result.goals;
+          } else if (vaultData.portfolioGoals && vaultData.portfolioGoals.length) {
+            userGoals = vaultData.portfolioGoals;
             rawGoals = userGoals;
             await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
           }
-
           handleResetSelections();
-          showToast(`✓ Loaded ${file.name} (${rawHoldings.length} holdings)`, "success");
           renderApp();
-        } catch (err) {
-          alert("Error parsing .kyf file: " + err.message);
-        } finally {
-          els.kyfFileInput.value = "";
         }
       });
-    }
+      window.KYF_VAULT.bindPageUI({
+        fileInputId: "kyfFileInput",
+        openBtnId: "navOpenFileBtn",
+        saveBtnId: "navSaveDataBtn"
+      });
+    } else {
+      if (els.navOpenFileBtn && els.kyfFileInput) {
+        els.navOpenFileBtn.addEventListener("click", () => {
+          els.kyfFileInput.click();
+        });
+      }
 
-    if (els.navSaveBtn) {
-      els.navSaveBtn.addEventListener("click", handleSaveAppData);
+      if (els.kyfFileInput) {
+        els.kyfFileInput.addEventListener("change", async (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+
+          try {
+            const text = await file.text();
+            const result = window.KYF_PORTFOLIO_DATA.parseAndExtractKyfData(text);
+            if (result.holdings && result.holdings.length) {
+              isDemoMode = false;
+              localStorage.setItem("kyf_demo_mode", "false");
+              userHoldings = result.holdings;
+              userGoals = result.goals || [];
+              localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
+              localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
+              rawHoldings = userHoldings;
+              rawGoals = userGoals;
+              if (els.demoDataToggle) els.demoDataToggle.checked = false;
+              await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+              await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
+            } else if (result.goals && result.goals.length) {
+              userGoals = result.goals;
+              rawGoals = userGoals;
+              await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
+            }
+
+            handleResetSelections();
+            showToast(`✓ Loaded ${file.name} (${rawHoldings.length} holdings)`, "success");
+            renderApp();
+          } catch (err) {
+            alert("Error parsing .kyf file: " + err.message);
+          } finally {
+            els.kyfFileInput.value = "";
+          }
+        });
+      }
+
+      if (els.navSaveBtn) {
+        els.navSaveBtn.addEventListener("click", handleSaveAppData);
+      }
     }
 
     // 8. Context Filter Click Delegation (clicking 👤 Individual or Asset Class in any row)

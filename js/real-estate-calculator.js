@@ -154,6 +154,14 @@
         });
 
         updateCalculator();
+
+        if (window.KYF_VAULT) {
+          window.KYF_VAULT.bindPageUI({
+            fileInputId: "kyfFileInput",
+            openBtnId: "navOpenFileBtn",
+            saveBtnId: "navSaveDataBtn"
+          });
+        }
       }
 
       if (document.readyState === "loading") {

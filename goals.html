@@ -735,6 +735,9 @@
     <span>Comments, questions, feedback? Write to <a href="mailto:info@vividnova.com">info@vividnova.com</a></span>
   </aside>
 
+  <!-- VAULT ENGINE -->
+  <script src="js/kyf-vault.js"></script>
+
   <!-- SCRIPT -->
   <script>
     (function () {
@@ -1350,85 +1353,24 @@
         }
       });
 
-      // Export & Save to .kyf file
-      function saveAndExportKYF() {
-        saveGoals();
-        const payload = {
-          app: "Know Your Finance",
-          version: "1.0",
-          fileType: "kyf-vault",
-          encrypted: false,
-          savedAt: new Date().toISOString(),
-          data: {
-            goals: goals
-          }
-        };
-
-        const jsonStr = JSON.stringify(payload, null, 2);
-        const blob = new Blob([jsonStr], { type: "application/octet-stream" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        const dateStr = new Date().toISOString().slice(0, 10);
-        a.href = url;
-        a.download = `my-goals-${dateStr}.kyf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        showToast(`✓ Goals saved & exported to my-goals-${dateStr}.kyf`);
-      }
-
-      // Open & Load .kyf file
-      function handleOpenKYFFile(file) {
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          try {
-            const parsed = JSON.parse(e.target.result);
-            let importedGoals = null;
-
-            if (parsed && parsed.data && Array.isArray(parsed.data.goals)) {
-              importedGoals = parsed.data.goals;
-            } else if (parsed && Array.isArray(parsed.goals)) {
-              importedGoals = parsed.goals;
-            } else if (Array.isArray(parsed)) {
-              importedGoals = parsed;
-            }
-
-            if (!importedGoals || !importedGoals.length) {
-              alert("Unable to load file: could not find valid KYF goals in this file.");
-              return;
-            }
-
-            goals = importedGoals;
+      // Unified KYF Vault Integration (Cadence + Portfolio + Goals)
+      if (window.KYF_VAULT) {
+        window.KYF_VAULT.registerPageHook({
+          pageName: "goals",
+          getLocalData: () => {
             saveGoals();
+            return { goals: goals };
+          },
+          onAfterOpen: (vaultData, summary) => {
+            loadGoals();
             render();
-            showToast(`✓ Loaded ${file.name} (${goals.length} goals)`);
-          } catch (err) {
-            alert("Error parsing .kyf file: " + err.message);
-          }
-        };
-        reader.readAsText(file);
-      }
-
-      const kyfFileInput = document.getElementById("kyfFileInput");
-      const navOpenFileBtn = document.getElementById("navOpenFileBtn");
-      const navSaveBtn = document.getElementById("navSaveDataBtn");
-
-      if (navOpenFileBtn && kyfFileInput) {
-        navOpenFileBtn.addEventListener("click", () => kyfFileInput.click());
-      }
-      if (kyfFileInput) {
-        kyfFileInput.addEventListener("change", function (e) {
-          if (e.target.files && e.target.files.length) {
-            handleOpenKYFFile(e.target.files[0]);
-            e.target.value = "";
           }
         });
-      }
-      if (navSaveBtn) {
-        navSaveBtn.addEventListener("click", saveAndExportKYF);
+        window.KYF_VAULT.bindPageUI({
+          fileInputId: "kyfFileInput",
+          openBtnId: "navOpenFileBtn",
+          saveBtnId: "navSaveDataBtn"
+        });
       }
 
       // Initialize
