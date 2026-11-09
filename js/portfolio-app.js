@@ -152,15 +152,40 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Toast Notifications
   // ==========================================================================
   let toastTimer = null;
-  function showToast(message, type = "success") {
+  function showToast(message, type = "success", action = null) {
     if (!els.toast) return;
     clearTimeout(toastTimer);
     els.toast.textContent = message;
+    if (action && typeof action.onAction === "function") {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "toast-action-btn";
+      btn.textContent = action.label || "Undo";
+      btn.addEventListener("click", () => {
+        clearTimeout(toastTimer);
+        els.toast.className = "toast-notice";
+        action.onAction();
+      });
+      els.toast.appendChild(btn);
+    }
     els.toast.className = `toast-notice show ${type}`;
     toastTimer = setTimeout(() => {
       els.toast.className = "toast-notice";
-    }, 3200);
+    }, action ? 7000 : 3200);
   }
+
+  // Flag unsaved changes so the Save button pulses and leaving the page warns the user
+  function markDataChanged() {
+    if (window.KYF_VAULT && typeof window.KYF_VAULT.markDirty === "function") {
+      window.KYF_VAULT.markDirty();
+    }
+  }
+
+  document.addEventListener("vault:dirtychange", (e) => {
+    if (els.navSaveBtn) {
+      els.navSaveBtn.classList.toggle("has-unsaved", !!(e.detail && e.detail.dirty));
+    }
+  });
 
   // ==========================================================================
   // Market Pulse Status Bar Renderer
@@ -1023,6 +1048,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         userMembers = [...rawMembers];
         localStorage.setItem("kyf_user_members", JSON.stringify(userMembers));
         await window.KYF_PORTFOLIO_DATA.saveMembersToDB(userMembers);
+        markDataChanged();
 
         if (activeMemberScope instanceof Set && activeMemberScope.has(nameToDelete)) {
           activeMemberScope.delete(nameToDelete);
@@ -1070,6 +1096,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     userMembers = [...rawMembers];
     localStorage.setItem("kyf_user_members", JSON.stringify(userMembers));
     await window.KYF_PORTFOLIO_DATA.saveMembersToDB(userMembers);
+    markDataChanged();
 
     els.inputMemberName.value = "";
     renderModalMembersList();
@@ -1582,6 +1609,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     els.holdingModal.style.display = "flex";
     els.holdingModal.setAttribute("aria-hidden", "false");
 
+    // Progressive disclosure: optional fields stay collapsed when adding, open when editing
+    const moreDetails = document.getElementById("holding-more-details");
+    if (moreDetails) moreDetails.open = !!forEdit;
+
     if (!forEdit) {
       editingHoldingId = null;
       activeModalInstrument = null;
@@ -1699,10 +1730,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const holding = rawHoldings.find((h) => h.id === holdingId || h.originalHoldingId === holdingId);
     const hName = holding ? holding.name : "this holding";
 
-    if (!window.confirm(`Are you sure you want to delete "${hName}"? This cannot be undone.`)) {
-      return;
-    }
-
     if (isDemoMode) {
       isDemoMode = false;
       localStorage.setItem("kyf_demo_mode", "false");
@@ -1710,14 +1737,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
     }
 
+    // Snapshot so the delete can be undone from the toast (no blocking confirm dialog)
+    const snapshot = [...rawHoldings];
+
+    const persistHoldings = async () => {
+      userHoldings = [...rawHoldings];
+      localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
+      await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+    };
+
     rawHoldings = rawHoldings.filter((h) => h.id !== holdingId && h.originalHoldingId !== holdingId);
-    userHoldings = [...rawHoldings];
-    localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
-    await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+    await persistHoldings();
+    markDataChanged();
 
     closeHoldingModal();
     renderApp();
-    showToast(`✓ Deleted "${hName}"`, "info");
+    showToast(`Deleted "${hName}"`, "info", {
+      label: "Undo",
+      onAction: async () => {
+        rawHoldings = snapshot;
+        await persistHoldings();
+        markDataChanged();
+        renderApp();
+        showToast(`✓ Restored "${hName}"`, "success");
+      }
+    });
   }
 
   function populateHoldingModalDropdowns() {
@@ -1866,6 +1910,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     userHoldings = [...rawHoldings];
     localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
     await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+    markDataChanged();
 
     closeHoldingModal();
     renderApp();

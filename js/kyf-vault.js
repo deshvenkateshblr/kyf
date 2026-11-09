@@ -76,6 +76,38 @@
 
       // Track bound DOM elements to prevent duplicate event listeners
       this._boundElements = new WeakSet();
+
+      // Unsaved-changes tracking: true when data changed since the last file save/open
+      this._dirty = false;
+      if (typeof window !== "undefined" && window.addEventListener) {
+        window.addEventListener("beforeunload", (e) => {
+          if (!this._dirty) return;
+          e.preventDefault();
+          e.returnValue = "";
+        });
+      }
+    }
+
+    /** Mark data as changed since the last .kyf save. */
+    markDirty() {
+      this._setDirty(true);
+    }
+
+    /** Mark data as safely written to a .kyf file. */
+    markClean() {
+      this._setDirty(false);
+    }
+
+    isDirty() {
+      return this._dirty;
+    }
+
+    _setDirty(value) {
+      if (this._dirty === value) return;
+      this._dirty = value;
+      if (typeof document !== "undefined" && typeof CustomEvent === "function") {
+        document.dispatchEvent(new CustomEvent("vault:dirtychange", { detail: { dirty: value } }));
+      }
     }
 
     /**
@@ -260,6 +292,7 @@
       }, 250);
 
       this.lastFileName = fileName;
+      this.markClean();
       this.showToast(`✓ Data saved & exported to ${fileName}`, "success");
       return fileName;
     }
@@ -381,6 +414,7 @@
         }
       }
 
+      this.markClean();
       this.showToast(toastMessage, "success");
 
       return {
