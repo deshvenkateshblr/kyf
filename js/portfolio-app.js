@@ -243,32 +243,25 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let html = `
       <button type="button" class="member-chip ${isAll ? "active" : ""}" data-name="ALL" title="View combined portfolio for all family members">
-        <span>👨‍👩‍👧‍👦 All Family</span>
+        <span class="chip-name">All Family</span>
         <span class="chip-amount">${formatINR(grandTotal, true)}</span>
       </button>
     `;
 
     for (const m of memberList) {
       const isSelected = !isAll && (activeMemberScope instanceof Set && activeMemberScope.has(m.name));
-      const checkMark = isSelected ? "✓ " : "";
       html += `
-        <button type="button" class="member-chip ${isSelected ? "active" : ""}" data-name="${escapeHTML(m.name)}" title="${escapeHTML(m.name)} (${escapeHTML(m.role)}): ${formatINR(m.totalVal)}">
-          <span>${checkMark}${m.avatar} ${escapeHTML(m.name)}</span>
+        <button type="button" class="member-chip ${isSelected ? "active" : ""}" data-name="${escapeHTML(m.name)}" title="${escapeHTML(m.name)} (${escapeHTML(m.role || "Family")}): ${formatINR(m.totalVal)}">
+          <span class="chip-name">${escapeHTML(m.name)}</span>
           <span class="chip-amount">${formatINR(m.totalVal, true)}</span>
         </button>
       `;
     }
 
-    html += `
-      <button type="button" class="member-chip add-member-chip" id="chip-add-member" title="Add or manage family members">
-        <span>＋ Add</span>
-      </button>
-    `;
-
     els.heroMemberChips.innerHTML = html;
 
     // Attach click events to member chips
-    const chips = els.heroMemberChips.querySelectorAll(".member-chip:not(.add-member-chip)");
+    const chips = els.heroMemberChips.querySelectorAll(".member-chip");
     chips.forEach((chip) => {
       chip.addEventListener("click", () => {
         const name = chip.getAttribute("data-name");
@@ -297,13 +290,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         renderApp();
       });
     });
-
-    const addBtn = els.heroMemberChips.querySelector("#chip-add-member");
-    if (addBtn) {
-      addBtn.addEventListener("click", () => {
-        openMemberModal();
-      });
-    }
   }
 
   // ==========================================================================
@@ -546,35 +532,104 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 10. Render Aligned TreeGrid
     if (rawHoldings.length === 0) {
+      const pulse = window.KYF_MARKET_PULSE || {};
+      const metals = pulse.preciousMetals || {};
+      const macro = pulse.macro || {};
+
+      const goldSub = metals.gold24kPerGram ? `₹${Number(metals.gold24kPerGram).toLocaleString("en-IN")}/g` : "₹14,280/g";
+      const fdSub = macro.sbiFd1Yr ? `FD ~${macro.sbiFd1Yr}%` : "Bank FD ~6.8%";
+      const epfSub = macro.epfRate ? `${macro.epfRate}% Sov.` : "8.25% Sov.";
+      const loanSub = macro.homeLoanAvg ? `~${macro.homeLoanAvg}%` : "~8.65%";
+
       els.treegrid.innerHTML = `
         <div class="portfolio-empty-box">
           <div class="portfolio-empty-icon">🏛️</div>
           <h2 class="portfolio-empty-title">What do you own?</h2>
           <p class="portfolio-empty-desc">
-            Your family wealth ledger is completely clean. Track your stocks, mutual funds, gold, fixed deposits, or real estate — 100% private and stored on your device.
+            Type any stock, mutual fund or city to begin — or pick a common asset type below.
           </p>
-          <div class="portfolio-empty-actions">
-            <button type="button" class="btn-empty-primary" id="btn-empty-add-holding">
-              <span>＋ Add First Holding</span>
-            </button>
-            <button type="button" class="btn-empty-secondary" id="btn-empty-open-vault">
-              <span>📂 Open .kyf Vault</span>
-            </button>
+
+          <!-- Typeahead Search Box -->
+          <div class="omni-search-wrapper">
+            <div class="omni-search-input-box">
+              <span class="omni-search-icon">🔍</span>
+              <input
+                type="text"
+                id="empty-omni-search-input"
+                class="omni-search-input"
+                placeholder="Search stock, fund or city (e.g. Parag, SBIN, Bengaluru)..."
+                autocomplete="off"
+                spellcheck="false"
+              >
+              <button type="button" class="omni-search-clear" id="empty-omni-search-clear" style="display:none;" aria-label="Clear search">✕</button>
+            </div>
+            <div id="empty-omni-search-results" class="omni-search-results" style="display:none;"></div>
           </div>
+
+          <!-- Quick-Pick Tiles -->
+          <div class="quick-pick-section">
+            <div class="quick-pick-label">Or select a standard asset:</div>
+            <div class="quick-pick-grid">
+              <button type="button" class="quick-pick-tile" data-quick="gold" title="Physical Gold / Sovereign Gold Bond">
+                <span class="tile-icon">🪙</span>
+                <span class="tile-name">Gold</span>
+                <span class="tile-sub mono-num">${goldSub}</span>
+              </button>
+
+              <button type="button" class="quick-pick-tile" data-quick="fd" title="Bank Fixed Deposit">
+                <span class="tile-icon">🏦</span>
+                <span class="tile-name">Fixed Deposit</span>
+                <span class="tile-sub mono-num">${fdSub}</span>
+              </button>
+
+              <button type="button" class="quick-pick-tile" data-quick="epf" title="EPF / PPF Retirement Corpus">
+                <span class="tile-icon">🛡️</span>
+                <span class="tile-name">EPF / PPF</span>
+                <span class="tile-sub mono-num">${epfSub}</span>
+              </button>
+
+              <button type="button" class="quick-pick-tile" data-quick="cash" title="Bank Savings & Liquid Cash">
+                <span class="tile-icon">💵</span>
+                <span class="tile-name">Cash &amp; Bank</span>
+                <span class="tile-sub">Liquid</span>
+              </button>
+
+              <button type="button" class="quick-pick-tile" data-quick="loan" title="Home Loan / Liability">
+                <span class="tile-icon">🏠</span>
+                <span class="tile-name">Loan / Debt</span>
+                <span class="tile-sub mono-num">${loanSub}</span>
+              </button>
+            </div>
+          </div>
+
           <div class="portfolio-empty-footer">
-            <button type="button" class="empty-state-demo-link" id="empty-state-demo-link">
-              <span>Try demo family (Rajesh &amp; Priya) &rarr;</span>
-            </button>
+            <div style="display:flex; justify-content:center; gap:16px; align-items:center; flex-wrap:wrap;">
+              <button type="button" class="btn-empty-secondary" id="btn-empty-open-vault">
+                <span>📂 Open .kyf Vault</span>
+              </button>
+              <button type="button" class="empty-state-demo-link" id="empty-state-demo-link">
+                <span>Try demo family (Rajesh &amp; Priya) &rarr;</span>
+              </button>
+            </div>
           </div>
         </div>
       `;
 
-      const emptyAddBtn = document.getElementById("btn-empty-add-holding");
-      if (emptyAddBtn) {
-        emptyAddBtn.addEventListener("click", () => {
-          openHoldingModal();
+      // Wire omni-search in empty state
+      wireOmniSearch(
+        document.getElementById("empty-omni-search-input"),
+        document.getElementById("empty-omni-search-results"),
+        document.getElementById("empty-omni-search-clear")
+      );
+
+      // Wire quick-pick tiles
+      const tiles = els.treegrid.querySelectorAll(".quick-pick-tile");
+      tiles.forEach((tile) => {
+        tile.addEventListener("click", () => {
+          const quickType = tile.getAttribute("data-quick");
+          handleQuickPick(quickType);
         });
-      }
+      });
 
       const emptyOpenBtn = document.getElementById("btn-empty-open-vault");
       if (emptyOpenBtn) {
@@ -861,10 +916,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     list.forEach((m) => {
       const holdingCount = rawHoldings.filter((h) => h.member === m.name).length;
       const countLabel = holdingCount === 1 ? "1 holding" : `${holdingCount} holdings`;
+      const initial = (m.name || "M").charAt(0).toUpperCase();
       html += `
         <div class="modal-member-row" data-id="${escapeHTML(m.id || m.name)}" data-name="${escapeHTML(m.name)}">
           <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:18px;">${m.avatar || "👤"}</span>
+            <div class="member-avatar-initial">${escapeHTML(initial)}</div>
             <div>
               <div style="font-weight:600; font-size:13px; color:var(--text);">${escapeHTML(m.name)}</div>
               <div style="font-size:11px; color:var(--muted);">${escapeHTML(m.role || "Family")} &bull; ${countLabel}</div>
@@ -920,7 +976,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const name = els.inputMemberName.value.trim();
     const role = (els.selectMemberRole && els.selectMemberRole.value) || "Family";
-    const avatar = (els.selectMemberAvatar && els.selectMemberAvatar.value) || "👤";
 
     if (!name) {
       alert("Please enter a member name.");
@@ -942,8 +997,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const newMember = {
       id: `mem_${Date.now()}`,
       name,
-      role,
-      avatar
+      role
     };
 
     rawMembers.push(newMember);
@@ -985,6 +1039,344 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ==========================================================================
+  // Omni-Asset Search & Typeahead Controller (Stocks, Funds & Residex Cities)
+  // ==========================================================================
+  function searchMarketInstruments(query, limit = 8) {
+    const q = (query || "").trim().toLowerCase();
+    if (!q || q.length < 2) return [];
+
+    const results = [];
+
+    // 1. Stocks from window.KYF_MARKET_EQUITIES
+    if (window.KYF_MARKET_EQUITIES && Array.isArray(window.KYF_MARKET_EQUITIES.stocks)) {
+      for (const s of window.KYF_MARKET_EQUITIES.stocks) {
+        // columns: [symbol, companyName, closePrice, ret1m, ret3m, ret6m, ret1y, isN500]
+        const symbol = String(s[0] || "");
+        const name = String(s[1] || "");
+        const price = Number(s[2]) || 0;
+        const sym = symbol.toLowerCase();
+        const nm = name.toLowerCase();
+
+        let score = 0;
+        if (sym === q) score = 100;
+        else if (sym.startsWith(q)) score = 85;
+        else if (nm.startsWith(q)) score = 65;
+        else if (nm.includes(" " + q)) score = 45;
+        else if (nm.includes(q)) score = 20;
+
+        if (score > 0) {
+          results.push({
+            type: "stock",
+            tag: "Stock",
+            tagClass: "tag-stock",
+            symbol,
+            name: `${name} (${symbol})`,
+            rawName: name,
+            subText: `NSE: ${symbol}`,
+            price: price > 0 ? `₹${price.toLocaleString("en-IN")}` : "Live Quote",
+            rawPrice: price,
+            assetClass: "Equities",
+            subCategory: s[7] === 1 ? "Nifty 500 Equities" : "NSE Equities",
+            custodian: "Zerodha / Demat",
+            score
+          });
+        }
+      }
+    }
+
+    // 2. Mutual Funds from window.KYF_MARKET_MF
+    if (window.KYF_MARKET_MF && Array.isArray(window.KYF_MARKET_MF.schemes)) {
+      for (const f of window.KYF_MARKET_MF.schemes) {
+        // columns: [directCode, fundName, category, directNav, regularNav, ret1m, ret3m, ret6m, ret1y]
+        const code = f[0];
+        const name = String(f[1] || "");
+        const category = String(f[2] || "Mutual Funds");
+        const nav = Number(f[3]) || Number(f[4]) || 0;
+        const nm = name.toLowerCase();
+
+        let score = 0;
+        if (nm.startsWith(q)) score = 80;
+        else if (nm.includes(" " + q)) score = 50;
+        else if (nm.includes(q)) score = 25;
+
+        if (score > 0) {
+          results.push({
+            type: "fund",
+            tag: "Fund",
+            tagClass: "tag-fund",
+            symbol: `MF-${code}`,
+            name,
+            rawName: name,
+            subText: category,
+            price: nav > 0 ? `NAV: ₹${nav.toFixed(2)}` : "Live NAV",
+            rawPrice: nav,
+            assetClass: "Mutual Funds",
+            subCategory: category,
+            custodian: "MF Central / AMC",
+            score
+          });
+        }
+      }
+    }
+
+    // 3. Real Estate Cities from window.KYF_RESIDEX.cities
+    if (window.KYF_RESIDEX && window.KYF_RESIDEX.cities) {
+      for (const [cityName, cityData] of Object.entries(window.KYF_RESIDEX.cities)) {
+        const cLower = cityName.toLowerCase();
+        let score = 0;
+        if (cLower === q) score = 95;
+        else if (cLower.startsWith(q)) score = 75;
+        else if (cLower.includes(q)) score = 35;
+
+        if (score > 0) {
+          let carpetRate = 8500;
+          if (cityData.carpet_price_sqft_by2024 && cityData.carpet_price_sqft_by2024.composite) {
+            const vals = Object.values(cityData.carpet_price_sqft_by2024.composite);
+            if (vals.length > 0) carpetRate = vals[vals.length - 1];
+          }
+
+          results.push({
+            type: "city",
+            tag: "City",
+            tagClass: "tag-city",
+            symbol: cityName,
+            name: `${cityName} Residential Property`,
+            rawName: `${cityName} Residential Property`,
+            subText: `NHB RESIDEX (${cityData.state || "India"})`,
+            price: `₹${Number(carpetRate).toLocaleString("en-IN")}/sq.ft`,
+            rawPrice: carpetRate,
+            assetClass: "Real Estate",
+            subCategory: "Residential Property",
+            custodian: "Physical / Registry",
+            score
+          });
+        }
+      }
+    }
+
+    results.sort((a, b) => b.score - a.score);
+    return results.slice(0, limit);
+  }
+
+  function wireOmniSearch(inputEl, resultsEl, clearBtnEl) {
+    if (!inputEl || !resultsEl) return;
+
+    let highlightedIndex = -1;
+    let currentResults = [];
+
+    function renderResults(results) {
+      currentResults = results;
+      highlightedIndex = -1;
+      if (!results || results.length === 0) {
+        resultsEl.innerHTML = `
+          <div style="padding: 12px 16px; font-size:12px; color:var(--muted); text-align:center;">
+            No matching stock, fund or city found. Fill details manually in the form.
+          </div>
+        `;
+        resultsEl.style.display = "block";
+        return;
+      }
+
+      let html = "";
+      results.forEach((r, idx) => {
+        html += `
+          <div class="omni-result-item" data-index="${idx}">
+            <div class="omni-result-left">
+              <span class="omni-tag ${r.tagClass}">${r.tag}</span>
+              <div class="omni-result-text">
+                <div class="omni-result-name">${escapeHTML(r.name)}</div>
+                <div class="omni-result-sub">${escapeHTML(r.subText || "")}</div>
+              </div>
+            </div>
+            <div class="omni-result-price mono-num">${r.price}</div>
+          </div>
+        `;
+      });
+
+      resultsEl.innerHTML = html;
+      resultsEl.style.display = "block";
+
+      const items = resultsEl.querySelectorAll(".omni-result-item");
+      items.forEach((item) => {
+        item.addEventListener("click", () => {
+          const idx = parseInt(item.getAttribute("data-index"), 10);
+          const chosen = currentResults[idx];
+          if (chosen) {
+            resultsEl.style.display = "none";
+            inputEl.value = "";
+            if (clearBtnEl) clearBtnEl.style.display = "none";
+            initiateAddHoldingFromSelection(chosen);
+          }
+        });
+      });
+    }
+
+    inputEl.addEventListener("input", (e) => {
+      const q = e.target.value;
+      if (clearBtnEl) clearBtnEl.style.display = q ? "block" : "none";
+      if (!q || q.trim().length < 2) {
+        resultsEl.style.display = "none";
+        resultsEl.innerHTML = "";
+        return;
+      }
+      const matches = searchMarketInstruments(q, 8);
+      renderResults(matches);
+    });
+
+    inputEl.addEventListener("keydown", (e) => {
+      const items = resultsEl.querySelectorAll(".omni-result-item");
+      if (!items || items.length === 0 || resultsEl.style.display === "none") return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        highlightedIndex = Math.min(items.length - 1, highlightedIndex + 1);
+        updateHighlight(items);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        highlightedIndex = Math.max(0, highlightedIndex - 1);
+        updateHighlight(items);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < currentResults.length) {
+          const chosen = currentResults[highlightedIndex];
+          resultsEl.style.display = "none";
+          inputEl.value = "";
+          if (clearBtnEl) clearBtnEl.style.display = "none";
+          initiateAddHoldingFromSelection(chosen);
+        }
+      } else if (e.key === "Escape") {
+        resultsEl.style.display = "none";
+      }
+    });
+
+    function updateHighlight(items) {
+      items.forEach((it, i) => {
+        if (i === highlightedIndex) {
+          it.classList.add("highlighted");
+          it.scrollIntoView({ block: "nearest" });
+        } else {
+          it.classList.remove("highlighted");
+        }
+      });
+    }
+
+    if (clearBtnEl) {
+      clearBtnEl.addEventListener("click", () => {
+        inputEl.value = "";
+        clearBtnEl.style.display = "none";
+        resultsEl.style.display = "none";
+        inputEl.focus();
+      });
+    }
+
+    document.addEventListener("click", (e) => {
+      if (!inputEl.contains(e.target) && !resultsEl.contains(e.target)) {
+        resultsEl.style.display = "none";
+      }
+    });
+  }
+
+  function handleQuickPick(type) {
+    const pulse = window.KYF_MARKET_PULSE || {};
+    const metals = pulse.preciousMetals || {};
+    const macro = pulse.macro || {};
+
+    if (type === "gold") {
+      const rate = metals.gold24kPerGram || 14280;
+      initiateAddHoldingFromSelection({
+        type: "gold",
+        tag: "Gold",
+        name: "Physical Gold 24K",
+        assetClass: "Gold",
+        subCategory: "24K Bullion / SGB",
+        custodian: "Locker / Physical",
+        notes: `Market rate: ₹${rate}/g`
+      });
+    } else if (type === "fd") {
+      const rate = macro.sbiFd1Yr || 6.8;
+      initiateAddHoldingFromSelection({
+        type: "fd",
+        tag: "Fixed Deposit",
+        name: "Bank Fixed Deposit",
+        assetClass: "Fixed Income",
+        subCategory: `Bank FD (${rate}% p.a.)`,
+        custodian: "SBI / HDFC Bank"
+      });
+    } else if (type === "epf") {
+      const rate = macro.epfRate || 8.25;
+      initiateAddHoldingFromSelection({
+        type: "epf",
+        tag: "EPF / PPF",
+        name: "Employees Provident Fund (EPF)",
+        assetClass: "Fixed Income",
+        subCategory: `EPF (${rate}% Sovereign Rate)`,
+        custodian: "EPFO"
+      });
+    } else if (type === "cash") {
+      initiateAddHoldingFromSelection({
+        type: "cash",
+        tag: "Cash & Bank",
+        name: "Savings Bank Account",
+        assetClass: "Cash & Liquid",
+        subCategory: "Savings Account",
+        custodian: "Bank Balance"
+      });
+    } else if (type === "loan") {
+      const rate = macro.homeLoanAvg || 8.65;
+      initiateAddHoldingFromSelection({
+        type: "loan",
+        tag: "Loan",
+        name: "Home Loan Outstanding",
+        assetClass: "Alternative",
+        subCategory: `Home Loan (${rate}%)`,
+        custodian: "Lending Bank"
+      });
+    }
+  }
+
+  function initiateAddHoldingFromSelection(item) {
+    openHoldingModal();
+
+    if (els.inputHoldingName) {
+      els.inputHoldingName.value = item.name || "";
+    }
+    if (els.selectHoldingAssetClass) {
+      els.selectHoldingAssetClass.value = item.assetClass || "Equities";
+    }
+    if (els.inputHoldingSubCategory) {
+      els.inputHoldingSubCategory.value = item.subCategory || "";
+    }
+    if (els.inputHoldingCustodian) {
+      if (item.custodian) {
+        els.inputHoldingCustodian.value = item.custodian;
+      } else if (item.assetClass === "Equities") {
+        els.inputHoldingCustodian.value = "Zerodha / Demat";
+      } else if (item.assetClass === "Mutual Funds") {
+        els.inputHoldingCustodian.value = "MF Central / AMC";
+      } else if (item.assetClass === "Real Estate") {
+        els.inputHoldingCustodian.value = "Physical / Registry";
+      } else if (item.assetClass === "Gold") {
+        els.inputHoldingCustodian.value = "Locker / SGB";
+      } else {
+        els.inputHoldingCustodian.value = "Self-Held";
+      }
+    }
+
+    if (els.inputHoldingCurVal) {
+      els.inputHoldingCurVal.value = "";
+      setTimeout(() => els.inputHoldingCurVal.focus(), 150);
+    }
+    if (els.inputHoldingInvVal) {
+      els.inputHoldingInvVal.value = "";
+    }
+
+    const modalTitle = document.getElementById("holding-modal-title");
+    if (modalTitle) {
+      modalTitle.textContent = `📈 Add ${item.tag || item.assetClass}`;
+    }
+  }
+
+  // ==========================================================================
   // Investment Holding Management Modal Controllers
   // ==========================================================================
   function openHoldingModal() {
@@ -1015,7 +1407,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         : (isDemoMode ? window.KYF_PORTFOLIO_DATA.getDemoMembers() : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }]);
 
       els.selectHoldingMember.innerHTML = membersList.map((m) => {
-        return `<option value="${escapeHTML(m.name)}">${m.avatar || "👤"} ${escapeHTML(m.name)} (${escapeHTML(m.role || "Family")})</option>`;
+        return `<option value="${escapeHTML(m.name)}">${escapeHTML(m.name)} (${escapeHTML(m.role || "Family")})</option>`;
       }).join("");
     }
 
@@ -1316,6 +1708,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.formAddHolding) {
       els.formAddHolding.addEventListener("submit", handleAddHoldingSubmit);
     }
+
+    // Modal Omni-Search Typeahead
+    wireOmniSearch(
+      document.getElementById("modal-omni-search-input"),
+      document.getElementById("modal-omni-search-results"),
+      document.getElementById("modal-omni-search-clear")
+    );
 
     // 7. App-Level Toolbar: Open & Save Data Buttons backed by shared KYF Vault
     if (window.KYF_VAULT) {

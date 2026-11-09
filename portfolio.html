@@ -57,12 +57,8 @@
       <!-- Top-Level Family Scope Selector -->
       <div class="hero-member-panel" role="region" aria-label="Family Member Scope">
         <div class="hero-member-header">
-          <span class="hero-member-title">👤 Family Member Scope</span>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <button type="button" class="btn-manage-members" id="btn-open-holding-modal" title="Add investment holding">＋ Holding</button>
-            <button type="button" class="btn-manage-members" id="btn-open-member-modal" title="Add or manage family members">＋ Member</button>
-            <span class="hero-member-hint">Filter by individual</span>
-          </div>
+          <span class="hero-member-title">Family Scope</span>
+          <button type="button" class="btn-manage-members" id="btn-open-member-modal" title="Add or manage family members">＋ Member</button>
         </div>
         <div class="hero-member-chips" id="hero-member-chips">
           <!-- Dynamically populated with individual names and live totals by js/portfolio-app.js -->
@@ -162,8 +158,11 @@
           </div>
         </div>
 
-        <!-- Toolbar Right Utilities: Collapse All & Search Box -->
+        <!-- Toolbar Right Utilities: Add Holding, Collapse All & Search Box -->
         <div class="toolbar-right-utils">
+          <button type="button" class="action-pill-btn btn-add-holding-action" id="btn-open-holding-modal" title="Add investment holding">
+            ＋ Add Holding
+          </button>
           <button type="button" class="action-pill-btn btn-collapse-util" id="btn-toggle-expand" title="Collapse or Expand all accordion groups">
             Collapse All
           </button>
@@ -250,13 +249,13 @@
       <!-- Add member form -->
       <form id="form-add-member" style="border-top: 1px dashed var(--line); padding-top: 18px;">
         <label style="display:block; font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:12px;">Add New Member</label>
-        <div style="display: grid; grid-template-columns: 1.5fr 1.2fr 1fr; gap: 10px; margin-bottom: 16px;">
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; margin-bottom: 16px;">
           <div>
-            <label style="display:block; font-family:var(--mono); font-size:10.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;" for="input-member-name">Name</label>
+            <label style="display:block; font-family:var(--mono); font-size:10.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;" for="input-member-name">Name *</label>
             <input type="text" id="input-member-name" class="form-control" placeholder="e.g. Self, Priya, Aarav" required>
           </div>
           <div>
-            <label style="display:block; font-family:var(--mono); font-size:10.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;" for="select-member-role">Role</label>
+            <label style="display:block; font-family:var(--mono); font-size:10.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;" for="select-member-role">Relationship / Role</label>
             <select id="select-member-role" class="form-control">
               <option value="Self">Self</option>
               <option value="Spouse">Spouse</option>
@@ -270,22 +269,9 @@
               <option value="Family">Family Member</option>
             </select>
           </div>
-          <div>
-            <label style="display:block; font-family:var(--mono); font-size:10.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;" for="select-member-avatar">Avatar</label>
-            <select id="select-member-avatar" class="form-control">
-              <option value="👤">👤 Person</option>
-              <option value="👨">👨 Man</option>
-              <option value="👩">👩 Woman</option>
-              <option value="👦">👦 Boy</option>
-              <option value="👧">👧 Girl</option>
-              <option value="👶">👶 Baby</option>
-              <option value="👴">👴 Elder M</option>
-              <option value="👵">👵 Elder F</option>
-            </select>
-          </div>
         </div>
         <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="submit" class="btn" style="padding: 8px 18px; font-size: 11.5px; background: var(--teal); border-color: var(--teal); color: #fff; border-radius: 999px; cursor: pointer;">＋ Add Member</button>
+          <button type="submit" class="btn" style="padding: 8px 18px; font-size: 11.5px; background: var(--teal); border-color: var(--teal); color: #fff; border-radius: 999px; cursor: pointer; font-weight:600;">＋ Add Member</button>
         </div>
       </form>
     </div>
@@ -297,6 +283,19 @@
       <div class="modal-head">
         <h3 id="holding-modal-title">📈 Add Investment Holding</h3>
         <button type="button" class="modal-close" id="btn-close-holding-modal" aria-label="Close dialog">✕</button>
+      </div>
+
+      <!-- Quick Search Typeahead within modal -->
+      <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed var(--line);">
+        <label style="display:block; font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:5px;">Instant Search (Stock, Fund, or City)</label>
+        <div class="omni-search-wrapper" style="margin: 0; max-width: 100%;">
+          <div class="omni-search-input-box" style="padding: 6px 14px;">
+            <span class="omni-search-icon" style="font-size:14px;">🔍</span>
+            <input type="text" id="modal-omni-search-input" class="omni-search-input" placeholder="Type to auto-fill (e.g. Parag, SBIN, Bengaluru)..." autocomplete="off">
+            <button type="button" class="omni-search-clear" id="modal-omni-search-clear" style="display:none;">✕</button>
+          </div>
+          <div id="modal-omni-search-results" class="omni-search-results" style="display:none; max-height: 220px;"></div>
+        </div>
       </div>
 
       <form id="form-add-holding">

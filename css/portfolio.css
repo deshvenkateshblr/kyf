@@ -247,12 +247,12 @@ button {
 
 .hero-member-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid rgba(215, 221, 210, 0.6);
-  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(215, 221, 210, 0.5);
+  padding-bottom: 7px;
 }
 
 .hero-member-title {
@@ -262,29 +262,21 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--teal-deep);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.hero-member-hint {
-  font-size: 11px;
-  color: var(--muted);
 }
 
 .hero-member-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
 }
 
 .member-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-family: var(--sans);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 500;
   padding: 5px 12px;
   border-radius: 999px;
   border: 1px solid var(--line);
@@ -306,14 +298,19 @@ button {
   background: var(--teal);
   color: #ffffff;
   border-color: var(--teal);
+  font-weight: 600;
   box-shadow: 0 2px 6px rgba(31, 122, 108, 0.25);
+}
+
+.member-chip .chip-name {
+  letter-spacing: -0.01em;
 }
 
 .member-chip .chip-amount {
   font-family: var(--mono);
   font-size: 10px;
-  font-weight: 700;
-  background: rgba(24, 38, 32, 0.08);
+  font-weight: 600;
+  background: rgba(24, 38, 32, 0.07);
   color: var(--ink-soft);
   padding: 1px 6px;
   border-radius: 999px;
@@ -325,10 +322,10 @@ button {
 }
 
 .btn-manage-members {
-  background: none;
-  border: 1px dashed var(--teal);
+  background: transparent;
+  border: 1px solid var(--line);
   color: var(--teal);
-  padding: 3px 9px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-family: var(--mono);
   font-size: 10px;
@@ -341,20 +338,23 @@ button {
 
 .btn-manage-members:hover {
   background: var(--teal-soft);
-  border-style: solid;
+  border-color: var(--teal);
 }
 
-.member-chip.add-member-chip {
-  background: #ffffff;
-  border: 1px dashed var(--teal);
-  color: var(--teal);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.member-chip.add-member-chip:hover {
+.member-avatar-initial {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   background: var(--teal-soft);
-  border-style: solid;
+  color: var(--teal);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 /* Demo Data Toggle in Hero Member Panel */
@@ -796,6 +796,19 @@ button {
   background: var(--paper);
   border-color: var(--teal);
   color: var(--teal);
+}
+
+.action-pill-btn.btn-add-holding-action {
+  background: var(--teal);
+  color: #ffffff !important;
+  border-color: var(--teal);
+  box-shadow: 0 1px 4px rgba(11, 107, 109, 0.2);
+}
+
+.action-pill-btn.btn-add-holding-action:hover {
+  background: var(--teal-deep);
+  border-color: var(--teal-deep);
+  color: #ffffff !important;
 }
 
 .action-pill-btn.btn-load-demo {
@@ -1464,7 +1477,229 @@ button {
   line-height: 1.6;
   color: var(--ink-soft, #4a6667);
   max-width: 480px;
-  margin: 0 auto 24px;
+  margin: 0 auto 20px;
+}
+
+/* ==========================================================================
+   Omni-Search Typeahead & Quick-Pick Tiles in Empty State
+   ========================================================================== */
+.omni-search-wrapper {
+  position: relative;
+  max-width: 540px;
+  margin: 0 auto 18px;
+  text-align: left;
+}
+
+.omni-search-input-box {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid var(--teal, #0b6b6d);
+  border-radius: 999px;
+  padding: 8px 18px;
+  box-shadow: 0 4px 18px rgba(11, 107, 109, 0.12);
+  transition: all 0.2s ease;
+}
+
+.omni-search-input-box:focus-within {
+  box-shadow: 0 6px 24px rgba(11, 107, 109, 0.22);
+  border-color: var(--teal-deep, #074749);
+}
+
+.omni-search-icon {
+  font-size: 16px;
+  margin-right: 10px;
+  color: var(--teal, #0b6b6d);
+}
+
+.omni-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--ink, #0b2b2c);
+  background: transparent;
+}
+
+.omni-search-input::placeholder {
+  color: var(--muted, #7c9899);
+  font-size: 13.5px;
+}
+
+.omni-search-clear {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.omni-search-clear:hover {
+  color: var(--ink);
+}
+
+/* Results Dropdown */
+.omni-search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid var(--line, #c8d8dc);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(11, 43, 44, 0.14);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 50;
+  padding: 6px 0;
+}
+
+.omni-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  border-bottom: 1px solid rgba(220, 230, 232, 0.4);
+}
+
+.omni-result-item:last-child {
+  border-bottom: none;
+}
+
+.omni-result-item:hover,
+.omni-result-item.highlighted {
+  background: rgba(11, 107, 109, 0.06);
+}
+
+.omni-result-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.omni-tag {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.tag-stock {
+  background: rgba(11, 107, 109, 0.12);
+  color: var(--teal, #0b6b6d);
+}
+
+.tag-fund {
+  background: rgba(94, 53, 177, 0.12);
+  color: #5e35b1;
+}
+
+.tag-city {
+  background: rgba(230, 81, 0, 0.12);
+  color: #e65100;
+}
+
+.omni-result-text {
+  min-width: 0;
+}
+
+.omni-result-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink, #0b2b2c);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.omni-result-sub {
+  font-size: 11px;
+  color: var(--muted, #668586);
+}
+
+.omni-result-price {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink, #0b2b2c);
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+/* Quick Pick Tiles Grid */
+.quick-pick-section {
+  margin: 16px 0 20px;
+}
+
+.quick-pick-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted, #668586);
+  margin-bottom: 10px;
+}
+
+.quick-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  .quick-pick-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.quick-pick-tile {
+  background: var(--paper, #fdfbf7);
+  border: 1px solid var(--line, #d4e0e2);
+  border-radius: 12px;
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.quick-pick-tile:hover {
+  background: #ffffff;
+  border-color: var(--teal, #0b6b6d);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(11, 43, 44, 0.08);
+}
+
+.quick-pick-tile .tile-icon {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+.quick-pick-tile .tile-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink, #0b2b2c);
+  white-space: nowrap;
+}
+
+.quick-pick-tile .tile-sub {
+  font-size: 9.5px;
+  color: var(--muted, #668586);
+  white-space: nowrap;
 }
 
 .portfolio-empty-actions {
@@ -1677,10 +1912,6 @@ button {
 
   .hero-member-title {
     font-size: 10.5px;
-  }
-
-  .hero-member-hint {
-    font-size: 10px;
   }
 
   .hero-member-chips {
