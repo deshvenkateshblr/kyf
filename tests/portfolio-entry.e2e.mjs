@@ -104,6 +104,34 @@ try {
   }
   check((await holdingCount()) === 5, "five holdings are listed");
 
+  console.log("[2b] Row actions and drawer");
+  check(await page.locator(".btn-edit-leaf").first().isVisible(), "Edit button is visible without hovering");
+  check((await page.locator("#holding-more-details").count()) === 1 && (await page.locator(".leaf-name-text.is-editable").count()) === 5, "holding names are click-to-edit");
+  await page.locator(".leaf-name-text.is-editable").first().click();
+  await page.waitForSelector("#holding-modal", { state: "visible" });
+  await page.waitForTimeout(400); // let the slide-in animation finish
+  const box = await page.locator(".drawer-panel").boundingBox();
+  const vp = page.viewportSize();
+  check(Math.abs(box.x + box.width - vp.width) < 2 && box.height >= vp.height - 2, "edit opens as a right-hand slide-over drawer");
+  check(await page.locator("#btn-save-holding").isVisible(), "Save stays in view");
+  await page.click("#btn-cancel-holding");
+
+  console.log("[2c] Fund units follow the selected plan");
+  await page.click("#btn-open-holding-modal");
+  await page.fill("#modal-omni-search-input", "parag parikh flexi");
+  await page.waitForSelector("#modal-omni-search-results .omni-result-item");
+  await page.locator("#modal-omni-search-results .omni-result-item").first().click();
+  await page.fill("#input-holding-curval", "100000");
+  const directPrice = parseFloat(await page.inputValue("#input-holding-price"));
+  const directUnits = parseFloat(await page.inputValue("#input-holding-units"));
+  await page.click("#label-variant-regular");
+  const regPrice = parseFloat(await page.inputValue("#input-holding-price"));
+  const regUnits = parseFloat(await page.inputValue("#input-holding-units"));
+  check(directPrice > 0 && regPrice > 0 && regPrice !== directPrice, `NAV changes with the plan (${directPrice} -> ${regPrice})`);
+  check(Math.abs(regUnits * regPrice - 100000) < regPrice && regUnits > directUnits, `units recomputed from the Regular NAV (${directUnits} -> ${regUnits}); worth stays ₹1,00,000`);
+  check((await page.inputValue("#input-holding-curval")) === "100000", "worth today is unchanged by the plan switch");
+  await page.click("#btn-cancel-holding");
+
   console.log("[3] Footer");
   check((await page.textContent("#kyf-footer")).includes("Questions, comments, feedback write to info@vividnova.com"), "footer shows the feedback line");
   check(/^KYF v\d+\.\d+\.\d+$/.test((await page.textContent(".kyf-footer-version")).trim()), "footer shows the app version");

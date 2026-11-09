@@ -883,10 +883,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <!-- Col 1: Holding / Instrument, Tags & Mobile Subtext -->
                     <div class="leaf-ident-wrap">
                       <div class="leaf-name">
-                        <span>${escapeHTML(h.name)}</span>
+                        <span class="leaf-name-text${isDemoMode ? "" : " is-editable"}" data-holding-id="${escapeHTML(targetHoldingId)}">${escapeHTML(h.name)}</span>
                         <div class="leaf-actions"${isDemoMode ? " hidden" : ""}>
-                          <button type="button" class="btn-leaf-action btn-edit-leaf" data-holding-id="${escapeHTML(targetHoldingId)}" title="Edit holding">✏️ Edit</button>
-                          <button type="button" class="btn-leaf-action btn-delete-leaf" data-holding-id="${escapeHTML(targetHoldingId)}" title="Delete holding">✕</button>
+                          <button type="button" class="btn-leaf-action btn-edit-leaf" data-holding-id="${escapeHTML(targetHoldingId)}" title="Edit holding" aria-label="Edit ${escapeHTML(h.name)}">✏️ Edit</button>
+                          <button type="button" class="btn-leaf-action btn-delete-leaf" data-holding-id="${escapeHTML(targetHoldingId)}" title="Delete holding" aria-label="Delete ${escapeHTML(h.name)}">🗑️</button>
                         </div>
                       </div>
                       <div class="leaf-tags">
@@ -937,6 +937,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     els.treegrid.innerHTML = html;
+
+    // Clicking a holding's name opens it for editing (same as the Edit button)
+    els.treegrid.querySelectorAll(".leaf-name-text.is-editable").forEach((el) => {
+      el.addEventListener("click", () => {
+        const hid = el.getAttribute("data-holding-id");
+        if (hid) openHoldingModalForEdit(hid);
+      });
+    });
 
     // Attach Edit and Delete listeners to leaf row buttons
     els.treegrid.querySelectorAll(".btn-edit-leaf").forEach((btn) => {
@@ -1411,6 +1419,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         type: "gold",
         tag: "Gold",
         name: "Physical Gold 24K",
+        rawPrice: rate,
         assetClass: "Gold",
         subCategory: "24K Bullion / SGB",
         custodian: "Locker / Physical",
@@ -1460,8 +1469,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function initiateAddHoldingFromSelection(item) {
     editingHoldingId = null;
-    activeModalInstrument = item;
     openHoldingModal();
+    // Set AFTER opening: opening a fresh form resets the active instrument, which used to drop
+    // the live-price link (and the Direct/Regular NAVs) for every stock, fund, city and gold pick.
+    activeModalInstrument = item;
 
     if (els.inputHoldingName) {
       els.inputHoldingName.value = item.name || "";
@@ -1590,40 +1601,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     recalcHoldingValues("variant");
   }
 
+  // Which of "units" / "worth today" the person typed last. A price or plan change keeps that
+  // one fixed and recomputes the other (e.g. "I hold ₹6.25L" -> switching to Regular gives more units).
+  let holdingAnchor = null;
+
   function recalcHoldingValues(changedSource) {
+    if (changedSource === "units" || changedSource === "curval") holdingAnchor = changedSource;
+
     const price = parseFloat(els.inputHoldingPrice ? els.inputHoldingPrice.value : "0") || 0;
     if (price <= 0) return;
 
-    const isMF = (els.selectHoldingAssetClass && els.selectHoldingAssetClass.value === "Mutual Funds");
-    const isStock = (els.selectHoldingAssetClass && els.selectHoldingAssetClass.value === "Equities");
+    const assetClass = els.selectHoldingAssetClass && els.selectHoldingAssetClass.value;
+    const decimals = assetClass === "Mutual Funds" ? 3 : 2;
+    const unitsVal = parseFloat(els.inputHoldingUnits ? els.inputHoldingUnits.value : "");
+    const worthVal = parseFloat(els.inputHoldingCurVal ? els.inputHoldingCurVal.value : "");
 
-    if (changedSource === "curval") {
-      const curVal = parseFloat(els.inputHoldingCurVal ? els.inputHoldingCurVal.value : "0");
-      if (!isNaN(curVal) && curVal > 0) {
-        const u = curVal / price;
-        const decimals = isMF ? 3 : (isStock ? 2 : 2);
-        if (els.inputHoldingUnits) {
-          els.inputHoldingUnits.value = parseFloat(u.toFixed(decimals));
-        }
-      }
-    } else if (changedSource === "units" || changedSource === "variant" || changedSource === "price") {
-      const units = parseFloat(els.inputHoldingUnits ? els.inputHoldingUnits.value : "0");
-      if (!isNaN(units) && units > 0) {
-        const curVal = Math.round(units * price);
-        if (els.inputHoldingCurVal) {
-          els.inputHoldingCurVal.value = curVal;
-        }
-      } else if (changedSource === "variant" || changedSource === "price") {
-        const curVal = parseFloat(els.inputHoldingCurVal ? els.inputHoldingCurVal.value : "0");
-        if (!isNaN(curVal) && curVal > 0) {
-          const u = curVal / price;
-          const decimals = isMF ? 3 : (isStock ? 2 : 2);
-          if (els.inputHoldingUnits) {
-            els.inputHoldingUnits.value = parseFloat(u.toFixed(decimals));
-          }
-        }
-      }
-    }
+    const worthFromUnits = () => {
+      if (els.inputHoldingCurVal && unitsVal > 0) els.inputHoldingCurVal.value = Math.round(unitsVal * price);
+    };
+    const unitsFromWorth = () => {
+      if (els.inputHoldingUnits && worthVal > 0) els.inputHoldingUnits.value = parseFloat((worthVal / price).toFixed(decimals));
+    };
+
+    if (changedSource === "curval") unitsFromWorth();
+    else if (changedSource === "units") worthFromUnits();
+    else if (holdingAnchor === "curval") unitsFromWorth();
+    else if (holdingAnchor === "units") worthFromUnits();
+    else if (unitsVal > 0) worthFromUnits();
+    else unitsFromWorth();
   }
 
   // ==========================================================================
@@ -1653,6 +1658,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!forEdit) {
       editingHoldingId = null;
       activeModalInstrument = null;
+      holdingAnchor = null;
       hideMfVariantBox();
 
       const modalTitle = document.getElementById("holding-modal-title");
@@ -1762,6 +1768,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const goalId = (holding.allocations && holding.allocations.length > 0 && holding.allocations[0].goalId) || "";
     if (els.selectHoldingGoal) els.selectHoldingGoal.value = goalId;
+
+    // Physical units are the fact for an existing holding: a price/plan change moves the value
+    holdingAnchor = unitsVal !== "" && unitsVal != null ? "units" : "curval";
   }
 
   async function handleDeleteHolding(holdingId) {
@@ -1804,7 +1813,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         : (isDemoMode ? window.KYF_PORTFOLIO_DATA.getDemoMembers() : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }]);
 
       els.selectHoldingMember.innerHTML = membersList.map((m) => {
-        return `<option value="${escapeHTML(m.name)}">${escapeHTML(m.name)} (${escapeHTML(m.role || "Family")})</option>`;
+        return `<option value="${escapeHTML(m.name)}">${escapeHTML(m.name)}${m.role && m.role.toLowerCase() !== String(m.name).toLowerCase() ? ` (${escapeHTML(m.role)})` : ""}</option>`;
       }).join("");
     }
 
@@ -1835,9 +1844,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const investedVal = investedValInput !== "" && !isNaN(parseFloat(investedValInput)) ? parseFloat(investedValInput) : null;
     const goalId = els.selectHoldingGoal && els.selectHoldingGoal.value;
     const unitsInput = els.inputHoldingUnits ? els.inputHoldingUnits.value.trim() : "";
-    const units = unitsInput !== "" && !isNaN(parseFloat(unitsInput)) ? parseFloat(unitsInput) : null;
     const priceInput = els.inputHoldingPrice ? els.inputHoldingPrice.value.trim() : "";
     const price = priceInput !== "" && !isNaN(parseFloat(priceInput)) ? parseFloat(priceInput) : null;
+    let units = unitsInput !== "" && !isNaN(parseFloat(unitsInput)) ? parseFloat(unitsInput) : null;
+    // Worth entered but no quantity: infer it from the price so live valuation has something to multiply
+    if (units == null && price > 0 && currentVal > 0) units = parseFloat((currentVal / price).toFixed(3));
 
     if (!name) {
       alert("Please enter a holding name.");
@@ -1883,6 +1894,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       pricingMode = "LIVE_MF";
       const isRegular = els.radioVariantRegular && els.radioVariantRegular.checked;
       instrumentMeta.planType = isRegular ? "REGULAR" : "DIRECT";
+    }
+
+    // Gold and property are valued as quantity x live rate; without a quantity keep the typed value
+    if ((pricingMode === "LIVE_GOLD" || pricingMode === "LIVE_RESIDEX") && !(units > 0)) {
+      pricingMode = "MANUAL";
     }
 
     if (units != null) {

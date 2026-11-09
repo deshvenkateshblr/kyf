@@ -2782,3 +2782,144 @@ button {
 .leaf-actions[hidden] {
   display: none;
 }
+
+/* ==========================================================================
+   Holding slide-over drawer (right-hand inspector panel)
+   Overlay visibility is toggled by JS via inline display (none / flex).
+   ========================================================================== */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  justify-content: flex-end;
+  align-items: stretch;
+  background: rgba(24, 38, 32, 0.45);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.drawer-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(460px, 100%);
+  height: 100%;
+  background: var(--panel, #ffffff);
+  border-left: 1px solid var(--line);
+  box-shadow: -16px 0 40px rgba(24, 38, 32, 0.18);
+  animation: drawer-slide-in 0.22s ease-out;
+}
+
+@keyframes drawer-slide-in {
+  from { transform: translateX(32px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+.drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawer-head h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.drawer-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px;
+}
+
+/* Save / Cancel stay in view however long the form gets */
+.drawer-actions {
+  margin-top: 0;
+  padding: 12px 22px;
+  border-top: 1px solid var(--line);
+  background: var(--panel, #ffffff);
+}
+
+@media (max-width: 520px) {
+  .drawer-head { padding: 14px 16px 12px; }
+  .drawer-body { padding: 14px 16px; }
+  .drawer-actions { padding: 10px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-panel { animation: none; }
+}
+
+/* ==========================================================================
+   Row actions: always visible (touch-friendly), same Edit / 🗑️ pattern as Goals
+   ========================================================================== */
+.leaf-actions,
+.leaf-actions[hidden] {
+  opacity: 1;
+}
+
+.leaf-actions[hidden] {
+  display: none;
+}
+
+.btn-leaf-action {
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.btn-leaf-action:hover,
+.btn-leaf-action:focus-visible {
+  opacity: 1;
+  border-color: var(--teal);
+  color: var(--teal);
+  background: var(--teal-soft);
+}
+
+.btn-leaf-action.btn-delete-leaf:hover,
+.btn-leaf-action.btn-delete-leaf:focus-visible {
+  border-color: var(--rose);
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.leaf-name-text.is-editable {
+  cursor: pointer;
+}
+
+.leaf-name-text.is-editable:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--teal);
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 768px) {
+  .leaf-ident-wrap .leaf-name {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .leaf-actions {
+    margin-left: 0;
+  }
+
+  .btn-leaf-action {
+    min-height: 32px;
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+}
