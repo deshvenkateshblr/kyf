@@ -357,10 +357,10 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         case "LIVE_EQUITY": {
           const sym = (meta.symbol || "").toUpperCase();
           const stock = equityMap.get(sym);
-          const qty = Number(meta.quantity) || 0;
+          const qty = Number(meta.quantity) || Number(h.units) || 0;
           if (stock && stock.closePrice > 0) {
             livePrice = stock.closePrice;
-            calculatedValue = qty * livePrice;
+            calculatedValue = qty > 0 ? (qty * livePrice) : (Number(h.currentValue) || Number(h.investedValue) || 0);
             ret1m = stock.ret1m;
             ret3m = stock.ret3m;
             ret6m = stock.ret6m;
@@ -377,20 +377,20 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         case "LIVE_MF": {
           const code = Number(meta.amfiCode);
           const scheme = mfMap.get(code);
-          const units = Number(meta.units) || 0;
+          const units = Number(meta.units) || Number(h.units) || 0;
           const isDirect = (meta.planType || "DIRECT").toUpperCase() === "DIRECT";
 
           if (scheme) {
-            livePrice = isDirect ? scheme.directNav : scheme.regularNav;
-            calculatedValue = units * livePrice;
+            livePrice = isDirect ? (scheme.directNav || scheme.regularNav) : (scheme.regularNav || scheme.directNav);
+            calculatedValue = units > 0 && livePrice > 0 ? (units * livePrice) : (Number(h.currentValue) || Number(h.investedValue) || 0);
             ret1m = scheme.ret1m;
             ret3m = scheme.ret3m;
             ret6m = scheme.ret6m;
             ret1y = scheme.ret1y;
             priceLabel = `NAV ₹${livePrice.toFixed(2)} (${isDirect ? "Dir" : "Reg"})`;
-            physicalUnitsLabel = `${units.toLocaleString("en-IN", { maximumFractionDigits: 2 })} units`;
+            physicalUnitsLabel = `${units.toLocaleString("en-IN", { maximumFractionDigits: 3 })} units`;
 
-            if (!isDirect && scheme.directNav > scheme.regularNav) {
+            if (!isDirect && scheme.directNav && scheme.regularNav && scheme.directNav > scheme.regularNav) {
               const diffPct = ((scheme.directNav - scheme.regularNav) / scheme.regularNav) * 100;
               regularAlert = {
                 planType: "REGULAR",
@@ -401,8 +401,10 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
               };
             }
           } else {
+            livePrice = Number(meta.price) || 0;
+            if (livePrice > 0 && units > 0) calculatedValue = units * livePrice;
             priceLabel = `AMFI ${code}`;
-            physicalUnitsLabel = `${units.toLocaleString("en-IN", { maximumFractionDigits: 2 })} units`;
+            physicalUnitsLabel = `${units.toLocaleString("en-IN", { maximumFractionDigits: 3 })} units`;
           }
           break;
         }
@@ -485,43 +487,44 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         }
       }
 
-      const invested = Number(h.investedValue) || 0;
-      const gainLoss = calculatedValue - invested;
-      const totalReturnPct = invested > 0 ? (gainLoss / invested) * 100 : 0;
+      const hasBasis = h.investedValue != null && h.investedValue !== "" && !isNaN(Number(h.investedValue)) && Number(h.investedValue) > 0;
+      const invested = hasBasis ? Number(h.investedValue) : null;
+      const gainLoss = hasBasis ? (calculatedValue - invested) : null;
+      const totalReturnPct = hasBasis && invested > 0 ? ((gainLoss / invested) * 100) : null;
 
       let activeHorizonReturn = totalReturnPct;
-      let activeHorizonLabel = "All-Time Gain";
+      let activeHorizonLabel = hasBasis ? "All-Time Gain" : "Basis Unknown";
 
       switch (activeHorizon) {
         case "1m":
-          activeHorizonReturn = ret1m != null ? ret1m : 0;
-          activeHorizonLabel = "1M Momentum";
+          activeHorizonReturn = ret1m != null ? ret1m : totalReturnPct;
+          activeHorizonLabel = ret1m != null ? "1M Momentum" : (hasBasis ? "1M Momentum" : "Basis Unknown");
           break;
         case "3m":
-          activeHorizonReturn = ret3m != null ? ret3m : 0;
-          activeHorizonLabel = "3M Momentum";
+          activeHorizonReturn = ret3m != null ? ret3m : totalReturnPct;
+          activeHorizonLabel = ret3m != null ? "3M Momentum" : (hasBasis ? "3M Momentum" : "Basis Unknown");
           break;
         case "6m":
-          activeHorizonReturn = ret6m != null ? ret6m : 0;
-          activeHorizonLabel = "6M Momentum";
+          activeHorizonReturn = ret6m != null ? ret6m : totalReturnPct;
+          activeHorizonLabel = ret6m != null ? "6M Momentum" : (hasBasis ? "6M Momentum" : "Basis Unknown");
           break;
         case "1y":
           activeHorizonReturn = ret1y != null ? ret1y : totalReturnPct;
-          activeHorizonLabel = "1Y Trailing";
+          activeHorizonLabel = ret1y != null ? "1Y Trailing" : (hasBasis ? "1Y Trailing" : "Basis Unknown");
           break;
         case "all":
         default:
           activeHorizonReturn = totalReturnPct;
-          activeHorizonLabel = "Absolute Return";
+          activeHorizonLabel = hasBasis ? "Absolute Return" : "Basis Unknown";
           break;
       }
 
       enriched.currentValue = Math.round(calculatedValue);
-      enriched.investedValue = Math.round(invested);
-      enriched.gainLoss = Math.round(gainLoss);
-      enriched.totalReturnPct = Number(totalReturnPct.toFixed(2));
-      enriched.returnPct = Number(totalReturnPct.toFixed(2));
-      enriched.activeHorizonReturn = Number(activeHorizonReturn.toFixed(2));
+      enriched.investedValue = invested != null ? Math.round(invested) : null;
+      enriched.gainLoss = gainLoss != null ? Math.round(gainLoss) : null;
+      enriched.totalReturnPct = totalReturnPct != null ? Number(totalReturnPct.toFixed(2)) : null;
+      enriched.returnPct = enriched.totalReturnPct;
+      enriched.activeHorizonReturn = activeHorizonReturn != null ? Number(activeHorizonReturn.toFixed(2)) : null;
       enriched.activeHorizonLabel = activeHorizonLabel;
       enriched.priceLabel = priceLabel;
       enriched.physicalUnitsLabel = physicalUnitsLabel;
@@ -660,18 +663,28 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     let grandInvested = 0;
     let grandCurrent = 0;
     let grandWeightedHorizonReturn = 0;
+    let grandWeightedHorizonBase = 0;
+    let grandTrackedInvested = 0;
+    let grandTrackedGainLoss = 0;
 
     for (const h of holdings) {
-      grandInvested += h.investedValue || 0;
+      if (h.investedValue != null) {
+        grandInvested += h.investedValue;
+        grandTrackedInvested += h.investedValue;
+        if (h.gainLoss != null) {
+          grandTrackedGainLoss += h.gainLoss;
+        }
+      }
       grandCurrent += h.currentValue || 0;
-      if (h.activeHorizonReturn != null) {
-        grandWeightedHorizonReturn += (h.activeHorizonReturn * (h.currentValue || 0));
+      if (h.activeHorizonReturn != null && (h.currentValue || 0) > 0) {
+        grandWeightedHorizonReturn += (h.activeHorizonReturn * h.currentValue);
+        grandWeightedHorizonBase += h.currentValue;
       }
     }
 
-    const grandGainLoss = grandCurrent - grandInvested;
-    const grandReturnPct = grandInvested > 0 ? (grandGainLoss / grandInvested) * 100 : 0;
-    const grandActiveHorizonReturn = grandCurrent > 0 ? (grandWeightedHorizonReturn / grandCurrent) : grandReturnPct;
+    const grandGainLoss = grandTrackedGainLoss;
+    const grandReturnPct = grandTrackedInvested > 0 ? (grandTrackedGainLoss / grandTrackedInvested) * 100 : null;
+    const grandActiveHorizonReturn = grandWeightedHorizonBase > 0 ? (grandWeightedHorizonReturn / grandWeightedHorizonBase) : grandReturnPct;
 
     // 2. Bucket into groups
     const groupsMap = new Map();
@@ -699,10 +712,12 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           goalMeta,
           holdings: [],
           totalInvested: 0,
+          trackedInvested: 0,
+          trackedGainLoss: 0,
           totalCurrentValue: 0,
           totalGainLoss: 0,
-          totalReturnPct: 0,
-          horizonReturnPct: 0,
+          totalReturnPct: null,
+          horizonReturnPct: null,
           allocationPct: 0,
           progressPct: null,
           adjustedTargetINR: (goalMeta && goalMeta.inflation && goalMeta.inflation.adjustedTargetINR) || 0,
@@ -713,14 +728,20 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
 
       const grp = groupsMap.get(groupKey);
       grp.holdings.push(h);
-      grp.totalInvested += h.investedValue || 0;
+      if (h.investedValue != null) {
+        grp.totalInvested += h.investedValue;
+        grp.trackedInvested += h.investedValue;
+        if (h.gainLoss != null) {
+          grp.trackedGainLoss += h.gainLoss;
+        }
+      }
       grp.totalCurrentValue += h.currentValue || 0;
     }
 
     // 3. Finalize group rollups with weighted-average returns, dual-unit math & divergence
     const groupsArray = Array.from(groupsMap.values()).map((grp) => {
-      grp.totalGainLoss = grp.totalCurrentValue - grp.totalInvested;
-      grp.totalReturnPct = grp.totalInvested > 0 ? (grp.totalGainLoss / grp.totalInvested) * 100 : 0;
+      grp.totalGainLoss = grp.trackedGainLoss;
+      grp.totalReturnPct = grp.trackedInvested > 0 ? (grp.trackedGainLoss / grp.trackedInvested) * 100 : null;
       grp.allocationPct = grandCurrent > 0 ? (grp.totalCurrentValue / grandCurrent) * 100 : 0;
 
       // Goal progress calculation against inflation-adjusted target
@@ -811,7 +832,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           weightedBase += h.currentValue;
         }
       }
-      grp.horizonReturnPct = weightedBase > 0 ? Number((weightedSum / weightedBase).toFixed(2)) : Number(grp.totalReturnPct.toFixed(2));
+      grp.horizonReturnPct = weightedBase > 0 ? Number((weightedSum / weightedBase).toFixed(2)) : (grp.totalReturnPct != null ? Number(grp.totalReturnPct.toFixed(2)) : null);
 
       grp.holdings = sortHoldings(grp.holdings, sortKey, sortDirection);
       return grp;
@@ -827,7 +848,9 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         return (a.totalInvested - b.totalInvested) * groupFactor;
       }
       if (sortKey === "returnPct") {
-        return (a.horizonReturnPct - b.horizonReturnPct) * groupFactor;
+        const retA = a.horizonReturnPct != null ? a.horizonReturnPct : -Infinity;
+        const retB = b.horizonReturnPct != null ? b.horizonReturnPct : -Infinity;
+        return (retA - retB) * groupFactor;
       }
       return (a.totalCurrentValue - b.totalCurrentValue) * groupFactor;
     });
@@ -849,8 +872,8 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         totalPortfolioValue: grandCurrent,
         totalPortfolioInvested: grandInvested,
         totalPortfolioGainLoss: grandGainLoss,
-        totalPortfolioReturnPct: Number(grandReturnPct.toFixed(2)),
-        activeHorizonReturnPct: Number(grandActiveHorizonReturn.toFixed(2)),
+        totalPortfolioReturnPct: grandReturnPct != null ? Number(grandReturnPct.toFixed(2)) : null,
+        activeHorizonReturnPct: grandActiveHorizonReturn != null ? Number(grandActiveHorizonReturn.toFixed(2)) : null,
         topAllocationLabel: topGroup ? topGroup.label : "None",
         topAllocationPct: topGroup ? Number(topGroup.allocationPct.toFixed(1)) : 0,
         holdingsCount: holdings.length

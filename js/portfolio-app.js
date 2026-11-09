@@ -36,6 +36,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let sortDirection = "desc";         // "asc" | "desc"
   let expandAllState = true;
   let searchQuery = "";
+  let editingHoldingId = null;        // null when adding, holding.id string when editing
+  let activeModalInstrument = null;   // metadata of instrument selected in modal search
 
   // DOM Element References
   const els = {
@@ -62,6 +64,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     toast: document.getElementById("kyf-toast"),
     pulseTicker: document.getElementById("pulse-ticker"),
     pulseAsOf: document.getElementById("pulse-asof-pill"),
+    portfolioTopAsOf: document.getElementById("portfolio-top-asof"),
+    portfolioAsofDate: document.getElementById("portfolio-asof-date"),
     // Family Member Management Modal elements
     btnOpenMemberModal: document.getElementById("btn-open-member-modal"),
     memberModal: document.getElementById("member-modal"),
@@ -76,12 +80,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     holdingModal: document.getElementById("holding-modal"),
     btnCloseHoldingModal: document.getElementById("btn-close-holding-modal"),
     btnCancelHolding: document.getElementById("btn-cancel-holding"),
+    btnDeleteHolding: document.getElementById("btn-delete-holding"),
+    btnSaveHolding: document.getElementById("btn-save-holding"),
     formAddHolding: document.getElementById("form-add-holding"),
     inputHoldingName: document.getElementById("input-holding-name"),
     selectHoldingAssetClass: document.getElementById("select-holding-assetclass"),
     inputHoldingSubCategory: document.getElementById("input-holding-subcategory"),
+    holdingMfVariantBox: document.getElementById("holding-mf-variant-box"),
+    radioVariantDirect: document.getElementById("radio-variant-direct"),
+    radioVariantRegular: document.getElementById("radio-variant-regular"),
+    labelVariantDirect: document.getElementById("label-variant-direct"),
+    labelVariantRegular: document.getElementById("label-variant-regular"),
+    mfNavDirect: document.getElementById("mf-nav-direct"),
+    mfNavRegular: document.getElementById("mf-nav-regular"),
     selectHoldingMember: document.getElementById("select-holding-member"),
     inputHoldingCustodian: document.getElementById("input-holding-custodian"),
+    inputHoldingPrice: document.getElementById("input-holding-price"),
+    inputHoldingUnits: document.getElementById("input-holding-units"),
     inputHoldingCurVal: document.getElementById("input-holding-curval"),
     inputHoldingInvVal: document.getElementById("input-holding-invval"),
     selectHoldingGoal: document.getElementById("select-holding-goal")
@@ -91,7 +106,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Number & Currency Formatters (Indian Rupee Standard)
   // ==========================================================================
   function formatINR(val, compact = false) {
-    if (val == null || isNaN(val)) return "₹0";
+    if (val == null || val === "" || isNaN(val)) return "—";
     const num = Math.round(Number(val));
     const abs = Math.abs(num);
     const sign = num < 0 ? "-" : "";
@@ -112,10 +127,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function formatPct(val) {
-    if (val == null || isNaN(val)) return "0.0%";
+    if (val == null || val === "" || isNaN(val)) return "—";
     const n = Number(val);
     const sign = n > 0 ? "+" : "";
     return `${sign}${n.toFixed(1)}%`;
+  }
+
+  function formatAsOfDate(isoStr) {
+    if (!isoStr) return "08 Nov 2026";
+    try {
+      const parts = String(isoStr).split("-");
+      if (parts.length === 3) {
+        const year = parts[0];
+        const monthNum = parseInt(parts[1], 10) - 1;
+        const day = parts[2];
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${day} ${months[monthNum] || parts[1]} ${year}`;
+      }
+    } catch (_) {}
+    return String(isoStr);
   }
 
   // ==========================================================================
@@ -140,10 +170,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const macro = pulse.macro || {};
     const metals = pulse.preciousMetals || {};
     const indices = pulse.indices || {};
-    const asOf = pulse.asOf || "2026-11-05";
+    const rawAsOf = (window.KYF_MARKET_EQUITIES && window.KYF_MARKET_EQUITIES.asOf) ||
+                    (window.KYF_MARKET_MF && window.KYF_MARKET_MF.asOf) ||
+                    pulse.asOf || "2026-11-08";
+    const formattedAsOf = formatAsOfDate(rawAsOf);
 
     if (els.pulseAsOf) {
-      els.pulseAsOf.textContent = `Live As Of: ${asOf}`;
+      els.pulseAsOf.innerHTML = `<span>🗓️ Market As of: <strong>${formattedAsOf}</strong></span>`;
+    }
+    if (els.portfolioAsofDate) {
+      els.portfolioAsofDate.textContent = formattedAsOf;
     }
 
     if (els.pulseTicker) {
@@ -516,11 +552,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (els.kpiReturnPct && els.kpiGainLoss) {
-      const isPositive = kpis.activeHorizonReturnPct >= 0;
-      const gainSign = isPositive ? "+" : "";
-      els.kpiReturnPct.textContent = formatPct(kpis.activeHorizonReturnPct);
-      els.kpiGainLoss.textContent = `${gainSign}${formatINR(kpis.totalPortfolioGainLoss, true)}`;
-      els.kpiReturnPct.className = `return-badge ${isPositive ? "positive" : "negative"}`;
+      if (kpis.activeHorizonReturnPct != null) {
+        const isPositive = kpis.activeHorizonReturnPct >= 0;
+        const gainSign = isPositive ? "+" : "";
+        els.kpiReturnPct.textContent = formatPct(kpis.activeHorizonReturnPct);
+        els.kpiGainLoss.textContent = `${gainSign}${formatINR(kpis.totalPortfolioGainLoss, true)}`;
+        els.kpiReturnPct.className = `return-badge ${isPositive ? "positive" : "negative"}`;
+      } else {
+        els.kpiReturnPct.textContent = "—";
+        els.kpiGainLoss.textContent = "—";
+        els.kpiReturnPct.className = "return-badge neutral";
+      }
       if (els.kpiGainSub) {
         const hLabel = activeHorizon === "all" ? "All-Time" : activeHorizon.toUpperCase();
         els.kpiGainSub.textContent = `${hLabel} return`;
@@ -768,8 +810,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="tree-leaf-container">
             ${group.holdings
               .map((h) => {
+                const targetHoldingId = h.originalHoldingId || h.id;
                 const isPos = h.activeHorizonReturn >= 0;
-                const retClass = isPos ? "positive" : "negative";
+                const retClass = h.activeHorizonReturn == null ? "neutral" : (isPos ? "positive" : "negative");
 
                 const custTag = activeDimension !== "custodian" ? `<span class="tag-badge badge-custodian">🏦 ${escapeHTML(h.custodian || "")}</span>` : "";
                 const regularDragTag = h.regularAlert
@@ -814,7 +857,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <!-- Col 1: Holding / Instrument, Tags & Mobile Subtext -->
                     <div class="leaf-ident-wrap">
                       <div class="leaf-name">
-                        ${escapeHTML(h.name)}
+                        <span>${escapeHTML(h.name)}</span>
+                        <div class="leaf-actions">
+                          <button type="button" class="btn-leaf-action btn-edit-leaf" data-holding-id="${escapeHTML(targetHoldingId)}" title="Edit holding">✏️ Edit</button>
+                          <button type="button" class="btn-leaf-action btn-delete-leaf" data-holding-id="${escapeHTML(targetHoldingId)}" title="Delete holding">✕</button>
+                        </div>
                       </div>
                       <div class="leaf-tags">
                         <span class="tag-badge">${escapeHTML(h.subCategory || h.assetClass)}</span>
@@ -823,7 +870,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         ${regularDragTag}
                       </div>
                       <div class="leaf-mobile-sub mono-num">
-                        ${escapeHTML(h.priceLabel || "")} &bull; 👤 ${escapeHTML(h.member || "")} &bull; Inv: ${formatINR(h.investedValue, true)}
+                        ${escapeHTML(h.priceLabel || "")} &bull; 👤 ${escapeHTML(h.member || "")} &bull; Inv: ${h.investedValue != null ? formatINR(h.investedValue, true) : "—"}
                       </div>
                     </div>
 
@@ -839,7 +886,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                     <!-- Col 3: Invested Value (Hidden on Mobile via .cell-hide-mobile) -->
                     <div class="leaf-num-cell tree-col-right mono-num cell-hide-mobile">
-                      ${formatINR(h.investedValue)}
+                      ${h.investedValue != null ? formatINR(h.investedValue) : "—"}
                     </div>
 
                     <!-- Col 4: Live Current Value (Visible on both Desktop and Mobile) -->
@@ -864,6 +911,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     els.treegrid.innerHTML = html;
+
+    // Attach Edit and Delete listeners to leaf row buttons
+    els.treegrid.querySelectorAll(".btn-edit-leaf").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const hid = btn.getAttribute("data-holding-id");
+        if (hid) openHoldingModalForEdit(hid);
+      });
+    });
+
+    els.treegrid.querySelectorAll(".btn-delete-leaf").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const hid = btn.getAttribute("data-holding-id");
+        if (hid) handleDeleteHolding(hid);
+      });
+    });
   }
 
   function escapeHTML(str) {
@@ -1091,7 +1157,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const code = f[0];
         const name = String(f[1] || "");
         const category = String(f[2] || "Mutual Funds");
-        const nav = Number(f[3]) || Number(f[4]) || 0;
+        const directNav = f[3] != null ? Number(f[3]) : null;
+        const regularNav = f[4] != null ? Number(f[4]) : null;
+        const nav = directNav != null ? directNav : (regularNav != null ? regularNav : 0);
         const nm = name.toLowerCase();
 
         let score = 0;
@@ -1105,11 +1173,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             tag: "Fund",
             tagClass: "tag-fund",
             symbol: `MF-${code}`,
+            amfiCode: code,
             name,
             rawName: name,
             subText: category,
             price: nav > 0 ? `NAV: ₹${nav.toFixed(2)}` : "Live NAV",
             rawPrice: nav,
+            directNav,
+            regularNav,
             assetClass: "Mutual Funds",
             subCategory: category,
             custodian: "MF Central / AMC",
@@ -1335,6 +1406,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function initiateAddHoldingFromSelection(item) {
+    editingHoldingId = null;
+    activeModalInstrument = item;
     openHoldingModal();
 
     if (els.inputHoldingName) {
@@ -1362,9 +1435,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
+    // Mutual fund specific setup
+    if (item.type === "fund" || item.assetClass === "Mutual Funds") {
+      setupMfVariantBox(item, "DIRECT");
+    } else {
+      hideMfVariantBox();
+      if (item.rawPrice && els.inputHoldingPrice) {
+        els.inputHoldingPrice.value = item.rawPrice;
+      }
+    }
+
     if (els.inputHoldingCurVal) {
       els.inputHoldingCurVal.value = "";
-      setTimeout(() => els.inputHoldingCurVal.focus(), 150);
+    }
+    if (els.inputHoldingUnits) {
+      els.inputHoldingUnits.value = "";
     }
     if (els.inputHoldingInvVal) {
       els.inputHoldingInvVal.value = "";
@@ -1374,30 +1459,265 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (modalTitle) {
       modalTitle.textContent = `📈 Add ${item.tag || item.assetClass}`;
     }
+    if (els.btnSaveHolding) {
+      els.btnSaveHolding.textContent = "＋ Save Holding";
+    }
+    if (els.btnDeleteHolding) {
+      els.btnDeleteHolding.style.display = "none";
+    }
+
+    setTimeout(() => {
+      if (els.inputHoldingCurVal) els.inputHoldingCurVal.focus();
+    }, 150);
+  }
+
+  function setupMfVariantBox(item, selectedPlan = "DIRECT") {
+    if (!els.holdingMfVariantBox) return;
+
+    els.holdingMfVariantBox.style.display = "block";
+
+    const directNav = item.directNav != null ? Number(item.directNav) : null;
+    const regularNav = item.regularNav != null ? Number(item.regularNav) : null;
+
+    if (els.mfNavDirect) {
+      els.mfNavDirect.textContent = directNav != null ? `NAV: ₹${directNav.toFixed(2)}` : "NAV: N/A";
+    }
+    if (els.mfNavRegular) {
+      els.mfNavRegular.textContent = regularNav != null ? `NAV: ₹${regularNav.toFixed(2)}` : "NAV: N/A";
+    }
+
+    let plan = selectedPlan;
+    if (plan === "DIRECT" && directNav == null && regularNav != null) {
+      plan = "REGULAR";
+    } else if (plan === "REGULAR" && regularNav == null && directNav != null) {
+      plan = "DIRECT";
+    }
+
+    if (plan === "REGULAR") {
+      if (els.radioVariantRegular) els.radioVariantRegular.checked = true;
+      if (els.labelVariantRegular) els.labelVariantRegular.classList.add("active");
+      if (els.labelVariantDirect) els.labelVariantDirect.classList.remove("active");
+      const activePrice = regularNav || directNav || 0;
+      if (els.inputHoldingPrice) els.inputHoldingPrice.value = activePrice;
+    } else {
+      if (els.radioVariantDirect) els.radioVariantDirect.checked = true;
+      if (els.labelVariantDirect) els.labelVariantDirect.classList.add("active");
+      if (els.labelVariantRegular) els.labelVariantRegular.classList.remove("active");
+      const activePrice = directNav || regularNav || 0;
+      if (els.inputHoldingPrice) els.inputHoldingPrice.value = activePrice;
+    }
+  }
+
+  function hideMfVariantBox() {
+    if (els.holdingMfVariantBox) {
+      els.holdingMfVariantBox.style.display = "none";
+    }
+  }
+
+  function handleMfVariantChange(e) {
+    const plan = e.target.value; // "DIRECT" or "REGULAR"
+    if (plan === "REGULAR") {
+      if (els.labelVariantRegular) els.labelVariantRegular.classList.add("active");
+      if (els.labelVariantDirect) els.labelVariantDirect.classList.remove("active");
+    } else {
+      if (els.labelVariantDirect) els.labelVariantDirect.classList.add("active");
+      if (els.labelVariantRegular) els.labelVariantRegular.classList.remove("active");
+    }
+
+    let nav = 0;
+    if (activeModalInstrument) {
+      nav = plan === "REGULAR"
+        ? (activeModalInstrument.regularNav || activeModalInstrument.directNav || 0)
+        : (activeModalInstrument.directNav || activeModalInstrument.regularNav || 0);
+    }
+    if (nav > 0 && els.inputHoldingPrice) {
+      els.inputHoldingPrice.value = nav;
+    }
+
+    recalcHoldingValues("variant");
+  }
+
+  function recalcHoldingValues(changedSource) {
+    const price = parseFloat(els.inputHoldingPrice ? els.inputHoldingPrice.value : "0") || 0;
+    if (price <= 0) return;
+
+    const isMF = (els.selectHoldingAssetClass && els.selectHoldingAssetClass.value === "Mutual Funds");
+    const isStock = (els.selectHoldingAssetClass && els.selectHoldingAssetClass.value === "Equities");
+
+    if (changedSource === "curval") {
+      const curVal = parseFloat(els.inputHoldingCurVal ? els.inputHoldingCurVal.value : "0");
+      if (!isNaN(curVal) && curVal > 0) {
+        const u = curVal / price;
+        const decimals = isMF ? 3 : (isStock ? 2 : 2);
+        if (els.inputHoldingUnits) {
+          els.inputHoldingUnits.value = parseFloat(u.toFixed(decimals));
+        }
+      }
+    } else if (changedSource === "units" || changedSource === "variant" || changedSource === "price") {
+      const units = parseFloat(els.inputHoldingUnits ? els.inputHoldingUnits.value : "0");
+      if (!isNaN(units) && units > 0) {
+        const curVal = Math.round(units * price);
+        if (els.inputHoldingCurVal) {
+          els.inputHoldingCurVal.value = curVal;
+        }
+      } else if (changedSource === "variant" || changedSource === "price") {
+        const curVal = parseFloat(els.inputHoldingCurVal ? els.inputHoldingCurVal.value : "0");
+        if (!isNaN(curVal) && curVal > 0) {
+          const u = curVal / price;
+          const decimals = isMF ? 3 : (isStock ? 2 : 2);
+          if (els.inputHoldingUnits) {
+            els.inputHoldingUnits.value = parseFloat(u.toFixed(decimals));
+          }
+        }
+      }
+    }
   }
 
   // ==========================================================================
   // Investment Holding Management Modal Controllers
   // ==========================================================================
-  function openHoldingModal() {
+  function openHoldingModal(forEdit = false, holdingData = null) {
     if (!els.holdingModal) return;
     populateHoldingModalDropdowns();
     els.holdingModal.style.display = "flex";
     els.holdingModal.setAttribute("aria-hidden", "false");
-    if (els.inputHoldingName) {
-      els.inputHoldingName.value = "";
-      els.inputHoldingName.focus();
+
+    if (!forEdit) {
+      editingHoldingId = null;
+      activeModalInstrument = null;
+      hideMfVariantBox();
+
+      const modalTitle = document.getElementById("holding-modal-title");
+      if (modalTitle) modalTitle.textContent = "📈 Add Investment Holding";
+      if (els.btnSaveHolding) els.btnSaveHolding.textContent = "＋ Save Holding";
+      if (els.btnDeleteHolding) els.btnDeleteHolding.style.display = "none";
+
+      if (els.inputHoldingName) {
+        els.inputHoldingName.value = "";
+        els.inputHoldingName.focus();
+      }
+      if (els.inputHoldingCurVal) els.inputHoldingCurVal.value = "";
+      if (els.inputHoldingInvVal) els.inputHoldingInvVal.value = "";
+      if (els.inputHoldingUnits) els.inputHoldingUnits.value = "";
+      if (els.inputHoldingPrice) els.inputHoldingPrice.value = "";
+      if (els.inputHoldingSubCategory) els.inputHoldingSubCategory.value = "";
+      if (els.inputHoldingCustodian) els.inputHoldingCustodian.value = "";
     }
-    if (els.inputHoldingCurVal) els.inputHoldingCurVal.value = "";
-    if (els.inputHoldingInvVal) els.inputHoldingInvVal.value = "";
-    if (els.inputHoldingSubCategory) els.inputHoldingSubCategory.value = "";
-    if (els.inputHoldingCustodian) els.inputHoldingCustodian.value = "";
   }
 
   function closeHoldingModal() {
     if (!els.holdingModal) return;
     els.holdingModal.style.display = "none";
     els.holdingModal.setAttribute("aria-hidden", "true");
+    editingHoldingId = null;
+    activeModalInstrument = null;
+  }
+
+  function openHoldingModalForEdit(holdingId) {
+    const holding = rawHoldings.find((h) => h.id === holdingId || h.originalHoldingId === holdingId);
+    if (!holding) {
+      showToast("Holding not found", "error");
+      return;
+    }
+
+    editingHoldingId = holding.id;
+    activeModalInstrument = null;
+    openHoldingModal(true, holding);
+
+    // Set modal title & submit button
+    const modalTitle = document.getElementById("holding-modal-title");
+    if (modalTitle) modalTitle.textContent = "✏️ Edit Holding";
+    if (els.btnSaveHolding) els.btnSaveHolding.textContent = "Save Changes";
+    if (els.btnDeleteHolding) els.btnDeleteHolding.style.display = "block";
+
+    // Pre-fill form
+    if (els.inputHoldingName) els.inputHoldingName.value = holding.name || "";
+    if (els.selectHoldingAssetClass) els.selectHoldingAssetClass.value = holding.assetClass || "Equities";
+    if (els.inputHoldingSubCategory) els.inputHoldingSubCategory.value = holding.subCategory || "";
+    if (els.selectHoldingMember) els.selectHoldingMember.value = holding.member || "Self";
+    if (els.inputHoldingCustodian) els.inputHoldingCustodian.value = holding.custodian || "";
+
+    const meta = holding.instrumentMeta || {};
+    const unitsVal = holding.units != null ? holding.units : (meta.units || meta.quantity || meta.grams || meta.carpetSqft || "");
+    if (els.inputHoldingUnits) els.inputHoldingUnits.value = unitsVal;
+
+    let unitPrice = 0;
+    if (holding.pricingMode === "LIVE_MF" || holding.assetClass === "Mutual Funds") {
+      const code = meta.amfiCode;
+      let scheme = null;
+      if (code && window.KYF_MARKET_MF && Array.isArray(window.KYF_MARKET_MF.schemes)) {
+        scheme = window.KYF_MARKET_MF.schemes.find((s) => s[0] === Number(code));
+      }
+      if (!scheme && window.KYF_MARKET_MF && Array.isArray(window.KYF_MARKET_MF.schemes)) {
+        const holdingNameLower = (holding.name || "").toLowerCase();
+        scheme = window.KYF_MARKET_MF.schemes.find((s) => holdingNameLower.includes(String(s[1]).toLowerCase()) || String(s[1]).toLowerCase().includes(holdingNameLower));
+      }
+
+      if (scheme) {
+        activeModalInstrument = {
+          type: "fund",
+          amfiCode: scheme[0],
+          name: scheme[1],
+          category: scheme[2],
+          directNav: scheme[3],
+          regularNav: scheme[4]
+        };
+        const plan = (meta.planType || "DIRECT").toUpperCase();
+        setupMfVariantBox(activeModalInstrument, plan);
+        unitPrice = plan === "REGULAR" ? (scheme[4] || scheme[3]) : (scheme[3] || scheme[4]);
+      } else {
+        hideMfVariantBox();
+      }
+    } else {
+      hideMfVariantBox();
+      if (holding.pricingMode === "LIVE_EQUITY" || holding.assetClass === "Equities") {
+        const sym = (meta.symbol || "").toUpperCase();
+        if (sym && window.KYF_MARKET_EQUITIES && Array.isArray(window.KYF_MARKET_EQUITIES.stocks)) {
+          const stock = window.KYF_MARKET_EQUITIES.stocks.find((s) => s[0] === sym);
+          if (stock) {
+            activeModalInstrument = { type: "stock", symbol: sym, rawPrice: stock[2] };
+            unitPrice = stock[2];
+          }
+        }
+      }
+    }
+
+    if (unitPrice > 0 && els.inputHoldingPrice) {
+      els.inputHoldingPrice.value = unitPrice;
+    } else if (meta.price && els.inputHoldingPrice) {
+      els.inputHoldingPrice.value = meta.price;
+    }
+
+    if (els.inputHoldingCurVal) els.inputHoldingCurVal.value = holding.currentValue != null ? holding.currentValue : "";
+    if (els.inputHoldingInvVal) els.inputHoldingInvVal.value = holding.investedValue != null ? holding.investedValue : "";
+
+    const goalId = (holding.allocations && holding.allocations.length > 0 && holding.allocations[0].goalId) || "";
+    if (els.selectHoldingGoal) els.selectHoldingGoal.value = goalId;
+  }
+
+  async function handleDeleteHolding(holdingId) {
+    const holding = rawHoldings.find((h) => h.id === holdingId || h.originalHoldingId === holdingId);
+    const hName = holding ? holding.name : "this holding";
+
+    if (!window.confirm(`Are you sure you want to delete "${hName}"? This cannot be undone.`)) {
+      return;
+    }
+
+    if (isDemoMode) {
+      isDemoMode = false;
+      localStorage.setItem("kyf_demo_mode", "false");
+      if (els.demoDataToggle) els.demoDataToggle.checked = false;
+      rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
+    }
+
+    rawHoldings = rawHoldings.filter((h) => h.id !== holdingId && h.originalHoldingId !== holdingId);
+    userHoldings = [...rawHoldings];
+    localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
+    await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+
+    closeHoldingModal();
+    renderApp();
+    showToast(`✓ Deleted "${hName}"`, "info");
   }
 
   function populateHoldingModalDropdowns() {
@@ -1434,9 +1754,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const member = (els.selectHoldingMember && els.selectHoldingMember.value) || "Self";
     const custodian = (els.inputHoldingCustodian && els.inputHoldingCustodian.value.trim()) || "Direct / Self-Held";
     const currentVal = parseFloat(els.inputHoldingCurVal.value);
-    const investedValInput = els.inputHoldingInvVal && els.inputHoldingInvVal.value;
-    const investedVal = investedValInput ? parseFloat(investedValInput) : currentVal;
+    const investedValInput = els.inputHoldingInvVal ? els.inputHoldingInvVal.value.trim() : "";
+    const investedVal = investedValInput !== "" && !isNaN(parseFloat(investedValInput)) ? parseFloat(investedValInput) : null;
     const goalId = els.selectHoldingGoal && els.selectHoldingGoal.value;
+    const unitsInput = els.inputHoldingUnits ? els.inputHoldingUnits.value.trim() : "";
+    const units = unitsInput !== "" && !isNaN(parseFloat(unitsInput)) ? parseFloat(unitsInput) : null;
+    const priceInput = els.inputHoldingPrice ? els.inputHoldingPrice.value.trim() : "";
+    const price = priceInput !== "" && !isNaN(parseFloat(priceInput)) ? parseFloat(priceInput) : null;
 
     if (!name) {
       alert("Please enter a holding name.");
@@ -1451,32 +1775,100 @@ document.addEventListener("DOMContentLoaded", async () => {
       isDemoMode = false;
       localStorage.setItem("kyf_demo_mode", "false");
       if (els.demoDataToggle) els.demoDataToggle.checked = false;
-      rawHoldings = [];
+      rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
     }
 
-    const newHolding = {
-      id: `hold_usr_${Date.now()}`,
-      name,
-      member,
-      custodian,
-      assetClass,
-      subCategory,
-      pricingMode: "MANUAL",
-      investedValue: isNaN(investedVal) ? currentVal : investedVal,
-      currentValue: currentVal,
-      manualCurrentValue: currentVal,
-      allocations: goalId ? [{ goalId, percentage: 100 }] : [],
-      notes: ""
-    };
+    // Determine pricing mode and instrumentMeta
+    let pricingMode = "MANUAL";
+    let instrumentMeta = {};
 
-    rawHoldings.push(newHolding);
+    if (editingHoldingId) {
+      const existing = rawHoldings.find((h) => h.id === editingHoldingId);
+      if (existing) {
+        pricingMode = existing.pricingMode || "MANUAL";
+        instrumentMeta = { ...(existing.instrumentMeta || {}) };
+      }
+    }
+
+    if (activeModalInstrument) {
+      if (activeModalInstrument.type === "fund" || assetClass === "Mutual Funds") {
+        pricingMode = "LIVE_MF";
+        const isRegular = els.radioVariantRegular && els.radioVariantRegular.checked;
+        instrumentMeta.amfiCode = activeModalInstrument.amfiCode || instrumentMeta.amfiCode;
+        instrumentMeta.planType = isRegular ? "REGULAR" : "DIRECT";
+      } else if (activeModalInstrument.type === "stock" || assetClass === "Equities") {
+        pricingMode = "LIVE_EQUITY";
+        instrumentMeta.symbol = activeModalInstrument.symbol || instrumentMeta.symbol;
+      } else if (activeModalInstrument.type === "city" || assetClass === "Real Estate") {
+        pricingMode = "LIVE_RESIDEX";
+        instrumentMeta.city = activeModalInstrument.symbol || instrumentMeta.city;
+      } else if (activeModalInstrument.type === "gold" || assetClass === "Gold") {
+        pricingMode = "LIVE_GOLD";
+        instrumentMeta.purity = "24K";
+      }
+    } else if (assetClass === "Mutual Funds") {
+      pricingMode = "LIVE_MF";
+      const isRegular = els.radioVariantRegular && els.radioVariantRegular.checked;
+      instrumentMeta.planType = isRegular ? "REGULAR" : "DIRECT";
+    }
+
+    if (units != null) {
+      if (pricingMode === "LIVE_MF") instrumentMeta.units = units;
+      else if (pricingMode === "LIVE_EQUITY") instrumentMeta.quantity = units;
+      else if (pricingMode === "LIVE_GOLD") instrumentMeta.grams = units;
+      else if (pricingMode === "LIVE_RESIDEX") instrumentMeta.carpetSqft = units;
+    }
+    if (price != null) {
+      instrumentMeta.price = price;
+    }
+
+    if (editingHoldingId) {
+      const idx = rawHoldings.findIndex((h) => h.id === editingHoldingId);
+      if (idx >= 0) {
+        rawHoldings[idx] = {
+          ...rawHoldings[idx],
+          name,
+          member,
+          custodian,
+          assetClass,
+          subCategory,
+          pricingMode,
+          units: units != null ? units : rawHoldings[idx].units,
+          investedValue: investedVal,
+          currentValue: currentVal,
+          manualCurrentValue: currentVal,
+          allocations: goalId ? [{ goalId, percentage: 100 }] : [],
+          instrumentMeta
+        };
+      }
+      showToast(`✓ Updated ${name}`, "success");
+    } else {
+      const newHolding = {
+        id: `hold_usr_${Date.now()}`,
+        name,
+        member,
+        custodian,
+        assetClass,
+        subCategory,
+        pricingMode,
+        units: units,
+        investedValue: investedVal,
+        currentValue: currentVal,
+        manualCurrentValue: currentVal,
+        allocations: goalId ? [{ goalId, percentage: 100 }] : [],
+        instrumentMeta,
+        notes: ""
+      };
+      rawHoldings.push(newHolding);
+      showToast(`✓ Added ${name} (${formatINR(currentVal)})`, "success");
+    }
+
     userHoldings = [...rawHoldings];
     localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
     await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
 
     closeHoldingModal();
     renderApp();
-    showToast(`✓ Added ${name} (${formatINR(currentVal)})`, "success");
   }
 
   // ==========================================================================
@@ -1685,13 +2077,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Holding Management Modal Events
     if (els.btnOpenHoldingModal) {
-      els.btnOpenHoldingModal.addEventListener("click", openHoldingModal);
+      els.btnOpenHoldingModal.addEventListener("click", () => openHoldingModal(false));
     }
     if (els.btnCloseHoldingModal) {
       els.btnCloseHoldingModal.addEventListener("click", closeHoldingModal);
     }
     if (els.btnCancelHolding) {
       els.btnCancelHolding.addEventListener("click", closeHoldingModal);
+    }
+    if (els.btnDeleteHolding) {
+      els.btnDeleteHolding.addEventListener("click", () => {
+        if (editingHoldingId) {
+          handleDeleteHolding(editingHoldingId);
+        }
+      });
     }
     if (els.holdingModal) {
       els.holdingModal.addEventListener("click", (e) => {
@@ -1707,6 +2106,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     if (els.formAddHolding) {
       els.formAddHolding.addEventListener("submit", handleAddHoldingSubmit);
+    }
+
+    // Modal Live Calculation and Plan Variant Event Listeners
+    if (els.inputHoldingCurVal) {
+      els.inputHoldingCurVal.addEventListener("input", () => recalcHoldingValues("curval"));
+    }
+    if (els.inputHoldingUnits) {
+      els.inputHoldingUnits.addEventListener("input", () => recalcHoldingValues("units"));
+    }
+    if (els.inputHoldingPrice) {
+      els.inputHoldingPrice.addEventListener("input", () => recalcHoldingValues("price"));
+    }
+    if (els.radioVariantDirect) {
+      els.radioVariantDirect.addEventListener("change", handleMfVariantChange);
+    }
+    if (els.radioVariantRegular) {
+      els.radioVariantRegular.addEventListener("change", handleMfVariantChange);
+    }
+    if (els.selectHoldingAssetClass) {
+      els.selectHoldingAssetClass.addEventListener("change", (e) => {
+        const val = e.target.value;
+        if (val === "Mutual Funds") {
+          if (activeModalInstrument && (activeModalInstrument.directNav != null || activeModalInstrument.regularNav != null)) {
+            setupMfVariantBox(activeModalInstrument);
+          }
+        } else {
+          hideMfVariantBox();
+        }
+      });
     }
 
     // Modal Omni-Search Typeahead
