@@ -290,24 +290,19 @@
         <button type="button" class="modal-close" id="btn-close-holding-modal" aria-label="Close dialog">✕</button>
       </div>
 
-      <!-- Quick Search Typeahead within modal -->
-      <div class="modal-search-block">
-        <label class="form-label" for="modal-omni-search-input">Instant Search (Stock, Fund, or City)</label>
-        <div class="omni-search-wrapper omni-search-wrapper--modal">
-          <div class="omni-search-input-box">
-            <span class="omni-search-icon">🔍</span>
-            <input type="text" id="modal-omni-search-input" class="omni-search-input" placeholder="Type to auto-fill (e.g. Parag, SBIN, Bengaluru)..." autocomplete="off">
-            <button type="button" class="omni-search-clear" id="modal-omni-search-clear" style="display:none;">✕</button>
-          </div>
-          <div id="modal-omni-search-results" class="omni-search-results" style="display:none;"></div>
-        </div>
-      </div>
-
       <form id="form-add-holding">
         <div class="holding-form-grid">
+          <!-- One box: search a stock/fund/city to auto-fill, or just type any name -->
           <div class="form-field full">
-            <label class="form-label" for="input-holding-name">What do you own? *</label>
-            <input type="text" id="input-holding-name" class="form-control" placeholder="e.g. HDFC Bank, Parag Parikh Flexi Cap, SBI FD" required>
+            <label class="form-label" for="modal-omni-search-input">What do you own? *</label>
+            <div class="omni-search-wrapper omni-search-wrapper--modal">
+              <div class="omni-search-input-box">
+                <span class="omni-search-icon">🔍</span>
+                <input type="text" id="modal-omni-search-input" class="omni-search-input" placeholder="Search a stock, fund or city &mdash; or type any name" autocomplete="off" required>
+                <button type="button" class="omni-search-clear" id="modal-omni-search-clear" style="display:none;" aria-label="Clear">✕</button>
+              </div>
+              <div id="modal-omni-search-results" class="omni-search-results" style="display:none;"></div>
+            </div>
           </div>
 
           <div class="form-field">
@@ -435,6 +430,7 @@
   <script src="js/portfolio-data.js?v=1.4.8"></script>
   <script src="js/portfolio-engine.js?v=1.4.8"></script>
   <script src="js/portfolio-app.js?v=1.4.8"></script>
+  <script src="js/kyf-footer.js?v=1.5.0"></script>
 </body>
 </html>
 

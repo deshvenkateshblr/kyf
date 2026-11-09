@@ -459,20 +459,6 @@
       .controls-bar { top: 60px; }
     }
 
-    /* Sticky Feedback Footer */
-    .sticky-footer {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-      background: rgba(24, 38, 32, 0.96); backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px); color: #eef1ea; text-align: center;
-      padding: 10px 16px; font-family: var(--mono); font-size: 12px;
-      letter-spacing: 0.03em; border-top: 1px solid rgba(255, 255, 255, 0.14);
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-    }
-    .sticky-footer a {
-      color: #8fe0cd; text-decoration: underline; text-underline-offset: 3px;
-      font-weight: 600; transition: color 0.15s ease;
-    }
-    .sticky-footer a:hover { color: #fff; }
   </style>
 </head>
 <body>
@@ -730,10 +716,6 @@
     </div>
   </footer>
 
-  <!-- STICKY FEEDBACK FOOTER -->
-  <aside class="sticky-footer" aria-label="Feedback and contact">
-    <span>Comments, questions, feedback? Write to <a href="mailto:info@vividnova.com">info@vividnova.com</a></span>
-  </aside>
 
   <!-- VAULT ENGINE -->
   <script src="js/kyf-vault.js"></script>
@@ -1378,6 +1360,7 @@
       render();
     })();
   </script>
+  <script src="js/kyf-footer.js?v=1.5.0"></script>
 </body>
 </html>
 

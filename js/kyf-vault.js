@@ -540,7 +540,7 @@
         toastEl.id = "vivid-vault-toast";
         toastEl.style.cssText = `
           position: fixed;
-          bottom: 24px;
+          bottom: 64px;
           left: 50%;
           transform: translateX(-50%) translateY(20px);
           background: #182620;

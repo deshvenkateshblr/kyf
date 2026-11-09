@@ -77,11 +77,16 @@ try {
   await page.waitForSelector(".btn-edit-leaf");
   check((await holdingCount()) === 1, "stock holding added");
 
-  // Mutual fund via search (modal search, since the empty state is gone)
+  // Mutual fund via the single "What do you own?" box (it is both search and name field)
   await page.click("#btn-open-holding-modal");
+  check((await page.locator("#input-holding-name").count()) === 0, "no separate name text box in the modal");
   await page.fill("#modal-omni-search-input", "parag");
   await page.waitForSelector("#modal-omni-search-results .omni-result-item");
+  const firstTag = (await page.locator("#modal-omni-search-results .omni-result-item .omni-tag").first().textContent()).trim();
+  const firstName = (await page.locator("#modal-omni-search-results .omni-result-name").first().textContent()).trim();
+  check(firstTag === "Fund" && /parag parikh/i.test(firstName), `"parag" ranks the fund first (${firstTag}: ${firstName})`);
   await page.locator("#modal-omni-search-results .omni-result-item").first().click();
+  check(/parag parikh/i.test(await page.inputValue("#modal-omni-search-input")), "picked name stays in the box");
   await fillAndSave({ curval: 150000 });
   check((await holdingCount()) === 2, "mutual fund added");
 
@@ -93,16 +98,21 @@ try {
   ];
   for (const m of manual) {
     await page.click("#btn-open-holding-modal");
-    await page.fill("#input-holding-name", m.name);
+    await page.fill("#modal-omni-search-input", m.name);
     await page.selectOption("#select-holding-assetclass", m.cls);
     await fillAndSave({ curval: m.curval });
   }
   check((await holdingCount()) === 5, "five holdings are listed");
 
-  console.log("[3] Unsaved-changes cue");
+  console.log("[3] Footer");
+  check((await page.textContent("#kyf-footer")).includes("Questions, comments, feedback write to info@vividnova.com"), "footer shows the feedback line");
+  check(/^KYF v\d+\.\d+\.\d+$/.test((await page.textContent(".kyf-footer-version")).trim()), "footer shows the app version");
+  check((await page.locator(".kyf-footer-refresh").count()) === 1 && (await page.locator(".sticky-footer").count()) === 0, "one Refresh button, no duplicate bars");
+
+  console.log("[4] Unsaved-changes cue");
   check(await page.locator("#navSaveDataBtn").evaluate((b) => b.classList.contains("has-unsaved")), "Save button flags unsaved changes");
 
-  console.log("[4] Reload keeps numbers identical");
+  console.log("[5] Reload keeps numbers identical");
   const before = await netWorth();
   await page.reload();
   await page.waitForSelector(".btn-edit-leaf");
@@ -110,7 +120,7 @@ try {
   check(before === after && before !== "₹0", `net worth identical after reload (${before} vs ${after})`);
   check((await holdingCount()) === 5, "all five holdings still present after reload");
 
-  console.log("[5] Delete with Undo");
+  console.log("[6] Delete with Undo");
   await page.locator(".btn-delete-leaf").first().click().catch(async () => {
     await page.locator(".btn-edit-leaf").first().click();
     await page.click("#btn-delete-holding");

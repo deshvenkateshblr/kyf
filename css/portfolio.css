@@ -1824,7 +1824,7 @@ button {
    ========================================================================== */
 .toast-notice {
   position: fixed;
-  bottom: 24px;
+  bottom: 64px;
   right: 24px;
   z-index: 100;
   background: var(--ink);
@@ -2609,12 +2609,6 @@ button {
 /* ==========================================================================
    Holding Modal — low-friction form (progressive disclosure)
    ========================================================================== */
-.modal-search-block {
-  margin-bottom: 14px;
-  padding-bottom: 12px;
-  border-bottom: 1px dashed var(--line);
-}
-
 .omni-search-wrapper--modal {
   margin: 0;
   max-width: 100%;

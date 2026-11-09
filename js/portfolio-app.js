@@ -83,7 +83,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     btnDeleteHolding: document.getElementById("btn-delete-holding"),
     btnSaveHolding: document.getElementById("btn-save-holding"),
     formAddHolding: document.getElementById("form-add-holding"),
-    inputHoldingName: document.getElementById("input-holding-name"),
+    // The modal has one box for the name: the search box doubles as the name field
+    inputHoldingName: document.getElementById("modal-omni-search-input"),
     selectHoldingAssetClass: document.getElementById("select-holding-assetclass"),
     inputHoldingSubCategory: document.getElementById("input-holding-subcategory"),
     holdingMfVariantBox: document.getElementById("holding-mf-variant-box"),
@@ -1135,8 +1136,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Omni-Asset Search & Typeahead Controller (Stocks, Funds & Residex Cities)
   // ==========================================================================
   function searchMarketInstruments(query, limit = 8) {
-    const q = (query || "").trim().toLowerCase();
+    const q = (query || "").trim().toLowerCase().replace(/\s+/g, " ");
     if (!q || q.length < 2) return [];
+    const tokens = q.split(" ");
+
+    // Name match quality: exact > starts-with > every word starts a name word > loose substring.
+    // Longer names lose ties, so the closest (shortest) name surfaces first.
+    const nameScore = (nm) => {
+      if (nm === q) return 90;
+      if (nm.startsWith(q)) return 80;
+      if (tokens.every((t) => nm.includes(t))) {
+        const words = nm.split(/[^a-z0-9]+/);
+        if (tokens.every((t) => words.some((w) => w.startsWith(t)))) return tokens.length > 1 ? 60 : 50;
+      }
+      return nm.includes(q) ? 20 : 0;
+    };
 
     const results = [];
 
@@ -1150,12 +1164,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         const sym = symbol.toLowerCase();
         const nm = name.toLowerCase();
 
+        // Ticker typed exactly wins outright; a ticker prefix ranks below a name match
+        // (so "parag" shows Parag Parikh Flexi Cap before the PARAGMILK ticker).
         let score = 0;
         if (sym === q) score = 100;
-        else if (sym.startsWith(q)) score = 85;
-        else if (nm.startsWith(q)) score = 65;
-        else if (nm.includes(" " + q)) score = 45;
-        else if (nm.includes(q)) score = 20;
+        else {
+          score = Math.max(nameScore(nm), sym.startsWith(q) ? 70 : 0);
+          if (score > 0) score += (s[7] === 1 ? 0.5 : 0) - nm.length / 1000;
+        }
 
         if (score > 0) {
           results.push({
@@ -1189,10 +1205,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const nav = directNav != null ? directNav : (regularNav != null ? regularNav : 0);
         const nm = name.toLowerCase();
 
-        let score = 0;
-        if (nm.startsWith(q)) score = 80;
-        else if (nm.includes(" " + q)) score = 50;
-        else if (nm.includes(q)) score = 25;
+        // +1 so a fund wins a dead-even name match against a stock (people searching by name mostly hold funds)
+        let score = nameScore(nm);
+        if (score > 0) score += 1 - nm.length / 1000;
 
         if (score > 0) {
           results.push({
@@ -1253,11 +1268,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     results.sort((a, b) => b.score - a.score);
-    return results.slice(0, limit);
+
+    // Keep the list mixed: a flood of stock matches must not hide the fund or city the user wants
+    const caps = { stock: 4, fund: 4, city: 2 };
+    const taken = { stock: 0, fund: 0, city: 0 };
+    const picked = results.filter((r) => (taken[r.type] += 1) <= (caps[r.type] || 4));
+    return picked.slice(0, limit);
   }
 
-  function wireOmniSearch(inputEl, resultsEl, clearBtnEl) {
+  function wireOmniSearch(inputEl, resultsEl, clearBtnEl, options = {}) {
     if (!inputEl || !resultsEl) return;
+    // keepValue: leave the chosen name in the box (modal) instead of clearing it (empty-state)
+    // isEnabled: lets the box stay a plain text field (e.g. when renaming an existing holding)
+    const keepValue = !!options.keepValue;
+    const isEnabled = typeof options.isEnabled === "function" ? options.isEnabled : () => true;
 
     let highlightedIndex = -1;
     let currentResults = [];
@@ -1265,6 +1289,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     function renderResults(results) {
       currentResults = results;
       highlightedIndex = -1;
+      if ((!results || results.length === 0) && keepValue) {
+        // Modal: the typed text is simply the holding's name, so no "not found" panel over the form
+        resultsEl.style.display = "none";
+        return;
+      }
       if (!results || results.length === 0) {
         resultsEl.innerHTML = `
           <div style="padding: 12px 16px; font-size:12px; color:var(--muted); text-align:center;">
@@ -1301,8 +1330,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           const chosen = currentResults[idx];
           if (chosen) {
             resultsEl.style.display = "none";
-            inputEl.value = "";
-            if (clearBtnEl) clearBtnEl.style.display = "none";
+            if (!keepValue) {
+              inputEl.value = "";
+              if (clearBtnEl) clearBtnEl.style.display = "none";
+            }
             initiateAddHoldingFromSelection(chosen);
           }
         });
@@ -1312,7 +1343,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     inputEl.addEventListener("input", (e) => {
       const q = e.target.value;
       if (clearBtnEl) clearBtnEl.style.display = q ? "block" : "none";
-      if (!q || q.trim().length < 2) {
+      if (!isEnabled() || !q || q.trim().length < 2) {
         resultsEl.style.display = "none";
         resultsEl.innerHTML = "";
         return;
@@ -1338,8 +1369,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (highlightedIndex >= 0 && highlightedIndex < currentResults.length) {
           const chosen = currentResults[highlightedIndex];
           resultsEl.style.display = "none";
-          inputEl.value = "";
-          if (clearBtnEl) clearBtnEl.style.display = "none";
+          if (!keepValue) {
+            inputEl.value = "";
+            if (clearBtnEl) clearBtnEl.style.display = "none";
+          }
           initiateAddHoldingFromSelection(chosen);
         }
       } else if (e.key === "Escape") {
@@ -1608,6 +1641,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     populateHoldingModalDropdowns();
     els.holdingModal.style.display = "flex";
     els.holdingModal.setAttribute("aria-hidden", "false");
+
+    const staleResults = document.getElementById("modal-omni-search-results");
+    if (staleResults) staleResults.style.display = "none";
 
     // Progressive disclosure: optional fields stay collapsed when adding, open when editing
     const moreDetails = document.getElementById("holding-more-details");
@@ -2186,8 +2222,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     wireOmniSearch(
       document.getElementById("modal-omni-search-input"),
       document.getElementById("modal-omni-search-results"),
-      document.getElementById("modal-omni-search-clear")
+      document.getElementById("modal-omni-search-clear"),
+      { keepValue: true, isEnabled: () => !editingHoldingId }
     );
+
+    // Retyping the name after picking a stock/fund/city means a different asset: drop the stale
+    // live-price link so the old instrument's price can't attach to the new name.
+    if (els.inputHoldingName) {
+      els.inputHoldingName.addEventListener("input", () => {
+        const inst = activeModalInstrument;
+        if (editingHoldingId || !inst || !["stock", "fund", "city"].includes(inst.type)) return;
+        if (els.inputHoldingName.value.trim() !== (inst.name || "").trim()) {
+          activeModalInstrument = null;
+          hideMfVariantBox();
+        }
+      });
+    }
 
     // 7. App-Level Toolbar: Open & Save Data Buttons backed by shared KYF Vault
     if (window.KYF_VAULT) {

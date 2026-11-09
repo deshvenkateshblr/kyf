@@ -1,0 +1,79 @@
+/* KYF app-wide footer — injected by js/kyf-footer.js */
+.kyf-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  background: rgba(24, 38, 32, 0.96);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  color: #eef1ea;
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+
+/* Keep page content clear of the fixed bar */
+body.has-kyf-footer {
+  padding-bottom: 48px;
+}
+
+.kyf-footer a {
+  color: #8fe0cd;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.kyf-footer a:hover {
+  color: #ffffff;
+}
+
+.kyf-footer-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kyf-footer-version {
+  color: rgba(238, 241, 234, 0.7);
+}
+
+.kyf-footer-refresh {
+  padding: 3px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #eef1ea;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.kyf-footer-refresh:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.kyf-footer-refresh:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+@media (max-width: 600px) {
+  .kyf-footer {
+    justify-content: center;
+    text-align: center;
+    font-size: 11px;
+  }
+  body.has-kyf-footer {
+    padding-bottom: 72px;
+  }
+}

@@ -400,19 +400,6 @@
       line-height: 1.5;
     }
 
-    /* Sticky Footer */
-    .sticky-footer {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-      background: rgba(24, 38, 32, 0.96); backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px); color: rgba(255, 255, 255, 0.85);
-      font-size: 12px; font-family: var(--mono); text-align: center;
-      padding: 10px 16px; border-top: 1px solid rgba(255, 255, 255, 0.14);
-      display: flex; justify-content: center; align-items: center; gap: 8px;
-    }
-    .sticky-footer a {
-      color: #8fe0cd; text-decoration: underline; font-weight: 600;
-    }
-    .sticky-footer a:hover { color: #fff; }
 
     @media (max-width: 900px) {
       .nav-links { display: none; }
