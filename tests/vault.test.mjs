@@ -100,7 +100,7 @@ global.indexedDB = {
           },
           transaction: (storeNames, mode) => {
             const arr = Array.isArray(storeNames) ? storeNames : [storeNames];
-            return {
+            const txObj = {
               oncomplete: null,
               onerror: null,
               objectStore: (s) => ({
@@ -116,7 +116,7 @@ global.indexedDB = {
                 put: (item) => {
                   const st = idbDatabases[name].stores[s];
                   if (st) {
-                    const key = st.opts && st.opts.keyPath ? item[st.opts.keyPath] : JSON.stringify(item);
+                    const key = st.opts && st.opts.keyPath ? item[st.opts.keyPath] : (item.id || item.key || JSON.stringify(item));
                     st.items[key] = item;
                   }
                 },
@@ -126,6 +126,10 @@ global.indexedDB = {
                 }
               })
             };
+            setTimeout(() => {
+              if (txObj.oncomplete) txObj.oncomplete();
+            }, 0);
+            return txObj;
           }
         };
         if (req.onupgradeneeded) {
@@ -139,9 +143,11 @@ global.indexedDB = {
   }
 };
 
-// Load kyf-vault.js code
+// Load kyf-vault.js and portfolio-data.js code
 const vaultCode = fs.readFileSync(path.resolve("js/kyf-vault.js"), "utf8");
 eval(vaultCode);
+const pDataCode = fs.readFileSync(path.resolve("js/portfolio-data.js"), "utf8");
+eval(pDataCode);
 
 console.log("=== RUNNING VAULT VERIFICATION TESTS ===");
 
@@ -237,6 +243,14 @@ async function runTests() {
   ];
   mockLocalStorage.setItem("kyf_user_goals", JSON.stringify(mockPortfolioGoals));
 
+  // 5. Family Members (First-Class)
+  const mockMembers = [
+    { id: "mem_self", name: "Self", role: "Self", avatar: "👤" },
+    { id: "mem_spouse", name: "Spouse", role: "Spouse", avatar: "👩" },
+    { id: "mem_aarav", name: "Aarav", role: "Child", avatar: "👦" }
+  ];
+  mockLocalStorage.setItem("kyf_user_members", JSON.stringify(mockMembers));
+
   // Create unified payload
   const kyfPayload = await global.KYF_VAULT.createPayload();
   assert(kyfPayload.app === "Know Your Finance", "KYF app name correct");
@@ -245,6 +259,7 @@ async function runTests() {
   assert(Array.isArray(kyfPayload.data.portfolio) && kyfPayload.data.portfolio.length === 2, "Unified payload includes portfolio holdings");
   assert(Array.isArray(kyfPayload.data.portfolioGoals) && kyfPayload.data.portfolioGoals.length === 1, "Unified payload includes portfolio goals");
   assert(Array.isArray(kyfPayload.data.goals) && kyfPayload.data.goals.length === 1, "Unified payload includes life planner goals");
+  assert(Array.isArray(kyfPayload.data.members) && kyfPayload.data.members.length === 3, "Unified payload includes first-class family members");
 
   // Test 4: Cadence Page Save / Open Round-Trip
   console.log("\n[TEST GROUP 4] Cadence Page Saving & Opening (The Primary Bug Fix)");
@@ -325,6 +340,54 @@ async function runTests() {
   const extracted = global.KYF_VAULT.parseAndExtractKyfData(JSON.stringify(legacyPortfolioFile));
   assert(extracted.holdings.length === 1, "Adapter returned holdings");
   assert(extracted.goals.length === 1, "Adapter returned goals");
+
+  // Test 8: First-Class Family Members (Can exist before any holdings)
+  console.log("\n[TEST GROUP 8] First-Class Family Members (Members exist before holdings)");
+  // Clear holdings completely to test 0 holdings scenario
+  mockLocalStorage.removeItem("kyf_user_holdings");
+  await global.KYF_PORTFOLIO_DATA.clearDatabase();
+
+  const emptyHoldings = await global.KYF_PORTFOLIO_DATA.loadHoldingsFromDB();
+  assert(emptyHoldings.length === 0, "Holdings database is empty (0 holdings)");
+
+  // Save new first-class members before any holding exists
+  const initialMembers = [
+    { id: "mem_self", name: "Self", role: "Self", avatar: "👤" },
+    { id: "mem_kavita", name: "Kavita", role: "Spouse", avatar: "👩" },
+    { id: "mem_kid", name: "Aarav", role: "Child", avatar: "👦" }
+  ];
+  await global.KYF_PORTFOLIO_DATA.saveMembersToDB(initialMembers);
+  const loadedMembers = await global.KYF_PORTFOLIO_DATA.loadMembersFromDB();
+  assert(loadedMembers.length === 3, "First-class members successfully saved & loaded with 0 holdings");
+  assert(loadedMembers[0].name === "Self", "First member is 'Self'");
+  assert(loadedMembers[1].name === "Kavita", "Second member is 'Kavita'");
+  assert(loadedMembers[2].name === "Aarav", "Third member is 'Aarav'");
+
+  // Test 9: Elimination of Data Corruption (loadHoldingsFromDB never renames "Self" or "Spouse")
+  console.log("\n[TEST GROUP 9] Elimination of Real Data Corruption in loadHoldingsFromDB");
+  const userRealHoldings = [
+    { id: "h_self", name: "HDFC Bank", member: "Self", assetClass: "Equities", currentValue: 50000 },
+    { id: "h_spouse", name: "ICICI Prudential MF", member: "Spouse", assetClass: "Mutual Funds", currentValue: 30000 },
+    { id: "h_father", name: "Senior Citizen FD", member: "Father", assetClass: "Fixed Income", currentValue: 100000 },
+    { id: "h_mother", name: "Sovereign Gold Bond", member: "Mother", assetClass: "Gold", currentValue: 25000 },
+    { id: "h_child", name: "Sukanya Samriddhi", member: "Ananya", assetClass: "Fixed Income", currentValue: 15000 }
+  ];
+
+  await global.KYF_PORTFOLIO_DATA.saveHoldingsToDB(userRealHoldings);
+  const loadedHoldings = await global.KYF_PORTFOLIO_DATA.loadHoldingsFromDB();
+
+  assert(loadedHoldings.length === 5, "All 5 user holdings loaded from database");
+  assert(loadedHoldings[0].member === "Self", "Holding member 'Self' was NOT renamed to 'Rajesh'!");
+  assert(loadedHoldings[1].member === "Spouse", "Holding member 'Spouse' was NOT renamed to 'Priya'!");
+  assert(loadedHoldings[2].member === "Father", "Holding member 'Father' was NOT renamed to 'Ramesh'!");
+  assert(loadedHoldings[3].member === "Mother", "Holding member 'Mother' was NOT renamed to 'Sunita'!");
+  assert(loadedHoldings[4].member === "Ananya", "Custom user member 'Ananya' is intact");
+
+  // Round-trip into KYF Vault payload and verify member field
+  const vaultWithMembers = await global.KYF_VAULT.createPayload();
+  assert(Array.isArray(vaultWithMembers.data.members) && vaultWithMembers.data.members.length === 3, "Vault payload contains all first-class members");
+  assert(vaultWithMembers.data.portfolio[0].member === "Self", "Vault portfolio holding preserves member 'Self'");
+  assert(vaultWithMembers.data.portfolio[1].member === "Spouse", "Vault portfolio holding preserves member 'Spouse'");
 
   console.log(`\n========================================`);
   console.log(`TEST SUMMARY: ${passed} passed, ${failed} failed`);

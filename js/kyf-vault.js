@@ -548,15 +548,17 @@
   // ==========================================================================
 
   const KYF_DB_NAME = "KYF_PORTFOLIO_DB";
-  const KYF_DB_VERSION = 2;
+  const KYF_DB_VERSION = 3;
   const KYF_STORE_HOLDINGS = "holdings";
   const KYF_STORE_GOALS = "goals";
+  const KYF_STORE_MEMBERS = "members";
   const KYF_STORE_META = "session_meta";
 
   const STORAGE_KEY_CADENCE = "kyf_cadence_v3";
   const STORAGE_KEY_GOALS = "kyf_goals_v1";
   const STORAGE_KEY_USER_HOLDINGS = "kyf_user_holdings";
   const STORAGE_KEY_USER_GOALS = "kyf_user_goals";
+  const STORAGE_KEY_USER_MEMBERS = "kyf_user_members";
   const STORAGE_KEY_DEMO_MODE = "kyf_demo_mode";
 
   // --------------------------------------------------------------------------
@@ -575,6 +577,9 @@
         }
         if (!db.objectStoreNames.contains(KYF_STORE_GOALS)) {
           db.createObjectStore(KYF_STORE_GOALS, { keyPath: "id" });
+        }
+        if (!db.objectStoreNames.contains(KYF_STORE_MEMBERS)) {
+          db.createObjectStore(KYF_STORE_MEMBERS, { keyPath: "id" });
         }
         if (!db.objectStoreNames.contains(KYF_STORE_META)) {
           db.createObjectStore(KYF_STORE_META, { keyPath: "key" });
@@ -682,6 +687,11 @@
       normalizedData.portfolioGoals = rawData.portfolioGoals;
     }
 
+    // Family Members (First-Class Entity)
+    if (Array.isArray(rawData.members)) {
+      normalizedData.members = rawData.members;
+    }
+
     // Disambiguate rawData.goals (Planner goals vs Portfolio Envelopes)
     if (Array.isArray(rawData.goals)) {
       const sample = rawData.goals[0];
@@ -706,7 +716,7 @@
 
     // Retain all other keys into normalizedData so they are never lost
     for (const [key, val] of Object.entries(rawData)) {
-      if (!["cadence", "portfolio", "holdings", "portfolioGoals", "goals"].includes(key)) {
+      if (!["cadence", "portfolio", "holdings", "portfolioGoals", "goals", "members"].includes(key)) {
         normalizedData[key] = val;
       }
     }
@@ -863,6 +873,36 @@
   });
 
   // --------------------------------------------------------------------------
+  // Register Section 5: Family Members (First-Class Entity)
+  // --------------------------------------------------------------------------
+  KYF_VAULT.registerSection("members", {
+    read: async () => {
+      const stored = await readPortfolioStore(KYF_STORE_MEMBERS);
+      if (stored && stored.length > 0) return stored;
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_USER_MEMBERS);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch {}
+      return [];
+    },
+    write: async (members) => {
+      if (Array.isArray(members)) {
+        await writePortfolioStore(KYF_STORE_MEMBERS, members);
+        try {
+          localStorage.setItem(STORAGE_KEY_USER_MEMBERS, JSON.stringify(members));
+        } catch (err) {
+          console.error("[KYF Vault] Error persisting members to localStorage:", err);
+        }
+      }
+    },
+    summary: (members) => (Array.isArray(members) ? `${members.length} family members` : ""),
+    validate: (data) => Array.isArray(data)
+  });
+
+  // --------------------------------------------------------------------------
   // Compatibility adapter for existing portfolio-data.js callers
   // --------------------------------------------------------------------------
   KYF_VAULT.parseAndExtractKyfData = function (text) {
@@ -873,11 +913,12 @@
       return {
         holdings: d.portfolio || [],
         goals: d.portfolioGoals || (Array.isArray(d.goals) && d.goals[0]?.baseTargetINR ? d.goals : []),
+        members: d.members || [],
         hasCadence: !!(d.cadence && d.cadence.length)
       };
     } catch (err) {
       console.error("[KYF Vault] parseAndExtractKyfData error:", err);
-      return { holdings: [], goals: [], hasCadence: false };
+      return { holdings: [], goals: [], members: [], hasCadence: false };
     }
   };
 

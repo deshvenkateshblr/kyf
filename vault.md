@@ -2,7 +2,7 @@
 
 > **Location:** `js/kyf-vault.js`  
 > **Status:** ✅ Production Ready (v2.0.0)  
-> **Test Suite:** `tests/vault.test.mjs` (31/31 Passing)  
+> **Test Suite:** `tests/vault.test.mjs` (46/46 Passing)  
 > **Scope:** Unified multi-page on-device persistence for Know Your Finance (KYF) and reusable generic storage engine for all Vividnova web applications.
 
 ---
@@ -46,6 +46,7 @@ A unified, two-tier architecture implemented in a single shared file: [`js/kyf-v
 │  - Section 2: "portfolio"      -> IndexedDB: KYF_PORTFOLIO_DB.holdings │
 │  - Section 3: "portfolioGoals" -> IndexedDB: KYF_PORTFOLIO_DB.goals    │
 │  - Section 4: "goals"          -> localStorage: kyf_goals_v1           │
+│  - Section 5: "members"        -> IndexedDB: KYF_PORTFOLIO_DB.members  │
 │  - Extra passthrough data      -> localStorage: _kyf_vault_extra       │
 │  - Payload normalizer supporting legacy bare-arrays & v1 exports       │
 └───────────────────────────────────┬────────────────────────────────────┘
@@ -119,6 +120,11 @@ All `.kyf` vault files follow this standard structured JSON format:
         "expectedReturn": 12.0
       }
     ],
+    "members": [
+      { "id": "mem_self", "name": "Self", "role": "Self", "avatar": "👤" },
+      { "id": "mem_spouse", "name": "Spouse", "role": "Spouse", "avatar": "👩" },
+      { "id": "mem_aarav", "name": "Aarav", "role": "Child", "avatar": "👦" }
+    ],
     "marketReviewDate": "2026-11-09T06:00:00.000Z"
   }
 }
@@ -132,6 +138,7 @@ All `.kyf` vault files follow this standard structured JSON format:
 | **`portfolio`** | Active page `rawHoldings` | IndexedDB `KYF_PORTFOLIO_DB` (`holdings`) | `localStorage["kyf_user_holdings"]` |
 | **`portfolioGoals`** | Active page `rawGoals` | IndexedDB `KYF_PORTFOLIO_DB` (`goals`) | `localStorage["kyf_user_goals"]` |
 | **`goals`** | Active page `goals` | `localStorage["kyf_goals_v1"]` | — |
+| **`members`** | Active page `rawMembers` | IndexedDB `KYF_PORTFOLIO_DB` (`members`) | `localStorage["kyf_user_members"]` |
 | **Extra Data** | Page-specific state / future extensions | `localStorage["_kyf_vault_extra"]` | In-memory passthrough |
 
 ---

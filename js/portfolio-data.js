@@ -6,9 +6,10 @@
 
 window.KYF_PORTFOLIO_DATA = (() => {
   const DB_NAME = "KYF_PORTFOLIO_DB";
-  const DB_VERSION = 2;
+  const DB_VERSION = 3;
   const STORE_HOLDINGS = "holdings";
   const STORE_GOALS = "goals";
+  const STORE_MEMBERS = "members";
   const STORE_META = "session_meta";
   const CADENCE_STORAGE_KEY = "kyf_cadence_v3";
 
@@ -336,6 +337,9 @@ window.KYF_PORTFOLIO_DATA = (() => {
         if (!db.objectStoreNames.contains(STORE_GOALS)) {
           db.createObjectStore(STORE_GOALS, { keyPath: "id" });
         }
+        if (!db.objectStoreNames.contains(STORE_MEMBERS)) {
+          db.createObjectStore(STORE_MEMBERS, { keyPath: "id" });
+        }
         if (!db.objectStoreNames.contains(STORE_META)) {
           db.createObjectStore(STORE_META, { keyPath: "key" });
         }
@@ -355,30 +359,7 @@ window.KYF_PORTFOLIO_DATA = (() => {
         const req = store.getAll();
 
         req.onsuccess = () => {
-          const list = req.result || [];
-          // Normalize legacy relationship names and combinations to pure individual members
-          let changed = false;
-          const normalized = list.map((h) => {
-            let m = h.member;
-            if (m === "Rajesh & Priya" || m === "Self & Spouse" || m === "Self") {
-              m = "Rajesh";
-              changed = true;
-            } else if (m === "Spouse") {
-              m = "Priya";
-              changed = true;
-            } else if (m === "Father") {
-              m = "Ramesh";
-              changed = true;
-            } else if (m === "Mother") {
-              m = "Sunita";
-              changed = true;
-            }
-            return m !== h.member ? { ...h, member: m } : h;
-          });
-          if (changed) {
-            saveHoldingsToDB(normalized).catch(() => {});
-          }
-          resolve(normalized);
+          resolve(req.result || []);
         };
         req.onerror = () => reject(req.error);
       });
@@ -450,12 +431,55 @@ window.KYF_PORTFOLIO_DATA = (() => {
     });
   }
 
+  async function loadMembersFromDB() {
+    try {
+      const db = await openDatabase();
+      if (!db.objectStoreNames.contains(STORE_MEMBERS)) return [];
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_MEMBERS, "readonly");
+        const store = tx.objectStore(STORE_MEMBERS);
+        const req = store.getAll();
+
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    } catch (err) {
+      console.warn("[KYF Portfolio] Error reading members from IndexedDB:", err);
+      return [];
+    }
+  }
+
+  async function saveMembersToDB(members) {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction([STORE_MEMBERS, STORE_META], "readwrite");
+      const store = tx.objectStore(STORE_MEMBERS);
+      const metaStore = tx.objectStore(STORE_META);
+
+      store.clear();
+      for (const m of members) {
+        store.put(m);
+      }
+
+      metaStore.put({
+        key: "members_last_updated",
+        value: new Date().toISOString()
+      });
+
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
   async function clearDatabase() {
     const db = await openDatabase();
     return new Promise((resolve, reject) => {
       const stores = [STORE_HOLDINGS, STORE_META];
       if (db.objectStoreNames.contains(STORE_GOALS)) {
         stores.push(STORE_GOALS);
+      }
+      if (db.objectStoreNames.contains(STORE_MEMBERS)) {
+        stores.push(STORE_MEMBERS);
       }
       const tx = db.transaction(stores, "readwrite");
       for (const s of stores) {
@@ -468,14 +492,15 @@ window.KYF_PORTFOLIO_DATA = (() => {
   }
 
   // ==========================================================================
-  // App-Level Unified .kyf Vault Import / Export (Cadence + Portfolio + Goals)
+  // App-Level Unified .kyf Vault Import / Export (Cadence + Portfolio + Goals + Members)
   // Routed through shared js/kyf-vault.js
   // ==========================================================================
-  function exportAppData(holdings, goals) {
+  function exportAppData(holdings, goals, members) {
     if (window.KYF_VAULT) {
       return window.KYF_VAULT.save({
         portfolio: holdings,
-        portfolioGoals: goals
+        portfolioGoals: goals,
+        members: members
       });
     }
 
@@ -494,7 +519,8 @@ window.KYF_PORTFOLIO_DATA = (() => {
       data: {
         cadence: cadenceData || [],
         portfolio: holdings,
-        portfolioGoals: goals || []
+        portfolioGoals: goals || [],
+        members: members || []
       }
     };
     const jsonStr = JSON.stringify(payload, null, 2);
@@ -522,6 +548,7 @@ window.KYF_PORTFOLIO_DATA = (() => {
     let importedHoldings = null;
     let importedGoals = null;
     let importedCadence = null;
+    let importedMembers = null;
 
     if (parsed && parsed.data) {
       if (Array.isArray(parsed.data.portfolio)) importedHoldings = parsed.data.portfolio;
@@ -530,10 +557,13 @@ window.KYF_PORTFOLIO_DATA = (() => {
       if (Array.isArray(parsed.data.portfolioGoals)) importedGoals = parsed.data.portfolioGoals;
       else if (Array.isArray(parsed.data.goals)) importedGoals = parsed.data.goals;
 
+      if (Array.isArray(parsed.data.members)) importedMembers = parsed.data.members;
+
       if (Array.isArray(parsed.data.cadence)) importedCadence = parsed.data.cadence;
     } else if (parsed && Array.isArray(parsed.holdings)) {
       importedHoldings = parsed.holdings;
       if (Array.isArray(parsed.goals)) importedGoals = parsed.goals;
+      if (Array.isArray(parsed.members)) importedMembers = parsed.members;
     } else if (Array.isArray(parsed)) {
       importedHoldings = parsed;
     }
@@ -547,6 +577,7 @@ window.KYF_PORTFOLIO_DATA = (() => {
     return {
       holdings: importedHoldings || [],
       goals: importedGoals || null,
+      members: importedMembers || null,
       hasCadence: !!(importedCadence && importedCadence.length)
     };
   }
@@ -559,6 +590,8 @@ window.KYF_PORTFOLIO_DATA = (() => {
     saveHoldingsToDB,
     loadGoalsFromDB,
     saveGoalsToDB,
+    loadMembersFromDB,
+    saveMembersToDB,
     clearDatabase,
     exportAppData,
     parseAndExtractKyfData

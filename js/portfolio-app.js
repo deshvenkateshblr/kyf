@@ -10,17 +10,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Application State
   let rawHoldings = [];
   let rawGoals = [];
-  let isDemoMode = localStorage.getItem("kyf_demo_mode") !== "false";
+  let rawMembers = [];
+  let isDemoMode = localStorage.getItem("kyf_demo_mode") === "true";
   let userHoldings = [];
   let userGoals = [];
+  let userMembers = [];
   try {
     const rawUserH = localStorage.getItem("kyf_user_holdings");
     if (rawUserH) userHoldings = JSON.parse(rawUserH);
     const rawUserG = localStorage.getItem("kyf_user_goals");
     if (rawUserG) userGoals = JSON.parse(rawUserG);
+    const rawUserM = localStorage.getItem("kyf_user_members");
+    if (rawUserM) userMembers = JSON.parse(rawUserM);
   } catch (e) {
     userHoldings = [];
     userGoals = [];
+    userMembers = [];
   }
 
   let activeMemberScope = "ALL";       // "ALL" or Set of string names (e.g. Set(["Rajesh", "Priya"]))
@@ -56,7 +61,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     kyfFileInput: document.getElementById("kyfFileInput"),
     toast: document.getElementById("kyf-toast"),
     pulseTicker: document.getElementById("pulse-ticker"),
-    pulseAsOf: document.getElementById("pulse-asof-pill")
+    pulseAsOf: document.getElementById("pulse-asof-pill"),
+    // Family Member Management Modal elements
+    btnOpenMemberModal: document.getElementById("btn-open-member-modal"),
+    memberModal: document.getElementById("member-modal"),
+    btnCloseMemberModal: document.getElementById("btn-close-member-modal"),
+    modalMembersList: document.getElementById("modal-members-list"),
+    formAddMember: document.getElementById("form-add-member"),
+    inputMemberName: document.getElementById("input-member-name"),
+    selectMemberRole: document.getElementById("select-member-role"),
+    selectMemberAvatar: document.getElementById("select-member-avatar"),
+    // Investment Holding Modal elements
+    btnOpenHoldingModal: document.getElementById("btn-open-holding-modal"),
+    holdingModal: document.getElementById("holding-modal"),
+    btnCloseHoldingModal: document.getElementById("btn-close-holding-modal"),
+    btnCancelHolding: document.getElementById("btn-cancel-holding"),
+    formAddHolding: document.getElementById("form-add-holding"),
+    inputHoldingName: document.getElementById("input-holding-name"),
+    selectHoldingAssetClass: document.getElementById("select-holding-assetclass"),
+    inputHoldingSubCategory: document.getElementById("input-holding-subcategory"),
+    selectHoldingMember: document.getElementById("select-holding-member"),
+    inputHoldingCustodian: document.getElementById("input-holding-custodian"),
+    inputHoldingCurVal: document.getElementById("input-holding-curval"),
+    inputHoldingInvVal: document.getElementById("input-holding-invval"),
+    selectHoldingGoal: document.getElementById("select-holding-goal")
   };
 
   // ==========================================================================
@@ -165,65 +193,48 @@ document.addEventListener("DOMContentLoaded", async () => {
   function renderHeroMemberChips(allHoldings) {
     if (!els.heroMemberChips) return;
 
-    const baseMembers = (window.KYF_PORTFOLIO_DATA && window.KYF_PORTFOLIO_DATA.getDemoMembers)
-      ? window.KYF_PORTFOLIO_DATA.getDemoMembers()
-      : [
-          { id: "mem_rajesh", name: "Rajesh", role: "Self", avatar: "👨" },
-          { id: "mem_priya", name: "Priya", role: "Spouse", avatar: "👩" },
-          { id: "mem_ramesh", name: "Ramesh", role: "Father", avatar: "👴" },
-          { id: "mem_sunita", name: "Sunita", role: "Mother", avatar: "👵" }
-        ];
-
     let grandTotal = 0;
     const memberTotals = new Map();
-    for (const h of allHoldings) {
+    for (const h of allHoldings || []) {
       grandTotal += h.currentValue || 0;
       const mName = h.member || "Unassigned";
       memberTotals.set(mName, (memberTotals.get(mName) || 0) + (h.currentValue || 0));
     }
 
-    if (allHoldings.length === 0) {
-      els.heroMemberChips.innerHTML = `
-        <button type="button" class="member-chip active" data-name="ALL" title="Your portfolio has 0 holdings">
-          <span>👨‍👩‍👧‍👦 All Family</span>
-          <span class="chip-amount">₹0</span>
-        </button>
-      `;
-      return;
-    }
-
-    // Build unique list of individuals only (no combination names)
+    // Build unique list of individuals from first-class rawMembers, augmented with any holding-assigned members
     const memberList = [];
-    if (isDemoMode) {
-      const knownNames = new Set(baseMembers.map((m) => m.name));
-      for (const m of baseMembers) {
+    const knownNames = new Set();
+
+    const baseList = (rawMembers && rawMembers.length > 0)
+      ? rawMembers
+      : (isDemoMode
+          ? (window.KYF_PORTFOLIO_DATA && window.KYF_PORTFOLIO_DATA.getDemoMembers ? window.KYF_PORTFOLIO_DATA.getDemoMembers() : [])
+          : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }]);
+
+    for (const m of baseList) {
+      if (!knownNames.has(m.name)) {
+        knownNames.add(m.name);
         memberList.push({
+          id: m.id || `mem_${m.name.toLowerCase()}`,
           name: m.name,
           avatar: m.avatar || "👤",
-          role: m.role,
+          role: m.role || "Family",
           totalVal: memberTotals.get(m.name) || 0
         });
       }
-      for (const [mName, val] of memberTotals.entries()) {
-        if (!knownNames.has(mName) && mName !== "Unassigned" && !mName.includes("&")) {
-          memberList.push({
-            name: mName,
-            avatar: "👤",
-            role: "Family",
-            totalVal: val
-          });
-        }
-      }
-    } else {
-      for (const [mName, val] of memberTotals.entries()) {
-        if (mName !== "Unassigned" && !mName.includes("&")) {
-          memberList.push({
-            name: mName,
-            avatar: "👤",
-            role: "Family",
-            totalVal: val
-          });
-        }
+    }
+
+    // Also include any member name that appears in holdings but wasn't yet in rawMembers
+    for (const [mName, val] of memberTotals.entries()) {
+      if (!knownNames.has(mName) && mName !== "Unassigned" && !mName.includes("&")) {
+        knownNames.add(mName);
+        memberList.push({
+          id: `mem_${mName.toLowerCase()}`,
+          name: mName,
+          avatar: "👤",
+          role: "Family",
+          totalVal: val
+        });
       }
     }
 
@@ -241,17 +252,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       const isSelected = !isAll && (activeMemberScope instanceof Set && activeMemberScope.has(m.name));
       const checkMark = isSelected ? "✓ " : "";
       html += `
-        <button type="button" class="member-chip ${isSelected ? "active" : ""}" data-name="${escapeHTML(m.name)}" title="${m.name} (${m.role}): ${formatINR(m.totalVal)}">
+        <button type="button" class="member-chip ${isSelected ? "active" : ""}" data-name="${escapeHTML(m.name)}" title="${escapeHTML(m.name)} (${escapeHTML(m.role)}): ${formatINR(m.totalVal)}">
           <span>${checkMark}${m.avatar} ${escapeHTML(m.name)}</span>
           <span class="chip-amount">${formatINR(m.totalVal, true)}</span>
         </button>
       `;
     }
 
+    html += `
+      <button type="button" class="member-chip add-member-chip" id="chip-add-member" title="Add or manage family members">
+        <span>＋ Add</span>
+      </button>
+    `;
+
     els.heroMemberChips.innerHTML = html;
 
     // Attach click events to member chips
-    const chips = els.heroMemberChips.querySelectorAll(".member-chip");
+    const chips = els.heroMemberChips.querySelectorAll(".member-chip:not(.add-member-chip)");
     chips.forEach((chip) => {
       chip.addEventListener("click", () => {
         const name = chip.getAttribute("data-name");
@@ -280,6 +297,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         renderApp();
       });
     });
+
+    const addBtn = els.heroMemberChips.querySelector("#chip-add-member");
+    if (addBtn) {
+      addBtn.addEventListener("click", () => {
+        openMemberModal();
+      });
+    }
   }
 
   // ==========================================================================
@@ -523,15 +547,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 10. Render Aligned TreeGrid
     if (rawHoldings.length === 0) {
       els.treegrid.innerHTML = `
-        <div class="treegrid-empty-state">
-          <h3>Your Private Portfolio is Clean</h3>
-          <p>No investment records in your personal portfolio yet. Click <strong>📂 Open</strong> in the top navigation to load your <code>.kyf</code> file, or check <strong>Demo Data</strong> above to explore sample family holdings.</p>
-          <button class="action-pill-btn" id="empty-state-load-demo-btn" style="padding: 9px 22px; font-weight:700;">🎲 Fill Demo Data</button>
+        <div class="portfolio-empty-box">
+          <div class="portfolio-empty-icon">🏛️</div>
+          <h2 class="portfolio-empty-title">What do you own?</h2>
+          <p class="portfolio-empty-desc">
+            Your family wealth ledger is completely clean. Track your stocks, mutual funds, gold, fixed deposits, or real estate — 100% private and stored on your device.
+          </p>
+          <div class="portfolio-empty-actions">
+            <button type="button" class="btn-empty-primary" id="btn-empty-add-holding">
+              <span>＋ Add First Holding</span>
+            </button>
+            <button type="button" class="btn-empty-secondary" id="btn-empty-open-vault">
+              <span>📂 Open .kyf Vault</span>
+            </button>
+          </div>
+          <div class="portfolio-empty-footer">
+            <button type="button" class="empty-state-demo-link" id="empty-state-demo-link">
+              <span>Try demo family (Rajesh &amp; Priya) &rarr;</span>
+            </button>
+          </div>
         </div>
       `;
-      const emptyBtn = document.getElementById("empty-state-load-demo-btn");
-      if (emptyBtn) {
-        emptyBtn.addEventListener("click", () => {
+
+      const emptyAddBtn = document.getElementById("btn-empty-add-holding");
+      if (emptyAddBtn) {
+        emptyAddBtn.addEventListener("click", () => {
+          openHoldingModal();
+        });
+      }
+
+      const emptyOpenBtn = document.getElementById("btn-empty-open-vault");
+      if (emptyOpenBtn) {
+        emptyOpenBtn.addEventListener("click", () => {
+          if (els.navOpenFileBtn) els.navOpenFileBtn.click();
+          else if (els.kyfFileInput) els.kyfFileInput.click();
+        });
+      }
+
+      const demoLink = document.getElementById("empty-state-demo-link");
+      if (demoLink) {
+        demoLink.addEventListener("click", () => {
           if (els.demoDataToggle) {
             els.demoDataToggle.checked = true;
           }
@@ -767,6 +822,272 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ==========================================================================
+  // Family Member Management Modal Controllers
+  // ==========================================================================
+  function openMemberModal() {
+    if (!els.memberModal) return;
+    renderModalMembersList();
+    els.memberModal.style.display = "flex";
+    els.memberModal.setAttribute("aria-hidden", "false");
+    if (els.inputMemberName) {
+      els.inputMemberName.value = "";
+      els.inputMemberName.focus();
+    }
+  }
+
+  function closeMemberModal() {
+    if (!els.memberModal) return;
+    els.memberModal.style.display = "none";
+    els.memberModal.setAttribute("aria-hidden", "true");
+  }
+
+  function renderModalMembersList() {
+    if (!els.modalMembersList) return;
+
+    const list = (rawMembers && rawMembers.length > 0)
+      ? rawMembers
+      : (isDemoMode
+          ? (window.KYF_PORTFOLIO_DATA && window.KYF_PORTFOLIO_DATA.getDemoMembers ? window.KYF_PORTFOLIO_DATA.getDemoMembers() : [])
+          : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }]);
+
+    if (list.length === 0) {
+      els.modalMembersList.innerHTML = `
+        <div style="color:var(--muted); font-size:12px; padding:12px 0;">No family members defined. Add your first member below.</div>
+      `;
+      return;
+    }
+
+    let html = "";
+    list.forEach((m) => {
+      const holdingCount = rawHoldings.filter((h) => h.member === m.name).length;
+      const countLabel = holdingCount === 1 ? "1 holding" : `${holdingCount} holdings`;
+      html += `
+        <div class="modal-member-row" data-id="${escapeHTML(m.id || m.name)}" data-name="${escapeHTML(m.name)}">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:18px;">${m.avatar || "👤"}</span>
+            <div>
+              <div style="font-weight:600; font-size:13px; color:var(--text);">${escapeHTML(m.name)}</div>
+              <div style="font-size:11px; color:var(--muted);">${escapeHTML(m.role || "Family")} &bull; ${countLabel}</div>
+            </div>
+          </div>
+          <button type="button" class="btn-delete-member" data-name="${escapeHTML(m.name)}" title="Remove ${escapeHTML(m.name)}">🗑 Remove</button>
+        </div>
+      `;
+    });
+
+    els.modalMembersList.innerHTML = html;
+
+    // Bind delete buttons
+    const delBtns = els.modalMembersList.querySelectorAll(".btn-delete-member");
+    delBtns.forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const nameToDelete = btn.getAttribute("data-name");
+        if (!nameToDelete) return;
+
+        if (isDemoMode) {
+          isDemoMode = false;
+          localStorage.setItem("kyf_demo_mode", "false");
+          if (els.demoDataToggle) els.demoDataToggle.checked = false;
+          rawMembers = window.KYF_PORTFOLIO_DATA.getDemoMembers();
+        }
+
+        const holdingCount = rawHoldings.filter((h) => h.member === nameToDelete).length;
+        if (holdingCount > 0) {
+          const confirmMsg = `"${nameToDelete}" has ${holdingCount} holding(s) assigned. Removing this member will leave those holdings with member "${nameToDelete}". Remove anyway?`;
+          if (!window.confirm(confirmMsg)) return;
+        }
+
+        rawMembers = rawMembers.filter((m) => m.name !== nameToDelete);
+        userMembers = [...rawMembers];
+        localStorage.setItem("kyf_user_members", JSON.stringify(userMembers));
+        await window.KYF_PORTFOLIO_DATA.saveMembersToDB(userMembers);
+
+        if (activeMemberScope instanceof Set && activeMemberScope.has(nameToDelete)) {
+          activeMemberScope.delete(nameToDelete);
+          if (activeMemberScope.size === 0) activeMemberScope = "ALL";
+        }
+
+        renderModalMembersList();
+        renderApp();
+        showToast(`✓ Removed member "${nameToDelete}"`, "info");
+      });
+    });
+  }
+
+  async function handleAddMemberSubmit(e) {
+    e.preventDefault();
+    if (!els.inputMemberName) return;
+
+    const name = els.inputMemberName.value.trim();
+    const role = (els.selectMemberRole && els.selectMemberRole.value) || "Family";
+    const avatar = (els.selectMemberAvatar && els.selectMemberAvatar.value) || "👤";
+
+    if (!name) {
+      alert("Please enter a member name.");
+      return;
+    }
+
+    if (isDemoMode) {
+      isDemoMode = false;
+      localStorage.setItem("kyf_demo_mode", "false");
+      if (els.demoDataToggle) els.demoDataToggle.checked = false;
+      rawMembers = window.KYF_PORTFOLIO_DATA.getDemoMembers();
+    }
+
+    if (rawMembers.some((m) => m.name.toLowerCase() === name.toLowerCase())) {
+      alert(`A family member named "${name}" already exists.`);
+      return;
+    }
+
+    const newMember = {
+      id: `mem_${Date.now()}`,
+      name,
+      role,
+      avatar
+    };
+
+    rawMembers.push(newMember);
+    userMembers = [...rawMembers];
+    localStorage.setItem("kyf_user_members", JSON.stringify(userMembers));
+    await window.KYF_PORTFOLIO_DATA.saveMembersToDB(userMembers);
+
+    els.inputMemberName.value = "";
+    renderModalMembersList();
+    renderApp();
+    showToast(`✓ Added family member "${name}"`, "success");
+  }
+
+  function inferMembersFromHoldings(holdings) {
+    const list = [];
+    const seen = new Set();
+    for (const h of holdings || []) {
+      const m = h.member;
+      if (m && m !== "Unassigned" && !m.includes("&") && !seen.has(m)) {
+        seen.add(m);
+        let role = "Family";
+        let avatar = "👤";
+        if (m === "Self") { role = "Self"; avatar = "👤"; }
+        else if (m === "Spouse") { role = "Spouse"; avatar = "👩"; }
+        else if (m === "Father") { role = "Father"; avatar = "👴"; }
+        else if (m === "Mother") { role = "Mother"; avatar = "👵"; }
+        list.push({
+          id: `mem_${m.toLowerCase()}`,
+          name: m,
+          role,
+          avatar
+        });
+      }
+    }
+    if (list.length === 0) {
+      list.push({ id: "mem_self", name: "Self", role: "Self", avatar: "👤" });
+    }
+    return list;
+  }
+
+  // ==========================================================================
+  // Investment Holding Management Modal Controllers
+  // ==========================================================================
+  function openHoldingModal() {
+    if (!els.holdingModal) return;
+    populateHoldingModalDropdowns();
+    els.holdingModal.style.display = "flex";
+    els.holdingModal.setAttribute("aria-hidden", "false");
+    if (els.inputHoldingName) {
+      els.inputHoldingName.value = "";
+      els.inputHoldingName.focus();
+    }
+    if (els.inputHoldingCurVal) els.inputHoldingCurVal.value = "";
+    if (els.inputHoldingInvVal) els.inputHoldingInvVal.value = "";
+    if (els.inputHoldingSubCategory) els.inputHoldingSubCategory.value = "";
+    if (els.inputHoldingCustodian) els.inputHoldingCustodian.value = "";
+  }
+
+  function closeHoldingModal() {
+    if (!els.holdingModal) return;
+    els.holdingModal.style.display = "none";
+    els.holdingModal.setAttribute("aria-hidden", "true");
+  }
+
+  function populateHoldingModalDropdowns() {
+    if (els.selectHoldingMember) {
+      const membersList = (rawMembers && rawMembers.length > 0)
+        ? rawMembers
+        : (isDemoMode ? window.KYF_PORTFOLIO_DATA.getDemoMembers() : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }]);
+
+      els.selectHoldingMember.innerHTML = membersList.map((m) => {
+        return `<option value="${escapeHTML(m.name)}">${m.avatar || "👤"} ${escapeHTML(m.name)} (${escapeHTML(m.role || "Family")})</option>`;
+      }).join("");
+    }
+
+    if (els.selectHoldingGoal) {
+      const goalsList = (rawGoals && rawGoals.length > 0)
+        ? rawGoals
+        : (isDemoMode ? window.KYF_PORTFOLIO_DATA.getDemoGoals() : []);
+
+      let goalOptions = `<option value="">None / General Wealth</option>`;
+      goalsList.forEach((g) => {
+        goalOptions += `<option value="${escapeHTML(g.id)}">${g.icon || "🎯"} ${escapeHTML(g.name)} (${g.targetYear || "Goal"})</option>`;
+      });
+      els.selectHoldingGoal.innerHTML = goalOptions;
+    }
+  }
+
+  async function handleAddHoldingSubmit(e) {
+    e.preventDefault();
+    if (!els.inputHoldingName || !els.inputHoldingCurVal) return;
+
+    const name = els.inputHoldingName.value.trim();
+    const assetClass = (els.selectHoldingAssetClass && els.selectHoldingAssetClass.value) || "Equities";
+    const subCategory = (els.inputHoldingSubCategory && els.inputHoldingSubCategory.value.trim()) || assetClass;
+    const member = (els.selectHoldingMember && els.selectHoldingMember.value) || "Self";
+    const custodian = (els.inputHoldingCustodian && els.inputHoldingCustodian.value.trim()) || "Direct / Self-Held";
+    const currentVal = parseFloat(els.inputHoldingCurVal.value);
+    const investedValInput = els.inputHoldingInvVal && els.inputHoldingInvVal.value;
+    const investedVal = investedValInput ? parseFloat(investedValInput) : currentVal;
+    const goalId = els.selectHoldingGoal && els.selectHoldingGoal.value;
+
+    if (!name) {
+      alert("Please enter a holding name.");
+      return;
+    }
+    if (isNaN(currentVal) || currentVal < 0) {
+      alert("Please enter a valid current live value (₹).");
+      return;
+    }
+
+    if (isDemoMode) {
+      isDemoMode = false;
+      localStorage.setItem("kyf_demo_mode", "false");
+      if (els.demoDataToggle) els.demoDataToggle.checked = false;
+      rawHoldings = [];
+    }
+
+    const newHolding = {
+      id: `hold_usr_${Date.now()}`,
+      name,
+      member,
+      custodian,
+      assetClass,
+      subCategory,
+      pricingMode: "MANUAL",
+      investedValue: isNaN(investedVal) ? currentVal : investedVal,
+      currentValue: currentVal,
+      manualCurrentValue: currentVal,
+      allocations: goalId ? [{ goalId, percentage: 100 }] : [],
+      notes: ""
+    };
+
+    rawHoldings.push(newHolding);
+    userHoldings = [...rawHoldings];
+    localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
+    await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+
+    closeHoldingModal();
+    renderApp();
+    showToast(`✓ Added ${name} (${formatINR(currentVal)})`, "success");
+  }
+
+  // ==========================================================================
   // Action Handlers
   // ==========================================================================
   async function handleDemoToggle(e) {
@@ -775,22 +1096,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     localStorage.setItem("kyf_demo_mode", isChecked ? "true" : "false");
 
     if (isChecked) {
-      // User turned ON Demo Data: stash any current user holdings so they are never lost
+      // User turned ON Demo Data: stash any current user holdings & members so they are never lost
       if (rawHoldings && rawHoldings.length > 0 && userHoldings.length === 0) {
         userHoldings = [...rawHoldings];
         userGoals = [...rawGoals];
+        userMembers = [...rawMembers];
         localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
         localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
+        localStorage.setItem("kyf_user_members", JSON.stringify(userMembers));
       }
       // Keep demo data in memory only — DO NOT overwrite user's IndexedDB!
       rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
       rawGoals = window.KYF_PORTFOLIO_DATA.getDemoGoals();
+      rawMembers = window.KYF_PORTFOLIO_DATA.getDemoMembers();
       handleResetSelections();
       showToast("✓ Filled with demo family data", "success");
     } else {
       // User turned OFF Demo Data: restore from IndexedDB or userHoldings cache
       const storedHoldings = await window.KYF_PORTFOLIO_DATA.loadHoldingsFromDB();
       const storedGoals = await window.KYF_PORTFOLIO_DATA.loadGoalsFromDB();
+      const storedMembers = await window.KYF_PORTFOLIO_DATA.loadMembersFromDB();
 
       if (storedHoldings && storedHoldings.length > 0) {
         rawHoldings = storedHoldings;
@@ -812,6 +1137,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         rawGoals = [];
       }
 
+      if (storedMembers && storedMembers.length > 0) {
+        rawMembers = storedMembers;
+        userMembers = storedMembers;
+      } else if (userMembers && userMembers.length > 0) {
+        rawMembers = [...userMembers];
+        await window.KYF_PORTFOLIO_DATA.saveMembersToDB(rawMembers);
+      } else {
+        const inferred = inferMembersFromHoldings(rawHoldings);
+        rawMembers = inferred;
+        userMembers = inferred;
+        await window.KYF_PORTFOLIO_DATA.saveMembersToDB(rawMembers);
+      }
+
       handleResetSelections();
       if (rawHoldings.length > 0) {
         showToast(`✓ Switched to your portfolio (${rawHoldings.length} holdings)`, "success");
@@ -826,10 +1164,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (window.KYF_VAULT) {
       window.KYF_VAULT.save({
         portfolio: rawHoldings,
-        portfolioGoals: rawGoals
+        portfolioGoals: rawGoals,
+        members: rawMembers
       });
     } else {
-      const fileName = window.KYF_PORTFOLIO_DATA.exportAppData(rawHoldings, rawGoals);
+      const fileName = window.KYF_PORTFOLIO_DATA.exportAppData(rawHoldings, rawGoals, rawMembers);
       showToast(`✓ Data saved & exported to ${fileName}`, "success");
     }
   }
@@ -929,13 +1268,63 @@ document.addEventListener("DOMContentLoaded", async () => {
       els.demoDataToggle.addEventListener("change", handleDemoToggle);
     }
 
+    // Member Management Modal Events
+    if (els.btnOpenMemberModal) {
+      els.btnOpenMemberModal.addEventListener("click", openMemberModal);
+    }
+    if (els.btnCloseMemberModal) {
+      els.btnCloseMemberModal.addEventListener("click", closeMemberModal);
+    }
+    if (els.memberModal) {
+      els.memberModal.addEventListener("click", (e) => {
+        if (e.target === els.memberModal) {
+          closeMemberModal();
+        }
+      });
+    }
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && els.memberModal && els.memberModal.style.display === "flex") {
+        closeMemberModal();
+      }
+    });
+    if (els.formAddMember) {
+      els.formAddMember.addEventListener("submit", handleAddMemberSubmit);
+    }
+
+    // Holding Management Modal Events
+    if (els.btnOpenHoldingModal) {
+      els.btnOpenHoldingModal.addEventListener("click", openHoldingModal);
+    }
+    if (els.btnCloseHoldingModal) {
+      els.btnCloseHoldingModal.addEventListener("click", closeHoldingModal);
+    }
+    if (els.btnCancelHolding) {
+      els.btnCancelHolding.addEventListener("click", closeHoldingModal);
+    }
+    if (els.holdingModal) {
+      els.holdingModal.addEventListener("click", (e) => {
+        if (e.target === els.holdingModal) {
+          closeHoldingModal();
+        }
+      });
+    }
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && els.holdingModal && els.holdingModal.style.display === "flex") {
+        closeHoldingModal();
+      }
+    });
+    if (els.formAddHolding) {
+      els.formAddHolding.addEventListener("submit", handleAddHoldingSubmit);
+    }
+
     // 7. App-Level Toolbar: Open & Save Data Buttons backed by shared KYF Vault
     if (window.KYF_VAULT) {
       window.KYF_VAULT.registerPageHook({
         pageName: "portfolio",
         getLocalData: () => ({
           portfolio: rawHoldings,
-          portfolioGoals: rawGoals
+          portfolioGoals: rawGoals,
+          members: rawMembers
         }),
         onAfterOpen: async (vaultData, summary) => {
           if (vaultData.portfolio && vaultData.portfolio.length) {
@@ -954,6 +1343,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             userGoals = vaultData.portfolioGoals;
             rawGoals = userGoals;
             await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
+          }
+          if (vaultData.members && Array.isArray(vaultData.members) && vaultData.members.length) {
+            userMembers = vaultData.members;
+            rawMembers = userMembers;
+            localStorage.setItem("kyf_user_members", JSON.stringify(userMembers));
+            await window.KYF_PORTFOLIO_DATA.saveMembersToDB(userMembers);
           }
           handleResetSelections();
           renderApp();
@@ -995,6 +1390,13 @@ document.addEventListener("DOMContentLoaded", async () => {
               userGoals = result.goals;
               rawGoals = userGoals;
               await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
+            }
+
+            if (result.members && result.members.length) {
+              userMembers = result.members;
+              rawMembers = userMembers;
+              localStorage.setItem("kyf_user_members", JSON.stringify(userMembers));
+              await window.KYF_PORTFOLIO_DATA.saveMembersToDB(userMembers);
             }
 
             handleResetSelections();
@@ -1057,9 +1459,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       els.demoDataToggle.checked = isDemoMode;
     }
 
-    // Always inspect IndexedDB for user's stored holdings & goals
+    // Always inspect IndexedDB for user's stored holdings, goals & members
     const storedHoldings = await window.KYF_PORTFOLIO_DATA.loadHoldingsFromDB();
     const storedGoals = await window.KYF_PORTFOLIO_DATA.loadGoalsFromDB();
+    const storedMembers = await window.KYF_PORTFOLIO_DATA.loadMembersFromDB();
 
     if (storedHoldings && storedHoldings.length > 0 && userHoldings.length === 0) {
       userHoldings = storedHoldings;
@@ -1067,11 +1470,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (storedGoals && storedGoals.length > 0 && userGoals.length === 0) {
       userGoals = storedGoals;
     }
+    if (storedMembers && storedMembers.length > 0 && userMembers.length === 0) {
+      userMembers = storedMembers;
+    }
 
     if (isDemoMode) {
       // Demo Data mode active: populate demo family dataset strictly in memory (DO NOT overwrite IndexedDB)
       rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
       rawGoals = window.KYF_PORTFOLIO_DATA.getDemoGoals();
+      rawMembers = window.KYF_PORTFOLIO_DATA.getDemoMembers();
     } else {
       // User Data mode: restore user's stored holdings or start with clean slate
       if (storedHoldings && storedHoldings.length > 0) {
@@ -1092,6 +1499,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
       } else {
         rawGoals = [];
+      }
+
+      if (storedMembers && storedMembers.length > 0) {
+        rawMembers = storedMembers;
+        userMembers = storedMembers;
+      } else if (userMembers && userMembers.length > 0) {
+        rawMembers = [...userMembers];
+        await window.KYF_PORTFOLIO_DATA.saveMembersToDB(rawMembers);
+      } else {
+        const inferred = inferMembersFromHoldings(rawHoldings);
+        rawMembers = inferred;
+        userMembers = inferred;
+        await window.KYF_PORTFOLIO_DATA.saveMembersToDB(rawMembers);
       }
     }
 
