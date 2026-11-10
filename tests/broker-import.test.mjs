@@ -430,6 +430,76 @@ Custom Offshore Global Equity Fund,12345/67,100.000,25.50,2550`;
   assert.equal(holdings[0].instrumentMeta.price, 25.5);
 });
 
+console.log("\n[TEST GROUP 9] Mutual Fund Plan Type Detection (Regular vs Direct)");
+test("Maps scheme without 'Direct' to REGULAR with regular NAV and regular ISIN", () => {
+  // Common statement naming: Parag Parikh Flexi Cap Fund - Growth (no "regular", no "direct")
+  const res = importer.resolveMarketInstrument({
+    rawName: "Parag Parikh Flexi Cap Fund - Growth",
+    defaultAssetClass: "Mutual Funds"
+  });
+  assert.equal(res.instrumentMeta.planType, "REGULAR", "Plan type must be REGULAR");
+  assert.equal(res.instrumentMeta.isin, "INF879O01019", "Must map to regular ISIN");
+  assert.ok(Math.abs(res.livePrice - 85.5091) < 0.01, "Must use regular NAV (85.51)");
+});
+
+test("Maps scheme with 'Direct' to DIRECT with direct NAV and direct ISIN", () => {
+  const res = importer.resolveMarketInstrument({
+    rawName: "Parag Parikh Flexi Cap Fund - Direct Plan - Growth",
+    defaultAssetClass: "Mutual Funds"
+  });
+  assert.equal(res.instrumentMeta.planType, "DIRECT", "Plan type must be DIRECT");
+  assert.equal(res.instrumentMeta.isin, "INF879O01027", "Must map to direct ISIN");
+  assert.ok(Math.abs(res.livePrice - 93.9483) < 0.01, "Must use direct NAV (93.95)");
+});
+
+test("Maps abbreviations 'Reg', 'Reg.', 'RP' to REGULAR", () => {
+  const r1 = importer.resolveMarketInstrument({
+    rawName: "SBI Small Cap Fund - Reg Growth",
+    defaultAssetClass: "Mutual Funds"
+  });
+  assert.equal(r1.instrumentMeta.planType, "REGULAR");
+  assert.equal(r1.instrumentMeta.isin, "INF200K01T28");
+
+  const r2 = importer.resolveMarketInstrument({
+    rawName: "SBI Small Cap Fund - RP - Growth",
+    defaultAssetClass: "Mutual Funds"
+  });
+  assert.equal(r2.instrumentMeta.planType, "REGULAR");
+});
+
+test("Imports mixed statement with both Regular and Direct holdings accurately", () => {
+  const mixedCsv = `Scheme Name,Folio No,Units,Cost Value,Market Value
+Parag Parikh Flexi Cap Fund - Growth,1111/00,100,7000,8550
+Parag Parikh Flexi Cap Fund - Direct Plan - Growth,2222/00,100,7000,9395`;
+
+  const matrix = importer.parseCSVToMatrix(mixedCsv);
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  assert.equal(holdings.length, 2);
+
+  const regHolding = holdings.find(h => h.notes === "Folio: 1111/00");
+  const dirHolding = holdings.find(h => h.notes === "Folio: 2222/00");
+
+  assert.ok(regHolding, "Found regular holding");
+  assert.ok(dirHolding, "Found direct holding");
+
+  assert.equal(regHolding.instrumentMeta.planType, "REGULAR");
+  assert.equal(regHolding.instrumentMeta.isin, "INF879O01019");
+
+  assert.equal(dirHolding.instrumentMeta.planType, "DIRECT");
+  assert.equal(dirHolding.instrumentMeta.isin, "INF879O01027");
+
+  // Enrich with engine and verify live market valuation and regular plan alert
+  const enriched = engine.enrichHoldingsWithLiveMarket(holdings);
+  const enrichedReg = enriched.find(h => h.notes === "Folio: 1111/00");
+  const enrichedDir = enriched.find(h => h.notes === "Folio: 2222/00");
+
+  assert.ok(enrichedReg.priceLabel.includes("Reg"), "Price label indicates Reg");
+  assert.ok(enrichedDir.priceLabel.includes("Dir"), "Price label indicates Dir");
+  assert.ok(enrichedReg.regularAlert != null, "Regular holding triggers Regular Alert");
+  assert.ok(enrichedReg.regularAlert.gapPct > 0, "Shows positive corpus gap for direct plan");
+  assert.equal(enrichedDir.regularAlert, null, "Direct holding has no regular alert");
+});
+
 console.log(`\n========================================`);
 console.log(`TEST SUMMARY: ${totalPassed} passed, 0 failed`);
 console.log(`========================================\n`);

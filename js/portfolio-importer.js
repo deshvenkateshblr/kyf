@@ -433,7 +433,49 @@ window.KYF_BROKER_IMPORTER = (() => {
       .trim();
   }
 
-  function resolveMarketInstrument({ isin, symbol, rawName, defaultAssetClass }) {
+  function determineMfPlanType(rawName, isin = null, fileLtp = null, scheme = null) {
+    const cleanIsin = (isin || "").trim().toUpperCase();
+
+    // 1. O(1) ISIN lookup against AMFI database (highest fidelity)
+    if (cleanIsin && typeof window !== "undefined" && window.KYF_PORTFOLIO_ENGINE) {
+      const hit = window.KYF_PORTFOLIO_ENGINE.lookupByIsin(cleanIsin);
+      if (hit && hit.kind === "MF" && hit.planType) {
+        return hit.planType;
+      }
+    }
+
+    const nameStr = String(rawName || "").trim();
+
+    // 2. Strict keyword detection on statement scheme name
+    // In the Indian mutual fund industry, Direct plans MUST explicitly state "Direct" or "Dir"
+    const hasDirect = /\b(direct|dir|dp)\b/i.test(nameStr);
+    const hasRegular = /\b(regular|reg|rp)\b/i.test(nameStr);
+
+    if (hasDirect && !hasRegular) return "DIRECT";
+    if (hasRegular && !hasDirect) return "REGULAR";
+
+    // 3. Live NAV Proximity Cross-Check (if statement provides NAV / LTP and scheme is matched)
+    if (scheme && fileLtp > 0) {
+      const directNav = Number(scheme[3] || scheme.directNav) || 0;
+      const regularNav = Number(scheme[4] || scheme.regularNav) || 0;
+      if (directNav > 0 && regularNav > 0 && Math.abs(directNav - regularNav) > 0.05) {
+        const diffDirect = Math.abs(fileLtp - directNav) / directNav;
+        const diffRegular = Math.abs(fileLtp - regularNav) / regularNav;
+        if (diffRegular < 0.05 && diffRegular < diffDirect * 0.6) {
+          return "REGULAR";
+        }
+        if (diffDirect < 0.05 && diffDirect < diffRegular * 0.6) {
+          return "DIRECT";
+        }
+      }
+    }
+
+    // 4. Fundamental SEBI / Indian Mutual Fund Market Rule:
+    // Every plan is REGULAR unless it explicitly carries the "Direct" designation!
+    return hasDirect ? "DIRECT" : "REGULAR";
+  }
+
+  function resolveMarketInstrument({ isin, symbol, rawName, defaultAssetClass, fileLtp = 0 }) {
     const engine = typeof window !== "undefined" ? window.KYF_PORTFOLIO_ENGINE : null;
     if (engine && typeof engine.ensureIndexed === "function") {
       engine.ensureIndexed();
@@ -474,13 +516,14 @@ window.KYF_BROKER_IMPORTER = (() => {
       }
       if (hit && hit.kind === "MF") {
         const sc = hit.scheme;
-        const planType = hit.planType || (/regular/i.test(rawName || "") ? "REGULAR" : "DIRECT");
+        const planType = hit.planType || determineMfPlanType(rawName, cleanIsin, fileLtp, sc);
+        const isReg = planType === "REGULAR";
         return {
           assetClass: "Mutual Funds",
           subCategory: sc.category || "Mutual Funds",
           pricingMode: "LIVE_MF",
           name: sc.fundName || rawName,
-          livePrice: planType === "REGULAR" ? (sc.regularNav || sc.directNav) : (sc.directNav || sc.regularNav),
+          livePrice: isReg ? (sc.regularNav || sc.directNav) : (sc.directNav || sc.regularNav),
           instrumentMeta: { amfiCode: sc.directCode, planType, isin: cleanIsin }
         };
       }
@@ -528,11 +571,11 @@ window.KYF_BROKER_IMPORTER = (() => {
         }
 
         if (bestScheme) {
-          const isReg = /\bregular\b/i.test(rawName);
-          const planType = isReg ? "REGULAR" : "DIRECT";
+          const planType = determineMfPlanType(rawName, cleanIsin, fileLtp, bestScheme);
+          const isReg = planType === "REGULAR";
           const directNav = Number(bestScheme[3]) || 0;
           const regularNav = Number(bestScheme[4]) || directNav;
-          const nav = isReg ? regularNav : directNav;
+          const nav = isReg ? (regularNav || directNav) : (directNav || regularNav);
           const directIsin = bestScheme[9] || null;
           const regularIsin = bestScheme[10] || null;
 
@@ -555,18 +598,19 @@ window.KYF_BROKER_IMPORTER = (() => {
     // 5. Fallback Resolution
     // If it's a mutual fund not indexed in AMFI, retain LIVE_MF pricing mode with file NAV!
     if (isMf) {
-      const isReg = /\bregular\b/i.test(rawName || "");
+      const planType = determineMfPlanType(rawName, cleanIsin, fileLtp, null);
       return {
         assetClass: "Mutual Funds",
         subCategory: "Mutual Funds",
         pricingMode: "LIVE_MF",
         name: rawName || cleanSym || cleanIsin || "Mutual Fund Holding",
-        livePrice: null,
+        livePrice: fileLtp || null,
         instrumentMeta: {
           amfiCode: null,
-          planType: isReg ? "REGULAR" : "DIRECT",
+          planType,
           isin: cleanIsin || null,
-          symbol: cleanSym || null
+          symbol: cleanSym || null,
+          price: fileLtp || null
         }
       };
     }
@@ -650,7 +694,8 @@ window.KYF_BROKER_IMPORTER = (() => {
         isin,
         symbol: rawSym,
         rawName,
-        defaultAssetClass: profile.defaultAssetClass
+        defaultAssetClass: profile.defaultAssetClass,
+        fileLtp: fileLtp || avgPrice || 0
       });
 
       const effectivePrice = resolved.livePrice || fileLtp || avgPrice || 0;
@@ -835,6 +880,7 @@ window.KYF_BROKER_IMPORTER = (() => {
     detectHeaderAndBroker,
     findColumnIndex,
     normalizeSchemeName,
+    determineMfPlanType,
     resolveMarketInstrument,
     extractHoldingsFromMatrix
   };

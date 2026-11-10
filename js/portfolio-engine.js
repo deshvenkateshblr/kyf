@@ -447,15 +447,25 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         case "LIVE_MF": {
           const code = Number(meta.amfiCode);
           let scheme = mfMap.get(code);
-          let isDirect = (meta.planType || "DIRECT").toUpperCase() === "DIRECT";
+          let isDirect = null;
 
-          if (!scheme && meta.isin && mfIsinMap) {
+          // 1. ISIN lookup in mfIsinMap (unambiguous ground truth if ISIN is known)
+          if (meta.isin && mfIsinMap) {
             const hit = mfIsinMap.get(String(meta.isin).trim().toUpperCase());
             if (hit) {
-              scheme = hit.scheme;
-              if (!meta.planType) {
-                isDirect = hit.planType === "DIRECT";
-              }
+              if (!scheme) scheme = hit.scheme;
+              isDirect = hit.planType === "DIRECT";
+            }
+          }
+
+          // 2. Check meta.planType
+          if (isDirect === null) {
+            if (meta.planType) {
+              isDirect = String(meta.planType).toUpperCase() === "DIRECT";
+            } else {
+              // In India, a mutual fund is Direct ONLY if explicitly named Direct or Dir
+              const rawNm = h.name || "";
+              isDirect = /\b(direct|dir|dp)\b/i.test(rawNm);
             }
           }
 
@@ -484,7 +494,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           } else {
             livePrice = Number(meta.price) || 0;
             if (livePrice > 0 && units > 0) calculatedValue = units * livePrice;
-            priceLabel = Number.isFinite(code) && code > 0 ? `AMFI ${code}` : (meta.isin ? `ISIN: ${meta.isin}` : "Manual valuation");
+            priceLabel = Number.isFinite(code) && code > 0 ? `AMFI ${code} (${isDirect ? "Dir" : "Reg"})` : (meta.isin ? `ISIN: ${meta.isin} (${isDirect ? "Dir" : "Reg"})` : `Manual (${isDirect ? "Dir" : "Reg"})`);
             physicalUnitsLabel = `${units.toLocaleString("en-IN", { maximumFractionDigits: 3 })} units`;
           }
           break;
