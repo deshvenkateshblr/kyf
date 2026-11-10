@@ -92,7 +92,7 @@ try {
 
   // Gold, FD, Cash by manual entry
   const manual = [
-    { name: "Gold coins", cls: "Gold", curval: 280000 },
+    { name: "Gold coins", cls: "Commodities & Gold", curval: 280000 },
     { name: "SBI FD", cls: "Fixed Income", curval: 100000 },
     { name: "Savings account", cls: "Cash & Liquid", curval: 50000 }
   ];
@@ -214,6 +214,71 @@ try {
   check(nwBefore === "₹50.0 K" && nwAfter === "₹30.0 K", `net worth drops by the loan (${nwBefore} -> ${nwAfter})`);
   check((await demoPage.textContent("#kpi-net-worth-sub")).includes("Debt"), "Net Worth card shows Assets − Debt");
   check((await demoPage.locator(".tag-badge--debt").count()) >= 1, "the loan row is tagged as Debt");
+
+  console.log("[9] QA regressions (KYF-QA-001 / 002 / 003 / 004 / 007 / 009)");
+  const qa = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  const qaErrors = [];
+  qa.on("pageerror", (e) => qaErrors.push(e.message));
+  await qa.goto(base);
+  await qa.waitForSelector("#empty-omni-search-input");
+  await qa.evaluate(async () => {
+    const D = window.KYF_PORTFOLIO_DATA;
+    const goals = D.getDemoGoals();
+    const holdings = [{
+      id: "h_split", name: "Split Stock", member: "Self", custodian: "Zerodha", assetClass: "Equities", subCategory: "",
+      pricingMode: "MANUAL", units: 10, investedValue: 80000, currentValue: 100000, manualCurrentValue: 100000,
+      allocations: [{ goalId: "goal_home", percentage: 70 }, { goalId: "goal_education", percentage: 30 }], instrumentMeta: {}
+    }];
+    await D.saveHoldingsToDB(holdings); await D.saveGoalsToDB(goals);
+    localStorage.setItem("kyf_user_holdings", JSON.stringify(holdings));
+    localStorage.setItem("kyf_user_goals", JSON.stringify(goals));
+  });
+  await qa.reload();
+  await qa.waitForSelector(".btn-edit-leaf");
+
+  // 001: editing a multi-goal holding keeps its split
+  await qa.locator(".btn-edit-leaf").first().click();
+  await qa.waitForSelector("#holding-modal", { state: "visible" });
+  check(await qa.locator("#holding-goal-split-hint").isVisible(), "KYF-QA-001: the form says the holding is split across 2 goals");
+  await qa.fill("#input-holding-curval", "120000");
+  await qa.click("#btn-save-holding");
+  await qa.waitForSelector("#holding-modal", { state: "hidden" });
+  const allocs = await qa.evaluate(async () => (await window.KYF_PORTFOLIO_DATA.loadHoldingsFromDB())[0].allocations);
+  check(allocs.length === 2 && allocs[0].percentage === 70 && allocs[1].percentage === 30, `KYF-QA-001: 70/30 goal split survives an edit (${JSON.stringify(allocs)})`);
+
+  // 002 + 003: gold added by type, value only
+  await qa.click("#btn-open-holding-modal");
+  await qa.fill("#modal-omni-search-input", "Gold coins");
+  await qa.selectOption("#select-holding-assetclass", "Commodities & Gold");
+  await qa.fill("#input-holding-curval", "150000");
+  await qa.click("#btn-save-holding");
+  await qa.waitForSelector("#holding-modal", { state: "hidden" });
+  const bodyText = await qa.textContent("#portfolio-treegrid, .treegrid, body");
+  check(/Commodities & Gold/.test(bodyText), "KYF-QA-002: gold sits in the 'Commodities & Gold' group");
+  check(/1,50,000/.test(bodyText), "KYF-QA-003: gold with only a value shows ₹1,50,000, not ₹0");
+
+  // 007: a group with no cost basis gets a neutral (grey) badge on the All horizon
+  await qa.click('[data-horizon="all"]');
+  const goldGroupBadge = await qa.locator(".tree-group", { hasText: "Commodities & Gold" }).first().locator("summary .return-badge").first().getAttribute("class");
+  check(/neutral/.test(goldGroupBadge) && !/positive/.test(goldGroupBadge), `KYF-QA-007: group with no return is neutral (${goldGroupBadge})`);
+
+  // 004: hand-typed fund must not show "AMFI NaN"
+  await qa.click("#btn-open-holding-modal");
+  await qa.fill("#modal-omni-search-input", "Custom Debt Fund");
+  await qa.selectOption("#select-holding-assetclass", "Mutual Funds");
+  await qa.fill("#input-holding-curval", "50000");
+  await qa.click("#btn-save-holding");
+  await qa.waitForSelector("#holding-modal", { state: "hidden" });
+  const afterFund = await qa.textContent("body");
+  check(/Custom Debt Fund/.test(afterFund) && !/NaN/.test(afterFund), "KYF-QA-004: a hand-typed fund shows no 'NaN'");
+
+  // 009: opening a file whose portfolio is empty clears the screen
+  check((await qa.locator(".btn-edit-leaf").count()) === 3, "three holdings on screen before opening the file");
+  await qa.setInputFiles("#kyfFileInput", { name: "empty.kyf", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ portfolio: [], members: [{ name: "Self", role: "Self" }] })) });
+  await qa.waitForSelector("#empty-omni-search-input", { timeout: 8000 });
+  check((await qa.locator(".btn-edit-leaf").count()) === 0, "KYF-QA-009: a .kyf with an empty portfolio clears the holdings");
+  check(qaErrors.length === 0, "no page errors in QA flow", qaErrors.join(" | "));
+
   check(demoErrors.length === 0, "no page errors in demo flow", demoErrors.join(" | "));
 
   check(errors.length === 0, "no uncaught page errors", errors.join(" | "));
