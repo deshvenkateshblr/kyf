@@ -88,7 +88,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     let pureGrams24k = 0;
 
     const isGoldAsset = holding.pricingMode === "LIVE_GOLD" ||
-      holding.assetClass === "Commodities & Gold" ||
+      normalizeAssetClass(holding.assetClass) === "Commodities & Gold" ||
       (meta.symbol || "").toUpperCase() === "GOLDBEES";
 
     if (!isGoldAsset) return 0;
@@ -332,6 +332,11 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
   // Liabilities (loans, credit-card dues): stored as a positive "amount owed", carried through
   // the engine as a NEGATIVE currentValue so every total, group and member roll-up nets it off.
   // ==========================================================================
+  // "Gold" was the form's spelling, "Commodities & Gold" the engine's: one canonical name for both
+  function normalizeAssetClass(assetClass) {
+    return assetClass === "Gold" ? "Commodities & Gold" : assetClass;
+  }
+
   function isLiabilityHolding(h) {
     if (!h) return false;
     if (h.isLiability === true || h.assetClass === "Liabilities") return true;
@@ -357,10 +362,17 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     };
 
     return holdings.map((h) => {
-      const enriched = { ...h };
+      const enriched = { ...h, assetClass: normalizeAssetClass(h.assetClass) };
       const meta = h.instrumentMeta || {};
       let livePrice = 0;
-      let calculatedValue = Number(h.investedValue) || 0;
+      // The value the person typed (a real 0 counts); cost is only the last resort
+      const typedValue = (() => {
+        for (const v of [h.manualCurrentValue, h.currentValue]) {
+          if (v != null && v !== "" && !isNaN(Number(v))) return Number(v);
+        }
+        return Number(h.investedValue) || 0;
+      })();
+      let calculatedValue = typedValue;
       let priceLabel = "";
       let ret1m = null;
       let ret3m = null;
@@ -376,7 +388,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           const qty = Number(meta.quantity) || Number(h.units) || 0;
           if (stock && stock.closePrice > 0) {
             livePrice = stock.closePrice;
-            calculatedValue = qty > 0 ? (qty * livePrice) : (Number(h.currentValue) || Number(h.investedValue) || 0);
+            calculatedValue = qty > 0 ? (qty * livePrice) : typedValue;
             ret1m = stock.ret1m;
             ret3m = stock.ret3m;
             ret6m = stock.ret6m;
@@ -398,7 +410,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
 
           if (scheme) {
             livePrice = isDirect ? (scheme.directNav || scheme.regularNav) : (scheme.regularNav || scheme.directNav);
-            calculatedValue = units > 0 && livePrice > 0 ? (units * livePrice) : (Number(h.currentValue) || Number(h.investedValue) || 0);
+            calculatedValue = units > 0 && livePrice > 0 ? (units * livePrice) : typedValue;
             ret1m = scheme.ret1m;
             ret3m = scheme.ret3m;
             ret6m = scheme.ret6m;
@@ -419,7 +431,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           } else {
             livePrice = Number(meta.price) || 0;
             if (livePrice > 0 && units > 0) calculatedValue = units * livePrice;
-            priceLabel = `AMFI ${code}`;
+            priceLabel = Number.isFinite(code) && code > 0 ? `AMFI ${code}` : "Manual valuation";
             physicalUnitsLabel = `${units.toLocaleString("en-IN", { maximumFractionDigits: 3 })} units`;
           }
           break;
@@ -446,6 +458,10 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
               const eqGrams = (units / factor).toFixed(1);
               physicalUnitsLabel = `${units.toLocaleString("en-IN")} units (≈${eqGrams}g 24K)`;
             }
+          } else if (!(grams > 0)) {
+            // No weight entered: keep the value the person typed instead of showing ₹0
+            priceLabel = "Manual valuation";
+            physicalUnitsLabel = `${purity} gold (weight not set)`;
           } else {
             livePrice = purity === "22K" ? precious.gold22kPerGram : precious.gold24kPerGram;
             calculatedValue = grams * livePrice;
@@ -464,9 +480,15 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           const city = meta.city || "Bengaluru";
           const sizeTier = meta.sizeTier || "large_gt_1184_sqft";
           livePrice = getResidexRate(city, sizeTier);
-          calculatedValue = sqft * livePrice;
-          priceLabel = `₹${livePrice.toLocaleString("en-IN")}/sq.ft (NHB)`;
-          physicalUnitsLabel = `${sqft.toLocaleString("en-IN")} sq.ft (${city})`;
+          if (sqft > 0) {
+            calculatedValue = sqft * livePrice;
+            priceLabel = `₹${livePrice.toLocaleString("en-IN")}/sq.ft (NHB)`;
+            physicalUnitsLabel = `${sqft.toLocaleString("en-IN")} sq.ft (${city})`;
+          } else {
+            // No area entered: keep the typed value instead of showing ₹0
+            priceLabel = "Manual valuation";
+            physicalUnitsLabel = `${city} (area not set)`;
+          }
 
           // Real Estate Returns from NHB RESIDEX City Summary
           const residexCity = window.KYF_RESIDEX && window.KYF_RESIDEX.cities && window.KYF_RESIDEX.cities[city];
@@ -488,7 +510,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         case "MACRO_LINKED":
         case "MANUAL":
         default: {
-          calculatedValue = Number(h.manualCurrentValue) || Number(h.investedValue) || 0;
+          calculatedValue = typedValue;
           if (meta.interestRate) {
             priceLabel = `Coupon: ${meta.interestRate}% p.a.`;
             ret1y = Number(meta.interestRate);
@@ -932,6 +954,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     expandGoalSlices,
     enrichHoldingsWithLiveMarket,
     isLiabilityHolding,
+    normalizeAssetClass,
     filterHoldings,
     sortHoldings,
     groupBySingleDimension

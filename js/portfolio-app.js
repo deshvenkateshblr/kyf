@@ -740,8 +740,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     let html = "";
 
     for (const group of pivotResult.groups) {
-      const groupIsPositive = group.horizonReturnPct >= 0;
-      const groupReturnClass = groupIsPositive ? "positive" : "negative";
+      // null >= 0 is true in JS, so a group with no return would wrongly show a green badge
+      const groupReturnClass = group.horizonReturnPct == null ? "neutral" : (group.horizonReturnPct >= 0 ? "positive" : "negative");
 
       // Goal Specific Sub-Header (Progress Bar, Dual-Unit Accumulation, Divergence & Horizon Badge)
       let goalHeaderExtra = "";
@@ -1425,7 +1425,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         tag: "Gold",
         name: "Physical Gold 24K",
         rawPrice: rate,
-        assetClass: "Gold",
+        assetClass: "Commodities & Gold",
         subCategory: "24K Bullion / SGB",
         custodian: "Locker / Physical",
         notes: `Market rate: ₹${rate}/g`
@@ -1498,7 +1498,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         els.inputHoldingCustodian.value = "MF Central / AMC";
       } else if (item.assetClass === "Real Estate") {
         els.inputHoldingCustodian.value = "Physical / Registry";
-      } else if (item.assetClass === "Gold") {
+      } else if (item.assetClass === "Commodities & Gold") {
         els.inputHoldingCustodian.value = "Locker / SGB";
       } else {
         els.inputHoldingCustodian.value = "Self-Held";
@@ -1702,6 +1702,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Progressive disclosure: optional fields stay collapsed when adding, open when editing
     const moreDetails = document.getElementById("holding-more-details");
     if (moreDetails) moreDetails.open = !!forEdit;
+    const staleSplitHint = document.getElementById("holding-goal-split-hint");
+    if (staleSplitHint) staleSplitHint.hidden = true;
 
     if (!forEdit) {
       editingHoldingId = null;
@@ -1756,7 +1758,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Pre-fill form
     if (els.inputHoldingName) els.inputHoldingName.value = holding.name || "";
     const holdingIsDebt = window.KYF_PORTFOLIO_ENGINE.isLiabilityHolding(holding);
-    if (els.selectHoldingAssetClass) els.selectHoldingAssetClass.value = holdingIsDebt ? "Liabilities" : (holding.assetClass || "Equities");
+    if (els.selectHoldingAssetClass) els.selectHoldingAssetClass.value = holdingIsDebt ? "Liabilities" : window.KYF_PORTFOLIO_ENGINE.normalizeAssetClass(holding.assetClass || "Equities");
     if (els.inputHoldingSubCategory) els.inputHoldingSubCategory.value = holding.subCategory || "";
     if (els.selectHoldingMember) els.selectHoldingMember.value = holding.member || "Self";
     if (els.inputHoldingCustodian) els.inputHoldingCustodian.value = holding.custodian || "";
@@ -1819,6 +1821,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const goalId = (holding.allocations && holding.allocations.length > 0 && holding.allocations[0].goalId) || "";
     if (els.selectHoldingGoal) els.selectHoldingGoal.value = goalId;
+    const splitHint = document.getElementById("holding-goal-split-hint");
+    if (splitHint) {
+      const n = holding.allocations ? holding.allocations.length : 0;
+      splitHint.hidden = n < 2;
+      splitHint.textContent = n > 1 ? `Split across ${n} goals. Leave this as is to keep the split; pick another goal to replace it.` : "";
+    }
     applyHoldingTypeMode();
 
     // Physical units are the fact for an existing holding: a price/plan change moves the value
@@ -1928,24 +1936,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (activeModalInstrument) {
       if (activeModalInstrument.type === "fund" || assetClass === "Mutual Funds") {
-        pricingMode = "LIVE_MF";
         const isRegular = els.radioVariantRegular && els.radioVariantRegular.checked;
         instrumentMeta.amfiCode = activeModalInstrument.amfiCode || instrumentMeta.amfiCode;
         instrumentMeta.planType = isRegular ? "REGULAR" : "DIRECT";
+        // Live NAV pricing needs a real scheme code; a hand-typed fund stays manually valued
+        pricingMode = Number(instrumentMeta.amfiCode) > 0 ? "LIVE_MF" : "MANUAL";
       } else if (activeModalInstrument.type === "stock" || assetClass === "Equities") {
         pricingMode = "LIVE_EQUITY";
         instrumentMeta.symbol = activeModalInstrument.symbol || instrumentMeta.symbol;
       } else if (activeModalInstrument.type === "city" || assetClass === "Real Estate") {
         pricingMode = "LIVE_RESIDEX";
         instrumentMeta.city = activeModalInstrument.symbol || instrumentMeta.city;
-      } else if (activeModalInstrument.type === "gold" || assetClass === "Gold") {
+      } else if (activeModalInstrument.type === "gold" || assetClass === "Commodities & Gold") {
         pricingMode = "LIVE_GOLD";
         instrumentMeta.purity = "24K";
       }
     } else if (assetClass === "Mutual Funds") {
-      pricingMode = "LIVE_MF";
       const isRegular = els.radioVariantRegular && els.radioVariantRegular.checked;
       instrumentMeta.planType = isRegular ? "REGULAR" : "DIRECT";
+      pricingMode = Number(instrumentMeta.amfiCode) > 0 ? "LIVE_MF" : "MANUAL";} else if (assetClass === "Commodities & Gold") {
+      // Gold chosen by type (no search pick): live-priced by weight when grams are given (guard below)
+      pricingMode = "LIVE_GOLD";
+      instrumentMeta.purity = instrumentMeta.purity || "24K";
     }
 
     // A liability is just an amount owed: never live-priced, no units, no cost basis
@@ -1979,6 +1991,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (editingHoldingId) {
       const idx = rawHoldings.findIndex((h) => h.id === editingHoldingId);
+      const priorAllocations = idx >= 0 && Array.isArray(rawHoldings[idx].allocations) ? rawHoldings[idx].allocations : [];
+      const keepGoalSplit = priorAllocations.length > 1 && (goalId || "") === (priorAllocations[0].goalId || "");
       if (idx >= 0) {
         rawHoldings[idx] = {
           ...rawHoldings[idx],
@@ -1993,7 +2007,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           isLiability,
           currentValue: currentVal,
           manualCurrentValue: currentVal,
-          allocations: goalId ? [{ goalId, percentage: 100 }] : [],
+          // A holding split across several goals keeps its split unless the goal was changed here
+          allocations: keepGoalSplit ? rawHoldings[idx].allocations : (goalId ? [{ goalId, percentage: 100 }] : []),
           instrumentMeta
         };
       }
@@ -2339,13 +2354,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (window.KYF_VAULT) {
       window.KYF_VAULT.registerPageHook({
         pageName: "portfolio",
+        // Saving while the demo family is on screen must not write the demo into the person's file
         getLocalData: () => ({
-          portfolio: rawHoldings,
-          portfolioGoals: rawGoals,
-          members: rawMembers
+          portfolio: isDemoMode ? userHoldings : rawHoldings,
+          portfolioGoals: isDemoMode ? userGoals : rawGoals,
+          members: isDemoMode ? userMembers : rawMembers
         }),
         onAfterOpen: async (vaultData, summary) => {
-          if (vaultData.portfolio && vaultData.portfolio.length) {
+          // An explicit (even empty) portfolio replaces what is on screen; a missing one leaves it alone
+          if (Array.isArray(vaultData.portfolio)) {
             isDemoMode = false;
             localStorage.setItem("kyf_demo_mode", "false");
             userHoldings = vaultData.portfolio;
@@ -2363,7 +2380,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
           }
           if (vaultData.members && Array.isArray(vaultData.members) && vaultData.members.length) {
-            userMembers = vaultData.members;
+            // Files from older builds may lack member ids, which the local store needs as its key
+            userMembers = vaultData.members.map((m, i) => (m && m.id ? m : { ...m, id: `mem_${Date.now()}_${i}` }));
             rawMembers = userMembers;
             localStorage.setItem("kyf_user_members", JSON.stringify(userMembers));
             await window.KYF_PORTFOLIO_DATA.saveMembersToDB(userMembers);
