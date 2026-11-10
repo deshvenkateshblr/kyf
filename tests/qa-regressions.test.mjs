@@ -45,4 +45,40 @@ ok(writtenOff.gainLoss === -100000 && Math.abs(writtenOff.totalReturnPct + 100) 
 const noTyped = enrich({ id: "z2", name: "FD", assetClass: "Fixed Income", pricingMode: "MANUAL", manualCurrentValue: null, investedValue: 80000, instrumentMeta: {} });
 ok(noTyped.currentValue === 80000, "with no current value at all, cost is still the fallback");
 
+console.log("Outlier guard on market-sourced returns");
+const ctx2 = { window: {}, console };
+ctx2.window.KYF_MARKET_PULSE = ctx.window.KYF_MARKET_PULSE;
+ctx2.window.KYF_MARKET_MF = { schemes: [
+  [100001, "UTI Liquid Fund", "Debt & Fixed Income", 4000, 3900, 0.5, 1.4, -89.67, 6.5],
+  [100002, "Good Flexi Cap", "Equity Flexi Cap Fund", 100, 95, 2, 5, 12, 20]
+] };
+ctx2.window.KYF_MARKET_EQUITIES = { stocks: [["SPLITCO", "Split Co", 500, 1, 2, 3, -80, 0]] };
+vm.createContext(ctx2);
+vm.runInContext(readFileSync("js/portfolio-engine.js", "utf8"), ctx2);
+const G = ctx2.window.KYF_PORTFOLIO_ENGINE;
+const liquid = G.enrichHoldingsWithLiveMarket([{ id: "m1", name: "UTI Liquid", assetClass: "Mutual Funds", pricingMode: "LIVE_MF", units: 10, investedValue: 40000, instrumentMeta: { amfiCode: 100001, units: 10, planType: "DIRECT" } }], "6m")[0];
+ok(liquid.ret6m === null && liquid.activeHorizonReturn === null, "UTI Liquid -89.67% 6M is dropped, not shown as a return");
+ok(liquid.activeHorizonLabel === "Data suspect" && liquid.suspectHorizons.includes("ret6m"), "holding is labelled 'Data suspect'");
+ok(liquid.ret1y === 6.5, "its sane horizons are kept");
+const goodF = G.enrichHoldingsWithLiveMarket([{ id: "m2", name: "Flexi", assetClass: "Mutual Funds", pricingMode: "LIVE_MF", units: 10, investedValue: 900, instrumentMeta: { amfiCode: 100002, units: 10, planType: "DIRECT" } }], "6m")[0];
+ok(goodF.activeHorizonReturn === 12, "a normal equity fund return is untouched");
+const split = G.enrichHoldingsWithLiveMarket([{ id: "s1", name: "Split", assetClass: "Stocks", pricingMode: "LIVE_EQUITY", instrumentMeta: { symbol: "SPLITCO", quantity: 10 }, investedValue: 5000 }], "1y")[0];
+ok(split.ret1y === null && split.suspectHorizons.includes("ret1y"), "an unadjusted-split stock return is dropped");
+const grp = G.groupBySingleDimension(G.enrichHoldingsWithLiveMarket([
+  { id: "m1", name: "UTI Liquid", assetClass: "Mutual Funds", pricingMode: "LIVE_MF", units: 10, investedValue: 40000, instrumentMeta: { amfiCode: 100001, units: 10 } },
+  { id: "m2", name: "Flexi", assetClass: "Mutual Funds", pricingMode: "LIVE_MF", units: 10, investedValue: 900, instrumentMeta: { amfiCode: 100002, units: 10 } }
+], "6m"), "assetClass", "currentValue", "desc", "6m");
+ok(grp.groups[0].horizonReturnPct === 12, `group return ignores the suspect fund (got ${grp.groups[0].horizonReturnPct})`);
+
+console.log("Hygiene: cache-busting, file names, currency symbols");
+import { readdirSync, existsSync } from "node:fs";
+const appVersion = /KYF_APP_VERSION\s*=\s*"([^"]+)"/.exec(readFileSync("js/kyf-footer.js", "utf8"))[1];
+const versions = new Set();
+for (const f of readdirSync(".").filter((n) => n.endsWith(".html") && !n.includes("bkup"))) {
+  for (const m of readFileSync(f, "utf8").matchAll(/\?v=([0-9.]+)/g)) versions.add(m[1]);
+}
+ok(versions.size === 1 && versions.has(appVersion), `every page uses ?v=${appVersion} (found ${[...versions].join(", ")})`);
+ok(!readdirSync("data").some((n) => n.endsWith(".js.js")) && existsSync("data/kyf-curriculum.js"), "no double-extension data files");
+ok(!/₹\$\{formatINR/.test(readFileSync("js/portfolio-app.js", "utf8")), "no '₹' stacked on formatINR() output");
+
 console.log(`\n${passed} passed`);

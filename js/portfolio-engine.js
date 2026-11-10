@@ -9,6 +9,27 @@
 window.KYF_PORTFOLIO_ENGINE = (() => {
   // Pre-indexed in-memory O(1) Lookup Maps
   let equityMap = null;
+
+  // Shared outlier guard: unadjusted splits / bad NAV history must not flow into portfolio returns.
+  // Mirrors the thresholds used on the Market Performance screen (stocks) and adds a tight band for debt funds.
+  const RETURN_BOUNDS = {
+    equity: { ret1m: [-45, 60], ret3m: [-55, 100], ret6m: [-65, 180], ret1y: [-75, 280] },
+    debt: { ret1m: [-5, 5], ret3m: [-8, 10], ret6m: [-12, 15], ret1y: [-20, 25] }
+  };
+
+  function returnBoundsFor(kind, category) {
+    if (kind === "fund" && /debt|liquid|money market|overnight|gilt|fixed income|bond|ultra short|low duration/i.test(category || "")) {
+      return RETURN_BOUNDS.debt;
+    }
+    return RETURN_BOUNDS.equity;
+  }
+
+  function isSuspectReturn(value, horizon, kind, category) {
+    if (value == null || isNaN(value)) return false;
+    const b = returnBoundsFor(kind, category)[horizon];
+    return !!b && (Number(value) < b[0] || Number(value) > b[1]);
+  }
+
   let mfMap = null;
   let isIndexed = false;
 
@@ -576,6 +597,27 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           break;
       }
 
+      // Outlier guard on market-sourced returns
+      const guardKind = h.pricingMode === "LIVE_MF" ? "fund" : "stock";
+      const guardCategory = h.pricingMode === "LIVE_MF" && mfMap ? ((mfMap.get(Number(meta.amfiCode)) || {}).category || "") : "";
+      const suspectHorizons = [];
+      if (h.pricingMode === "LIVE_MF" || h.pricingMode === "LIVE_EQUITY") {
+        const rets = { ret1m, ret3m, ret6m, ret1y };
+        for (const k of Object.keys(rets)) {
+          if (isSuspectReturn(rets[k], k, guardKind, guardCategory)) suspectHorizons.push(k);
+        }
+        if (suspectHorizons.includes("ret1m")) ret1m = null;
+        if (suspectHorizons.includes("ret3m")) ret3m = null;
+        if (suspectHorizons.includes("ret6m")) ret6m = null;
+        if (suspectHorizons.includes("ret1y")) ret1y = null;
+        const activeKey = "ret" + activeHorizon;
+        if (suspectHorizons.includes(activeKey)) {
+          activeHorizonReturn = null;
+          activeHorizonLabel = "Data suspect";
+        }
+      }
+      enriched.suspectHorizons = suspectHorizons;
+
       enriched.currentValue = Math.round(calculatedValue);
       enriched.investedValue = invested != null ? Math.round(invested) : null;
       enriched.gainLoss = gainLoss != null ? Math.round(gainLoss) : null;
@@ -955,6 +997,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     enrichHoldingsWithLiveMarket,
     isLiabilityHolding,
     normalizeAssetClass,
+    isSuspectReturn,
     filterHoldings,
     sortHoldings,
     groupBySingleDimension

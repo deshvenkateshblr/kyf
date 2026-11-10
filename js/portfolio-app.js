@@ -756,7 +756,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           const clampedWidth = Math.min(100, Math.max(0, group.progressPct));
           const isFunded = group.progressPct >= 100;
           progressBarHTML = `
-            <div class="goal-progress-container" title="Inflation-Adjusted Target: ₹${formatINR(group.adjustedTargetINR)} (${infl.inflationRate}% ${infl.inflationCategory} compounded over ${yearsRemaining} yrs from base ₹${formatINR(meta.baseTargetINR, true)})">
+            <div class="goal-progress-container" title="Inflation-Adjusted Target: ${formatINR(group.adjustedTargetINR)} (${infl.inflationRate}% ${infl.inflationCategory} compounded over ${yearsRemaining} yrs from base ${formatINR(meta.baseTargetINR, true)})">
               <div class="goal-progress-bar">
                 <div class="goal-progress-fill ${isFunded ? "funded" : ""}" style="width: ${clampedWidth}%;"></div>
               </div>
@@ -849,7 +849,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                   ? `<span class="tag-badge badge-regular-alert" title="${escapeHTML(h.regularAlert.message)}">⚠️ Regular Plan Drag</span>`
                   : "";
                 const sliceTag = h.isSlice
-                  ? `<span class="tag-badge badge-slice" title="${h.slicePercentage}% virtual allocation of full holding (Total live: ₹${formatINR(h.originalCurrentValue)})">🍰 ${h.slicePercentage}% slice</span>`
+                  ? `<span class="tag-badge badge-slice" title="${h.slicePercentage}% virtual allocation of full holding (Total live: ${formatINR(h.originalCurrentValue)})">🍰 ${h.slicePercentage}% slice</span>`
                   : "";
 
                 // Dynamic Column 2 Context: Owner in Asset Class View, Asset Class in Member View, Asset Class & Owner in Goal View
