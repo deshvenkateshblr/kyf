@@ -144,6 +144,7 @@ global.indexedDB = {
 };
 
 // Load kyf-vault.js and portfolio-data.js code
+eval(fs.readFileSync(path.resolve("js/kyf-goals.js"), "utf8"));
 const vaultCode = fs.readFileSync(path.resolve("js/kyf-vault.js"), "utf8");
 eval(vaultCode);
 const pDataCode = fs.readFileSync(path.resolve("js/portfolio-data.js"), "utf8");
@@ -257,8 +258,12 @@ async function runTests() {
   assert(kyfPayload.fileType === "kyf-vault", "KYF fileType correct");
   assert(Array.isArray(kyfPayload.data.cadence) && kyfPayload.data.cadence.length === 2, "Unified payload includes cadence");
   assert(Array.isArray(kyfPayload.data.portfolio) && kyfPayload.data.portfolio.length === 2, "Unified payload includes portfolio holdings");
-  assert(Array.isArray(kyfPayload.data.portfolioGoals) && kyfPayload.data.portfolioGoals.length === 1, "Unified payload includes portfolio goals");
-  assert(Array.isArray(kyfPayload.data.goals) && kyfPayload.data.goals.length === 1, "Unified payload includes life planner goals");
+  assert(kyfPayload.data.portfolioGoals === undefined, "v3 payload has no separate portfolioGoals list");
+  assert(Array.isArray(kyfPayload.data.goals) && kyfPayload.data.goals.length === 2, "Planner + portfolio goals are merged into ONE goals list");
+  const retire = kyfPayload.data.goals.find((g) => g.id === "g_retire");
+  assert(retire && retire.name === "Retirement Corpus" && retire.baseTargetINR === 25000000 && retire.priority, "Planner goal converted to the unified schema");
+  assert(kyfPayload.version === "3.0.0", "File format is stamped 3.0.0");
+  assert(mockLocalStorage.getItem("kyf_goals_v1") === null, "Retired planner store was absorbed and removed");
   assert(Array.isArray(kyfPayload.data.members) && kyfPayload.data.members.length === 3, "Unified payload includes first-class family members");
 
   // Test 4: Cadence Page Save / Open Round-Trip
@@ -282,8 +287,7 @@ async function runTests() {
   assert(cadenceSavePayload.data.cadence.length === 2, "Cadence data is freshest from page hook");
   assert(cadenceSavePayload.data.cadence[0].status === "done", "Checked off item in cadence is updated");
   assert(cadenceSavePayload.data.portfolio.length === 2, "PORTFOLIO WAS NOT LOST when saving from cadence page!");
-  assert(cadenceSavePayload.data.portfolioGoals.length === 1, "PORTFOLIO GOALS WERE NOT LOST when saving from cadence page!");
-  assert(cadenceSavePayload.data.goals.length === 1, "LIFE GOALS WERE NOT LOST when saving from cadence page!");
+  assert(cadenceSavePayload.data.goals.length === 2, "GOALS WERE NOT LOST when saving from cadence page!");
 
   // Test 5: Market Performance Save Round-Trip
   console.log("\n[TEST GROUP 5] Market Performance Page Saving");
@@ -296,7 +300,7 @@ async function runTests() {
   assert(mpSavePayload.data.marketReviewDate === "2026-11-09T06:00:00.000Z", "Market review date included");
   assert(mpSavePayload.data.cadence.length === 2, "Cadence not lost when saving from market-performance");
   assert(mpSavePayload.data.portfolio.length === 2, "Portfolio not lost when saving from market-performance");
-  assert(mpSavePayload.data.goals.length === 1, "Goals not lost when saving from market-performance");
+  assert(mpSavePayload.data.goals.length === 2, "Goals not lost when saving from market-performance");
 
   // Test 6: Legacy Payloads Backward Compatibility
   console.log("\n[TEST GROUP 6] Legacy Format Backward Compatibility");
@@ -326,7 +330,25 @@ async function runTests() {
   };
   const parseResultB = await global.KYF_VAULT.parseFile(JSON.stringify(legacyPortfolioFile));
   assert(parseResultB.payload.data.portfolio.length === 1, "Portfolio holdings mapped");
-  assert(parseResultB.payload.data.portfolioGoals.length === 1, "Portfolio goals disambiguated from life goals");
+  assert(parseResultB.payload.data.goals.length === 1 && parseResultB.payload.data.goals[0].baseTargetINR === 10000000, "Old portfolio goals land in the unified goals list");
+  assert(parseResultB.payload.data.portfolioGoals === undefined, "No portfolioGoals key after normalising");
+
+  // Case B2: v2 file carrying BOTH goal lists + generic milestone cards
+  const v2Both = {
+    app: "Know Your Finance", version: "2.0.0", fileType: "kyf-vault",
+    data: {
+      cadence: [{ id: "goal-home", section: "goals", status: "active", title: "Buy My First Home" }, { id: "goal-car", section: "goals", status: "done", title: "Car" }, { id: "house-tax", section: "housekeeping", status: "active", title: "Tax" }],
+      goals: [{ id: "p1", title: "Child College", category: "education", priority: "essential", years: 10, presentValue: 4000000, inflationRate: 10, expectedReturn: 12, currentSavings: 800000, status: "achieved" }],
+      portfolioGoals: [{ id: "e1", name: "Family Home", baseTargetINR: 15000000, targetYear: 2030, priority: "COMPLETED" }]
+    }
+  };
+  const parsedV2 = (await global.KYF_VAULT.parseFile(JSON.stringify(v2Both))).payload.data;
+  assert(parsedV2.goals.length === 2, "v2 planner + portfolio goals merged");
+  const college = parsedV2.goals.find((g) => g.id === "p1");
+  assert(college.inflationCategory === "EDUCATION" && college.manualSavedINR === 800000 && college.status === "ACHIEVED" && college.priority === "ESSENTIAL", "Planner fields mapped (education inflation, savings, status, priority)");
+  const fam = parsedV2.goals.find((g) => g.id === "e1");
+  assert(fam.status === "ACHIEVED" && fam.priority === "ESSENTIAL", "Legacy priority 'COMPLETED' became status ACHIEVED");
+  assert(!parsedV2.cadence.some((a) => a.id === "goal-home") && parsedV2.cadence.some((a) => a.id === "goal-car") && parsedV2.cadence.some((a) => a.id === "house-tax"), "Untouched generic milestone cards dropped; edited/housekeeping cards kept");
 
   // Case C: Raw array of cadence activities
   const rawArray = [

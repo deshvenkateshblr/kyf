@@ -537,6 +537,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       scopedHoldings = enriched.filter((h) => activeMemberScope.has(h.member));
     }
 
+    // Share per-goal funding with the Goals page (derived, never stored in the .kyf file)
+    if (!isDemoMode && window.KYF_GOALS && window.KYF_PORTFOLIO_ENGINE.expandGoalSlices) {
+      const fundingSlices = window.KYF_PORTFOLIO_ENGINE.expandGoalSlices(enriched, rawGoals).slices;
+      const byGoal = {};
+      fundingSlices.forEach((sl) => {
+        const gid = sl.goalId || (sl.allocations && sl.allocations[0] && sl.allocations[0].goalId);
+        if (gid && gid !== "goal_unallocated") byGoal[gid] = (byGoal[gid] || 0) + Math.max(0, sl.currentValue || 0);
+      });
+      window.KYF_GOALS.writeFundingCache(byGoal);
+    }
+
     // 4. Prepare Working Holdings (Virtual Lot Slices if viewing by Goal)
     let workingHoldings = [];
     if (activeDimension === "goal") {
@@ -2139,7 +2150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (window.KYF_VAULT) {
       window.KYF_VAULT.save({
         portfolio: rawHoldings,
-        portfolioGoals: rawGoals,
+        goals: rawGoals,
         members: rawMembers
       });
     } else {
@@ -2357,7 +2368,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Saving while the demo family is on screen must not write the demo into the person's file
         getLocalData: () => ({
           portfolio: isDemoMode ? userHoldings : rawHoldings,
-          portfolioGoals: isDemoMode ? userGoals : rawGoals,
+          goals: isDemoMode ? userGoals : rawGoals,
           members: isDemoMode ? userMembers : rawMembers
         }),
         onAfterOpen: async (vaultData, summary) => {
@@ -2366,7 +2377,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             isDemoMode = false;
             localStorage.setItem("kyf_demo_mode", "false");
             userHoldings = vaultData.portfolio;
-            userGoals = vaultData.portfolioGoals || [];
+            userGoals = vaultData.goals || [];
             localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
             localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
             rawHoldings = userHoldings;
@@ -2374,8 +2385,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (els.demoDataToggle) els.demoDataToggle.checked = false;
             await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
             await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
-          } else if (vaultData.portfolioGoals && vaultData.portfolioGoals.length) {
-            userGoals = vaultData.portfolioGoals;
+          } else if (vaultData.goals && vaultData.goals.length) {
+            userGoals = vaultData.goals;
             rawGoals = userGoals;
             await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
           }

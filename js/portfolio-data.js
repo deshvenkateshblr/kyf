@@ -417,7 +417,7 @@ window.KYF_PORTFOLIO_DATA = (() => {
         const store = tx.objectStore(STORE_GOALS);
         const req = store.getAll();
 
-        req.onsuccess = () => resolve(req.result || []);
+        req.onsuccess = () => resolve(window.KYF_GOALS ? window.KYF_GOALS.mergeGoalLists(req.result || []) : (req.result || []));
         req.onerror = () => reject(req.error);
       });
     } catch (err) {
@@ -516,7 +516,7 @@ window.KYF_PORTFOLIO_DATA = (() => {
     if (window.KYF_VAULT) {
       return window.KYF_VAULT.save({
         portfolio: holdings,
-        portfolioGoals: goals,
+        goals: goals,
         members: members
       });
     }
@@ -536,7 +536,7 @@ window.KYF_PORTFOLIO_DATA = (() => {
       data: {
         cadence: cadenceData || [],
         portfolio: holdings,
-        portfolioGoals: goals || [],
+        goals: goals || [],
         members: members || []
       }
     };
@@ -601,7 +601,7 @@ window.KYF_PORTFOLIO_DATA = (() => {
 
   return {
     getDemoFamilyHoldings: () => JSON.parse(JSON.stringify(DEMO_FAMILY_HOLDINGS)),
-    getDemoGoals: () => JSON.parse(JSON.stringify(DEMO_GOALS)),
+    getDemoGoals: () => (window.KYF_GOALS ? window.KYF_GOALS.mergeGoalLists(DEMO_GOALS) : JSON.parse(JSON.stringify(DEMO_GOALS))),
     getDemoMembers: () => JSON.parse(JSON.stringify(DEMO_MEMBERS)),
     loadHoldingsFromDB,
     saveHoldingsToDB,

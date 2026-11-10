@@ -5,452 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Know Your Finance (KYF) Life Goals Planner — Calculate inflation-adjusted targets, required monthly SIPs, and asset recipes for retirement, children education, home purchase, and wealth freedom. 100% private, runs locally.">
   <meta name="theme-color" content="#1f7a6c">
-  <title>Life Goals Planner — Anchor Dreams to Math | Know Your Finance (KYF)</title>
+  <title>Goals | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.5.1">
-  <style>
-    :root {
-      --ink: #182620;
-      --ink-soft: #3d4a44;
-      --paper: #eef1ea;
-      --panel: #ffffff;
-      --line: #d7ddd2;
-      --muted: #6d786f;
-      --teal: #1f7a6c;
-      --teal-deep: #145a4f;
-      --teal-soft: #e3f0ec;
-      --amber: #c97a2b;
-      --amber-soft: #f7e9d8;
-      --rose: #a8503f;
-      --rose-soft: #faebe8;
-      --green: #2e7d32;
-      --green-soft: #e8f5e9;
-      --blue: #1976d2;
-      --blue-soft: #e3f2fd;
-      --purple: #7b1fa2;
-      --purple-soft: #f3e5f5;
-      --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
-      --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, serif;
-      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
-      --wrap: 1140px;
-    }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      background: var(--paper);
-      color: var(--ink);
-      font-family: var(--sans);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-      padding-bottom: 56px;
-    }
-    a { color: inherit; }
-    img { max-width: 100%; display: block; }
-    ::selection { background: var(--teal); color: #fff; }
-    :focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
-
-    .wrap { width: min(var(--wrap), 100% - clamp(24px, 5vw, 64px)); margin-inline: auto; }
-
-    /* ---------- Nav ---------- */
-    .nav {
-      position: sticky; top: 0; z-index: 30;
-      background: rgba(238,241,234,.92);
-      backdrop-filter: saturate(1.4) blur(10px);
-      -webkit-backdrop-filter: saturate(1.4) blur(10px);
-      border-bottom: 1px solid var(--line);
-    }
-    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 0; }
-    .nav img { height: 40px; width: auto; }
-    .nav-links { display: flex; align-items: center; gap: 16px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
-    .nav-links a { text-decoration: none; color: var(--ink-soft); transition: color .15s ease; }
-    .nav-links a:hover, .nav-links a.active { color: var(--teal); font-weight: 700; }
-
-    .nav-btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase;
-      text-decoration: none; cursor: pointer; padding: 8px 16px; border-radius: 999px;
-      font-weight: 700; transition: all .18s ease; outline: none; border: 2px solid transparent;
-      line-height: 1.2;
-    }
-    .nav-btn.primary {
-      background: var(--teal); color: #ffffff !important; border-color: var(--teal);
-      box-shadow: 0 2px 8px rgba(31,122,108,.3);
-    }
-    .nav-btn.primary:hover {
-      background: var(--teal-deep); border-color: var(--teal-deep); color: #ffffff !important;
-      transform: translateY(-1px);
-    }
-    .nav-btn.secondary {
-      background: var(--panel); color: var(--ink) !important; border-color: var(--line);
-    }
-    .nav-btn.secondary:hover {
-      background: var(--paper); border-color: var(--teal); color: var(--teal) !important;
-      transform: translateY(-1px);
-    }
-
-    /* Toast Notification */
-    .toast-notice {
-      position: fixed; bottom: 62px; right: 24px; z-index: 110;
-      background: var(--ink); color: #fff; padding: 12px 20px;
-      border-radius: 8px; font-family: var(--mono); font-size: 12px;
-      box-shadow: 0 10px 28px rgba(0,0,0,.25); border-left: 4px solid var(--teal);
-      transform: translateY(140%); opacity: 0; pointer-events: none;
-      transition: transform .25s cubic-bezier(.2,.8,.2,1), opacity .25s ease;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .toast-notice.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
-
-    /* ---------- Eyebrows & Headings ---------- */
-    .eyebrow {
-      font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
-      text-transform: uppercase; color: var(--teal); margin: 0 0 10px;
-    }
-    h1, h2, h3 { font-family: var(--serif); font-weight: 100; letter-spacing: -0.015em; margin: 0; }
-
-    /* ---------- Hero & Overview ---------- */
-    .goals-hero {
-      padding: clamp(32px, 5vh, 48px) 0 clamp(24px, 4vh, 36px);
-      background:
-        radial-gradient(ellipse 650px 380px at 5% 0%, rgba(31,122,108,.12), transparent 60%),
-        radial-gradient(ellipse 550px 380px at 95% 100%, rgba(201,122,43,.14), transparent 60%),
-        var(--paper);
-      border-bottom: 1px solid var(--line);
-    }
-    .hero-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 20px; }
-    .goals-hero h1 { font-size: clamp(30px, 4vw, 44px); line-height: 1.15; margin-bottom: 12px; }
-    .goals-hero .lede { font-size: clamp(15px, 1.3vw, 17px); color: var(--ink-soft); max-width: 680px; margin: 0; }
-
-    .privacy-badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
-      padding: 6px 14px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft); margin-bottom: 18px;
-    }
-    .privacy-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
-
-    /* Summary Metric Strip */
-    .metric-strip {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 12px; margin-top: 24px;
-    }
-    .metric-card {
-      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-      padding: 16px 18px; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-    }
-    .metric-card:hover { transform: translateY(-2px); border-color: var(--teal); box-shadow: 0 6px 16px rgba(0,0,0,.04); }
-    .metric-card.active-metric { border-color: var(--teal); background: var(--teal-soft); }
-    .metric-card .val { font-size: 22px; font-weight: 700; font-family: var(--mono); color: var(--ink); line-height: 1.1; }
-    .metric-card .lbl { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-top: 6px; }
-
-    /* ---------- Search & Filters Toolbar ---------- */
-    .controls-bar {
-      position: sticky; top: 65px; z-index: 25;
-      background: rgba(238,241,234,.95);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      padding: 18px 0; border-bottom: 1px solid var(--line);
-    }
-    .controls-inner {
-      display: flex; flex-direction: column; gap: 14px;
-    }
-    .search-row {
-      display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
-    }
-    .search-box {
-      flex: 1 1 320px; position: relative; display: flex; align-items: center;
-    }
-    .search-box svg {
-      position: absolute; left: 14px; color: var(--muted); pointer-events: none;
-    }
-    .search-input {
-      width: 100%; height: 44px; padding: 0 40px 0 42px;
-      font-family: var(--sans); font-size: 14.5px;
-      background: var(--panel); color: var(--ink);
-      border: 1px solid var(--line); border-radius: 999px;
-      transition: all .2s ease;
-    }
-    .search-input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
-    .search-clear {
-      position: absolute; right: 12px; background: none; border: none; cursor: pointer;
-      color: var(--muted); font-size: 16px; padding: 4px; display: none;
-    }
-    .search-clear.visible { display: block; }
-
-    .action-buttons {
-      display: flex; gap: 10px; align-items: center;
-    }
-    .btn-action {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 9px 18px; border-radius: 999px;
-      font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
-      background: var(--panel); color: var(--ink); border: 1px solid var(--line);
-      cursor: pointer; transition: all .18s ease; text-decoration: none;
-    }
-    .btn-action:hover { background: var(--teal); border-color: var(--teal); color: #fff; }
-    .btn-action.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
-    .btn-action.primary:hover { background: var(--teal-deep); }
-
-    /* Filters Row */
-    .filter-pills-row {
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-    }
-    .filter-label {
-      font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
-      color: var(--muted); margin-right: 4px;
-    }
-    .filter-pill {
-      font-family: var(--mono); font-size: 11.5px; padding: 5px 12px; border-radius: 999px;
-      background: var(--panel); border: 1px solid var(--line); color: var(--ink-soft);
-      cursor: pointer; transition: all .15s ease;
-    }
-    .filter-pill:hover { border-color: var(--teal); color: var(--teal); }
-    .filter-pill.active {
-      background: var(--ink); border-color: var(--ink); color: #fff;
-    }
-
-    /* ---------- Section Headers & Containers ---------- */
-    .goals-section {
-      padding: 36px 0 54px;
-    }
-    .section-title-wrap {
-      display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
-      gap: 12px; margin-bottom: 22px; padding-bottom: 12px; border-bottom: 2px solid var(--line);
-    }
-    .section-title-wrap h2 { font-size: 26px; display: flex; align-items: center; gap: 10px; }
-    .section-badge {
-      font-family: var(--mono); font-size: 12px; padding: 4px 10px; border-radius: 999px;
-      background: var(--panel); border: 1px solid var(--line); color: var(--muted);
-    }
-
-    /* Cards Grid */
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 22px;
-    }
-
-    /* Goal Card */
-    .goal-card {
-      position: relative;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 22px 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-    }
-    .goal-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 28px rgba(24,38,32,.09);
-      border-color: var(--teal);
-    }
-    .goal-card::before {
-      content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px;
-      border-radius: 14px 14px 0 0; background: var(--card-accent, var(--teal));
-    }
-    .goal-card.horizon-short::before { background: var(--amber); }
-    .goal-card.horizon-medium::before { background: var(--teal); }
-    .goal-card.horizon-long::before { background: var(--green); }
-    .goal-card.status-achieved { opacity: .8; background: #fafcfa; border-color: #c8e6c9; }
-    .goal-card.status-achieved::before { background: var(--green); }
-
-    .card-head {
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-      margin-bottom: 12px;
-    }
-    .card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-    .tag-cat {
-      font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
-      padding: 3px 8px; border-radius: 4px; font-weight: 600;
-      background: var(--teal-soft); color: var(--teal-deep);
-    }
-    .tag-horizon {
-      font-family: var(--mono); font-size: 10.5px; color: var(--muted);
-      background: var(--paper); padding: 3px 8px; border-radius: 4px; font-weight: 600;
-    }
-    .tag-priority {
-      font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
-      padding: 2px 7px; border-radius: 4px; font-weight: 700;
-    }
-    .tag-priority.essential { background: var(--rose-soft); color: var(--rose); }
-    .tag-priority.important { background: var(--amber-soft); color: var(--amber); }
-    .tag-priority.flexible { background: var(--blue-soft); color: var(--blue); }
-
-    .card-icon {
-      font-size: 26px; line-height: 1; flex-shrink: 0;
-    }
-
-    .goal-card h3 {
-      font-size: 20px; line-height: 1.25; margin: 4px 0 6px;
-    }
-    .goal-card.status-achieved h3 { text-decoration: line-through; color: var(--muted); }
-
-    .goal-desc {
-      font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px; line-height: 1.45;
-    }
-
-    /* Math Box inside Goal Card */
-    .goal-math-box {
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px 14px;
-      margin-bottom: 14px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px 14px;
-    }
-    .math-item { display: flex; flex-direction: column; }
-    .math-item.full-width { grid-column: span 2; }
-    .math-lbl {
-      font-family: var(--mono); font-size: 10px; text-transform: uppercase;
-      letter-spacing: .06em; color: var(--muted); line-height: 1.2;
-    }
-    .math-val {
-      font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--ink); margin-top: 2px;
-    }
-    .math-val.accent { color: var(--teal); }
-    .math-val.fv-val { color: var(--amber); }
-    .math-val.sip-val { color: var(--teal-deep); font-size: 15px; }
-
-    /* Progress Bar */
-    .progress-section {
-      margin-bottom: 14px;
-    }
-    .progress-labels {
-      display: flex; justify-content: space-between; align-items: baseline;
-      font-family: var(--mono); font-size: 11px; margin-bottom: 5px;
-    }
-    .progress-bar-wrap {
-      width: 100%; height: 8px; background: var(--line); border-radius: 999px; overflow: hidden;
-    }
-    .progress-bar-fill {
-      height: 100%; border-radius: 999px; background: var(--teal);
-      transition: width .3s ease;
-    }
-    .progress-bar-fill.achieved { background: var(--green); }
-
-    /* Asset Recipe Tag */
-    .recipe-strip {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
-      font-family: var(--mono); font-size: 11px; color: var(--ink-soft);
-      background: rgba(31,122,108,.07); padding: 6px 10px; border-radius: 6px;
-      border-left: 3px solid var(--teal);
-    }
-    .recipe-strip strong { color: var(--teal-deep); }
-
-    /* Card Footer & Interactive Status */
-    .card-footer {
-      border-top: 1px dashed var(--line);
-      padding-top: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .status-select {
-      font-family: var(--mono); font-size: 11.5px; padding: 5px 8px;
-      border: 1px solid var(--line); border-radius: 6px;
-      background: var(--panel); color: var(--ink); cursor: pointer;
-      outline: none; transition: border-color .15s ease;
-    }
-    .status-select:focus { border-color: var(--teal); }
-
-    .card-btns {
-      display: flex; gap: 6px; align-items: center;
-    }
-    .icon-btn {
-      background: none; border: 1px solid var(--line); border-radius: 6px;
-      padding: 5px 8px; cursor: pointer; color: var(--muted); font-size: 12px;
-      transition: all .15s ease; display: inline-flex; align-items: center; gap: 4px;
-    }
-    .icon-btn:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-soft); }
-    .icon-btn.delete:hover { border-color: var(--rose); color: var(--rose); background: var(--rose-soft); }
-
-    /* Empty state */
-    .empty-state {
-      text-align: center; padding: 48px 24px; background: var(--panel);
-      border: 1px dashed var(--line); border-radius: 12px; margin: 16px 0;
-    }
-    .empty-state p { color: var(--muted); margin: 0 0 12px; }
-
-    /* ---------- Goal drawer (shell styles live in css/kyf-drawer.css) ---------- */
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
-    .form-group { margin-bottom: 14px; }
-    .form-group.full { grid-column: span 2; }
-    @media (max-width: 520px) {
-      .form-grid { grid-template-columns: 1fr; }
-      .form-group.full { grid-column: auto; }
-    }
-    .form-group label {
-      display: block; font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-      letter-spacing: .08em; color: var(--muted); margin-bottom: 5px;
-    }
-    .form-control {
-      width: 100%; padding: 9px 12px; font-family: var(--sans); font-size: 14px;
-      border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink);
-    }
-    .form-control:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
-
-    /* Live Preview Box in Modal */
-    .modal-preview-box {
-      background: var(--teal-soft);
-      border: 1px solid rgba(31,122,108,.25);
-      border-radius: 10px;
-      padding: 14px;
-      margin-top: 10px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      text-align: center;
-    }
-    .prev-item .prev-lbl {
-      font-family: var(--mono); font-size: 10px; text-transform: uppercase;
-      letter-spacing: .06em; color: var(--teal-deep);
-    }
-    .prev-item .prev-val {
-      font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--teal-deep); margin-top: 3px;
-    }
-
-
-    /* ---------- Educational Callout Card ---------- */
-    .edu-callout {
-      background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
-      padding: 24px 28px; margin: 40px 0 20px; display: grid; grid-template-columns: 1fr 1fr 1fr;
-      gap: 20px;
-    }
-    .edu-col h4 { font-family: var(--serif); font-size: 18px; margin: 0 0 8px; color: var(--ink); }
-    .edu-col p { font-size: 13px; color: var(--ink-soft); margin: 0; line-height: 1.45; }
-    .edu-col strong { color: var(--teal); }
-
-    /* ---------- Footer ---------- */
-    footer {
-      border-top: 1px solid var(--line); background: var(--panel); padding: 36px 0; margin-top: 48px;
-    }
-    .foot {
-      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
-      gap: 16px; font-size: 13px; color: var(--muted);
-    }
-    .foot .links { display: flex; gap: 18px; font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; }
-    .foot a { text-decoration: none; }
-    .foot a:hover { color: var(--teal); }
-
-    /* Responsive */
-    @media (max-width: 820px) {
-      .cards-grid { grid-template-columns: 1fr; }
-      .edu-callout { grid-template-columns: 1fr; }
-      .form-grid { grid-template-columns: 1fr; }
-      .form-group.full { grid-column: span 1; }
-      .modal-preview-box { grid-template-columns: 1fr; gap: 8px; }
-      .nav-links a { display: none; }
-      .nav-links .nav-btn { display: inline-flex; padding: 6px 12px; font-size: 11px; }
-      .controls-bar { top: 60px; }
-    }
-
-  </style>
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.6.0">
+  <link rel="stylesheet" href="css/goals.css?v=1.6.0">
 </head>
 <body>
 
@@ -463,7 +21,7 @@
         <a href="cadence.html">Cadence</a>
         <a href="portfolio.html">Portfolio</a>
         <a href="index.html#framework">Framework</a>
-        <input type="file" id="kyfFileInput" accept=".kyf,.json" style="display:none;">
+        <input type="file" id="kyfFileInput" accept=".kyf,.json" hidden>
         <button type="button" class="nav-btn secondary" id="navOpenFileBtn" title="Open saved .kyf data file">📂 Open</button>
         <button type="button" class="nav-btn primary" id="navSaveDataBtn" title="Save data as .kyf file">💾 Save Data</button>
       </nav>
@@ -476,38 +34,47 @@
       <div class="wrap">
         <div class="hero-top">
           <div>
-            <div class="privacy-badge"><span class="dot" aria-hidden="true"></span><span><strong>Dimension 01:</strong> 100% private. Calculations run locally in your browser.</span></div>
-            <h1>Life Goals Planner &mdash; Anchor Dreams to Math</h1>
-            <p class="lede">Price your milestones against realistic Indian inflation, calculate the required monthly SIPs, and match the right asset allocation containers—Equity, Debt, and Gold—across your short, medium, and long-term horizons.</p>
+            <div class="privacy-badge"><span class="dot" aria-hidden="true"></span><span>100% private. Everything is calculated in your browser.</span></div>
+            <h1>Goals &mdash; what is the money for?</h1>
+            <p class="lede">Name what matters, price it in future rupees, and see the monthly amount that gets you there. Money you hold in <a href="portfolio.html">Portfolio</a> counts automatically once you tag it to a goal.</p>
           </div>
           <div class="action-buttons">
-            <button class="btn-action primary" id="openAddModalBtn">+ Create Goal</button>
-            <button class="btn-action" id="resetGoalsBtn" title="Reset all goals to clean default slate">Reset</button>
+            <button class="btn-action primary" id="openAddModalBtn">+ Add goal</button>
           </div>
         </div>
 
-        <!-- METRIC SUMMARY STRIP -->
+        <!-- PLAN SUMMARY -->
         <div class="metric-strip">
-          <div class="metric-card active-metric" data-filter="all">
+          <div class="metric-card">
             <div class="val" id="metricTotalCount">0</div>
-            <div class="lbl">Total Goals</div>
+            <div class="lbl">Open goals</div>
           </div>
-          <div class="metric-card" data-filter="all">
-            <div class="val" id="metricTotalPV" style="color:var(--ink)">₹0</div>
-            <div class="lbl">Present Cost</div>
+          <div class="metric-card">
+            <div class="val" id="metricTotalPV">₹0</div>
+            <div class="lbl">Cost today</div>
           </div>
-          <div class="metric-card" data-filter="all">
-            <div class="val" id="metricTotalFV" style="color:var(--amber)">₹0</div>
-            <div class="lbl">Inflation Target (FV)</div>
+          <div class="metric-card">
+            <div class="val val-amber" id="metricTotalFV">₹0</div>
+            <div class="lbl">Cost in future rupees</div>
           </div>
-          <div class="metric-card" data-filter="all">
-            <div class="val" id="metricTotalSIP" style="color:var(--teal)">₹0</div>
-            <div class="lbl">Total Monthly SIP</div>
+          <div class="metric-card">
+            <div class="val val-teal" id="metricTotalSIP">₹0</div>
+            <div class="lbl">Monthly SIP needed</div>
           </div>
-          <div class="metric-card" data-filter="all">
-            <div class="val" id="metricFundedPct" style="color:var(--green)">0%</div>
-            <div class="lbl">Corpus Funded</div>
+          <div class="metric-card">
+            <div class="val val-green" id="metricFundedPct">0%</div>
+            <div class="lbl">Funded so far</div>
           </div>
+        </div>
+
+        <!-- AFFORDABILITY CHECK -->
+        <div class="plan-check" id="planCheck">
+          <label for="surplusInput" class="plan-check-label">Monthly surplus I can put towards goals</label>
+          <div class="plan-check-input">
+            <span aria-hidden="true">₹</span>
+            <input type="number" id="surplusInput" min="0" step="1000" placeholder="e.g. 60000" inputmode="numeric">
+          </div>
+          <p class="plan-check-msg" id="planCheckMsg">Add the amount you can invest each month to see if your goals fit.</p>
         </div>
       </div>
     </section>
@@ -520,30 +87,22 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <input type="text" id="searchInput" class="search-input" placeholder="Search goals by name, category, horizon, or tag (e.g., retirement, college, home, buffer)..." aria-label="Search goals">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search goals (home, college, retirement...)" aria-label="Search goals">
             <button id="searchClearBtn" class="search-clear" aria-label="Clear search">&times;</button>
           </div>
         </div>
 
         <div class="filter-pills-row">
-          <span class="filter-label">Horizon:</span>
-          <button class="filter-pill active" data-horizon="all">All Horizons</button>
-          <button class="filter-pill" data-horizon="short">⚡ Short (&lt;3y)</button>
-          <button class="filter-pill" data-horizon="medium">🌱 Medium (3-7y)</button>
-          <button class="filter-pill" data-horizon="long">🌳 Long (&gt;7y)</button>
-
-          <span class="filter-label" style="margin-left:12px;">Category:</span>
-          <button class="filter-pill active" data-category="all">All</button>
-          <button class="filter-pill" data-category="retirement">Retirement</button>
-          <button class="filter-pill" data-category="education">Education</button>
-          <button class="filter-pill" data-category="realestate">Home</button>
-          <button class="filter-pill" data-category="buffer">Safety Buffer</button>
-          <button class="filter-pill" data-category="lifestyle">Lifestyle</button>
-
-          <span class="filter-label" style="margin-left:12px;">Status:</span>
-          <button class="filter-pill active" data-status="all">All</button>
-          <button class="filter-pill" data-status="in_progress">In Progress</button>
+          <span class="filter-label">Show:</span>
+          <button class="filter-pill active" data-status="open">Open</button>
           <button class="filter-pill" data-status="achieved">Achieved</button>
+          <button class="filter-pill" data-status="all">All</button>
+
+          <span class="filter-label filter-label--gap">Horizon:</span>
+          <button class="filter-pill active" data-horizon="all">Any</button>
+          <button class="filter-pill" data-horizon="short">⚡ Under 3 yrs</button>
+          <button class="filter-pill" data-horizon="medium">🌱 3–7 yrs</button>
+          <button class="filter-pill" data-horizon="long">🌳 7+ yrs</button>
         </div>
       </div>
     </section>
@@ -551,144 +110,159 @@
     <!-- GOALS CONTAINER -->
     <section class="goals-section">
       <div class="wrap">
-        <!-- SECTION 1: ESSENTIAL & PRIORITY MILESTONES -->
-        <div class="section-title-wrap">
-          <h2>🎯 Essential Family Milestones &amp; Safety Corpi</h2>
-          <span class="section-badge" id="essentialCountBadge">0 goals</span>
-        </div>
-        <div class="cards-grid" id="essentialGrid">
-          <!-- Dynamically populated -->
+        <!-- DISCOVERY: shown when there are no goals yet -->
+        <div class="discover" id="discoverPanel" hidden>
+          <h2>Start with a goal most families have</h2>
+          <p class="discover-sub">Tap one to add it with sensible defaults. You can change every number afterwards.</p>
+          <div class="template-grid" id="templateGrid"></div>
+          <button class="btn-action" id="customGoalBtn">Or create your own goal</button>
         </div>
 
-        <!-- SECTION 2: WEALTH CREATION & ASPIRATIONAL GOALS -->
-        <div class="section-title-wrap" style="margin-top: 48px;">
-          <h2>🚀 Aspirational Milestones &amp; Financial Freedom</h2>
-          <span class="section-badge" id="aspirationalCountBadge">0 goals</span>
-        </div>
-        <div class="cards-grid" id="aspirationalGrid">
-          <!-- Dynamically populated -->
+        <div id="goalSections">
+          <div class="goal-group" id="groupESSENTIAL">
+            <div class="section-title-wrap">
+              <h2>🔴 Essential</h2>
+              <span class="section-badge" id="countESSENTIAL">0 goals</span>
+            </div>
+            <div class="cards-grid" id="gridESSENTIAL"></div>
+          </div>
+          <div class="goal-group" id="groupIMPORTANT">
+            <div class="section-title-wrap">
+              <h2>🟡 Important</h2>
+              <span class="section-badge" id="countIMPORTANT">0 goals</span>
+            </div>
+            <div class="cards-grid" id="gridIMPORTANT"></div>
+          </div>
+          <div class="goal-group" id="groupFLEXIBLE">
+            <div class="section-title-wrap">
+              <h2>🔵 Flexible</h2>
+              <span class="section-badge" id="countFLEXIBLE">0 goals</span>
+            </div>
+            <div class="cards-grid" id="gridFLEXIBLE"></div>
+          </div>
+          <div class="empty-state" id="noMatchState" hidden>
+            <p>No goals match this filter.</p>
+          </div>
         </div>
 
         <!-- EDUCATIONAL CALLOUT -->
         <div class="edu-callout">
           <div class="edu-col">
-            <h4>1. Real Inflation Trap</h4>
-            <p>CPI headline inflation is ~5.4%, but <strong>Higher Education compounds at 9–10%</strong> and Healthcare at 8–11%. KYF applies sector-specific compounding so you aren't surprised a decade later.</p>
+            <h4>1. Inflate the cost</h4>
+            <p>General inflation is about 5–6%, but <strong>college fees rise 9–10%</strong> and medical costs 11%+. Each goal uses the rate that fits it.</p>
           </div>
           <div class="edu-col">
-            <h4>2. Timeline &rarr; Asset Recipe</h4>
-            <p><strong>Under 3 years:</strong> 100% Debt/Liquid. Never risk equity for short-term goals. <strong>3–7 years:</strong> 40% Equity / 50% Debt. <strong>Over 7 years:</strong> 70% Equity / 20% Debt / 10% Gold for long-term compounding.</p>
+            <h4>2. Match money to time</h4>
+            <p><strong>Under 3 years:</strong> debt/liquid only. <strong>3–7 years:</strong> a hybrid mix. <strong>7+ years:</strong> equity-led. Each card says when to start shifting to safety.</p>
           </div>
           <div class="edu-col">
-            <h4>3. Step-Up Compounding</h4>
-            <p>Increasing your SIP by just <strong>10% each year</strong> as your salary grows cuts your required starting investment almost in half while protecting your monthly peace of mind.</p>
+            <h4>3. Fit the plan to your income</h4>
+            <p>Add up the monthly SIPs. If they exceed your surplus, move a goal later, shrink it, or downgrade its priority.</p>
           </div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- ADD / EDIT GOAL MODAL -->
+  <!-- ADD / EDIT GOAL DRAWER -->
   <div class="drawer-overlay" id="goalModalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="drawer-panel drawer-panel--wide">
       <div class="drawer-head">
-        <h3 id="modalTitle">Create New Life Goal</h3>
+        <h3 id="modalTitle">Add a goal</h3>
         <button class="modal-close" id="closeGoalModalBtn" aria-label="Close panel">&times;</button>
       </div>
       <form id="goalForm" class="drawer-form">
         <div class="drawer-body">
-        <input type="hidden" id="goalId">
+          <input type="hidden" id="goalId">
+          <input type="hidden" id="goalTemplateId">
 
-        <div class="form-grid">
-          <div class="form-group full">
-            <label for="goalTitleInput">Goal Title</label>
-            <input type="text" id="goalTitleInput" class="form-control" placeholder="e.g. Daughter's College Abroad, Buy First Home, Early Retirement..." required>
+          <div class="template-pick" id="templatePick">
+            <span class="filter-label">Start from:</span>
+            <span id="templateChips"></span>
           </div>
 
-          <div class="form-group">
-            <label for="goalCategoryInput">Category</label>
-            <select id="goalCategoryInput" class="form-control" required>
-              <option value="retirement">🌴 Retirement / Freedom</option>
-              <option value="education">🎓 Child Education</option>
-              <option value="realestate">🏠 Real Estate / Home</option>
-              <option value="buffer">🛡️ Emergency Buffer</option>
-              <option value="wedding">💍 Family / Wedding</option>
-              <option value="vehicle">🚗 Vehicle Purchase</option>
-              <option value="lifestyle">🏖️ Travel &amp; Sabbatical</option>
-              <option value="wealth">📈 Wealth Creation</option>
-            </select>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label for="goalTitleInput">What is it for?</label>
+              <input type="text" id="goalTitleInput" class="form-control" placeholder="e.g. Daughter's college, first home, 2-year sabbatical" required>
+            </div>
+
+            <div class="form-group">
+              <label for="goalCategoryInput">Type</label>
+              <select id="goalCategoryInput" class="form-control" required></select>
+            </div>
+
+            <div class="form-group">
+              <label for="goalPriorityInput">How important?</label>
+              <select id="goalPriorityInput" class="form-control"></select>
+            </div>
+
+            <div class="form-group">
+              <label for="goalOwnerInput">Whose goal?</label>
+              <select id="goalOwnerInput" class="form-control"></select>
+            </div>
+
+            <div class="form-group">
+              <label for="goalYearInput">Needed by (year)</label>
+              <input type="number" id="goalYearInput" class="form-control" min="2026" max="2100" required>
+            </div>
+
+            <div class="form-group">
+              <label for="goalPvInput">Cost today (₹)</label>
+              <input type="number" id="goalPvInput" class="form-control" min="10000" step="10000" placeholder="e.g. 2500000" required>
+            </div>
+
+            <div class="form-group">
+              <label for="goalSavedInput">Already set aside outside Portfolio (₹)</label>
+              <input type="number" id="goalSavedInput" class="form-control" min="0" step="5000" value="0">
+              <p class="field-hint" id="goalPortfolioHint"></p>
+            </div>
+
+            <div class="form-group">
+              <label for="goalInflationInput">Price rises with</label>
+              <select id="goalInflationInput" class="form-control">
+                <option value="CPI">General inflation</option>
+                <option value="EDUCATION">Education inflation</option>
+                <option value="MEDICAL">Medical inflation</option>
+                <option value="CUSTOM">My own rate</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="customInflationGroup" hidden>
+              <label for="goalCustomRateInput">Inflation (% a year)</label>
+              <input type="number" id="goalCustomRateInput" class="form-control" min="0" max="25" step="0.5" value="6">
+            </div>
+
+            <div class="form-group">
+              <label for="goalReturnInput">Expected return (% a year)</label>
+              <input type="number" id="goalReturnInput" class="form-control" min="3" max="20" step="0.5" placeholder="Auto">
+              <p class="field-hint" id="goalReturnHint">Leave blank to use the horizon default.</p>
+            </div>
+
+            <div class="form-group full">
+              <label for="goalDescInput">Notes (optional)</label>
+              <textarea id="goalDescInput" class="form-control" rows="2" placeholder="Which accounts or funds will hold this money?"></textarea>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="goalPriorityInput">Priority</label>
-            <select id="goalPriorityInput" class="form-control">
-              <option value="essential">🔴 Essential / Non-negotiable</option>
-              <option value="important">🟡 Important</option>
-              <option value="flexible">🔵 Flexible / Desirable</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="goalYearsInput">Horizon (Years from now)</label>
-            <input type="number" id="goalYearsInput" class="form-control" min="1" max="40" value="10" required>
-          </div>
-
-          <div class="form-group">
-            <label for="goalPvInput">Present Cost (₹ today)</label>
-            <input type="number" id="goalPvInput" class="form-control" min="10000" step="10000" placeholder="e.g. 2500000" value="2500000" required>
-          </div>
-
-          <div class="form-group">
-            <label for="goalInflationInput">Expected Inflation (% p.a.)</label>
-            <input type="number" id="goalInflationInput" class="form-control" min="0" max="25" step="0.5" value="6.0" required>
-          </div>
-
-          <div class="form-group">
-            <label for="goalReturnInput">Expected Return (% p.a.)</label>
-            <input type="number" id="goalReturnInput" class="form-control" min="3" max="20" step="0.5" value="11.5" required>
-          </div>
-
-          <div class="form-group">
-            <label for="goalSavedInput">Current Savings Allocated (₹)</label>
-            <input type="number" id="goalSavedInput" class="form-control" min="0" step="5000" value="0">
-          </div>
-
-          <div class="form-group">
-            <label for="goalStatusInput">Status</label>
-            <select id="goalStatusInput" class="form-control">
-              <option value="in_progress">🟢 In Progress</option>
-              <option value="on_track">⭐ On Track</option>
-              <option value="achieved">✅ Achieved</option>
-            </select>
-          </div>
-
-          <div class="form-group full">
-            <label for="goalDescInput">Notes / Strategy</label>
-            <textarea id="goalDescInput" class="form-control" rows="2" placeholder="Container plan (e.g., Index Funds, Arbitrage, PPF), step-up discipline, or target year context..."></textarea>
+          <div class="modal-preview-box" id="modalPreviewBox">
+            <div class="prev-item">
+              <div class="prev-lbl">Cost in future rupees</div>
+              <div class="prev-val" id="prevFv">₹0</div>
+            </div>
+            <div class="prev-item">
+              <div class="prev-lbl">Still to build</div>
+              <div class="prev-val" id="prevGap">₹0</div>
+            </div>
+            <div class="prev-item">
+              <div class="prev-lbl">Monthly SIP</div>
+              <div class="prev-val prev-val--teal" id="prevSip">₹0</div>
+            </div>
           </div>
         </div>
-
-        <!-- LIVE CALCULATION PREVIEW -->
-        <div class="modal-preview-box" id="modalPreviewBox">
-          <div class="prev-item">
-            <div class="prev-lbl">Future Target (FV)</div>
-            <div class="prev-val" id="prevFv">₹0</div>
-          </div>
-          <div class="prev-item">
-            <div class="prev-lbl">Net Gap to Fund</div>
-            <div class="prev-val" id="prevGap">₹0</div>
-          </div>
-          <div class="prev-item">
-            <div class="prev-lbl">Monthly SIP Needed</div>
-            <div class="prev-val" id="prevSip" style="color:var(--teal)">₹0</div>
-          </div>
-        </div>
-
-        </div>
-
         <div class="drawer-actions">
           <button type="button" class="btn-action" id="cancelGoalModalBtn">Cancel</button>
-          <button type="submit" class="btn-action primary">Save Goal</button>
+          <button type="submit" class="btn-action primary" id="saveGoalBtn">Save goal</button>
         </div>
       </form>
     </div>
@@ -712,649 +286,13 @@
 
 
   <!-- VAULT ENGINE -->
-  <script src="js/kyf-vault.js"></script>
+  <script src="data/market-pulse.js?v=1.6.0"></script>
+  <script src="js/kyf-goals.js?v=1.6.0"></script>
+  <script src="js/kyf-vault.js?v=1.6.0"></script>
 
   <!-- SCRIPT -->
-  <script>
-    (function () {
-      const STORAGE_KEY = "kyf_goals_v1";
-
-      const DEFAULT_GOALS = [
-        {
-          id: "goal-retire",
-          title: "Financial Freedom & Retirement Corpus",
-          category: "retirement",
-          priority: "essential",
-          icon: "🌴",
-          years: 20,
-          presentValue: 25000000, // 2.5 Cr
-          inflationRate: 6.0,
-          expectedReturn: 12.0,
-          currentSavings: 3500000, // 35 Lakhs
-          status: "in_progress",
-          description: "Build an independent 30x annual expenses work-optional corpus with a 3-bucket strategy (Cash runway, Hybrid debt, Broad market equity index)."
-        },
-        {
-          id: "goal-child-edu",
-          title: "Child's Higher Education & College",
-          category: "education",
-          priority: "essential",
-          icon: "🎓",
-          years: 12,
-          presentValue: 4000000, // 40 Lakhs
-          inflationRate: 10.0,
-          expectedReturn: 12.0,
-          currentSavings: 800000, // 8 Lakhs
-          status: "in_progress",
-          description: "Fund global master's or premier professional degree. Higher education inflation compounds at ~10% in India; shift to capital preservation 3 years before payout."
-        },
-        {
-          id: "goal-home",
-          title: "Dream Home Down Payment & Registration",
-          category: "realestate",
-          priority: "essential",
-          icon: "🏠",
-          years: 5,
-          presentValue: 3000000, // 30 Lakhs
-          inflationRate: 6.0,
-          expectedReturn: 9.0,
-          currentSavings: 1200000, // 12 Lakhs
-          status: "in_progress",
-          description: "Target 25-30% down payment buffer plus stamp duty & interior setup without touching emergency peace runway."
-        },
-        {
-          id: "goal-emergency",
-          title: "Emergency Corpus / 12-Month Peace Buffer",
-          category: "buffer",
-          priority: "essential",
-          icon: "🛡️",
-          years: 1,
-          presentValue: 600000, // 6 Lakhs
-          inflationRate: 6.0,
-          expectedReturn: 7.0,
-          currentSavings: 450000, // 4.5 Lakhs
-          status: "on_track",
-          description: "12 months of mandatory household expenses & loan EMIs parked in Sweep FDs, Arbitrage Funds, and Liquid funds with zero equity volatility."
-        },
-        {
-          id: "goal-sabbatical",
-          title: "World Sabbatical & Family Passion Trip",
-          category: "lifestyle",
-          priority: "flexible",
-          icon: "🏖️",
-          years: 3,
-          presentValue: 1200000, // 12 Lakhs
-          inflationRate: 7.0,
-          expectedReturn: 8.0,
-          currentSavings: 350000,
-          status: "in_progress",
-          description: "6-month work break to travel and recharge. Medium-term debt & arbitrage allocation to prevent sequence-of-returns drawdown."
-        },
-        {
-          id: "goal-vehicle",
-          title: "Safe Family EV / Vehicle Upgrade",
-          category: "vehicle",
-          priority: "important",
-          icon: "🚗",
-          years: 3,
-          presentValue: 1800000, // 18 Lakhs
-          inflationRate: 5.0,
-          expectedReturn: 8.0,
-          currentSavings: 500000,
-          status: "in_progress",
-          description: "Pay 60-70% upfront cash down payment to avoid high auto loan interest drag and keep EMI under 10% of monthly surplus."
-        }
-      ];
-
-      let goals = [];
-      let activeHorizonFilter = "all";
-      let activeCategoryFilter = "all";
-      let activeStatusFilter = "all";
-      let searchQuery = "";
-
-      // Smart inflation defaults by category
-      const CATEGORY_DEFAULTS = {
-        retirement: { inflation: 6.0, return: 12.0, icon: "🌴" },
-        education: { inflation: 10.0, return: 12.0, icon: "🎓" },
-        realestate: { inflation: 6.5, return: 9.0, icon: "🏠" },
-        buffer: { inflation: 6.0, return: 7.0, icon: "🛡️" },
-        wedding: { inflation: 8.0, return: 8.5, icon: "💍" },
-        vehicle: { inflation: 5.0, return: 8.0, icon: "🚗" },
-        lifestyle: { inflation: 7.0, return: 8.5, icon: "🏖️" },
-        wealth: { inflation: 6.0, return: 12.0, icon: "📈" }
-      };
-
-      // Math Helpers
-      function calculateFutureValue(pv, years, inflationRate) {
-        return Math.round(pv * Math.pow(1 + inflationRate / 100, years));
-      }
-
-      function calculateFutureValueOfCurrent(current, years, expectedReturn) {
-        return Math.round(current * Math.pow(1 + expectedReturn / 100, years));
-      }
-
-      function calculateMonthlySIP(futureTarget, currentSavings, years, expectedReturn) {
-        const curFV = calculateFutureValueOfCurrent(currentSavings, years, expectedReturn);
-        const gap = Math.max(0, futureTarget - curFV);
-        if (gap <= 0 || years <= 0) return { gap: 0, sip: 0, curFV };
-
-        const months = years * 12;
-        const rMonth = (expectedReturn / 100) / 12;
-        if (rMonth <= 0) {
-          return { gap, sip: Math.round(gap / months), curFV };
-        }
-        // Annuity due monthly formula:
-        const factor = (Math.pow(1 + rMonth, months) - 1) / rMonth * (1 + rMonth);
-        const sip = Math.round(gap / factor);
-        return { gap, sip, curFV };
-      }
-
-      function getAssetRecipe(years) {
-        if (years <= 3) {
-          return {
-            badge: "⚡ Short Horizon",
-            recipe: "100% Debt & Arbitrage",
-            desc: "Zero equity risk · Focus on capital protection and liquidity"
-          };
-        } else if (years <= 7) {
-          return {
-            badge: "🌱 Medium Horizon",
-            recipe: "40% Equity · 50% Debt · 10% Gold",
-            desc: "Balanced hybrid compounding with moderate volatility shield"
-          };
-        } else {
-          return {
-            badge: "🌳 Long Horizon",
-            recipe: "70% Equity · 20% Debt · 10% Gold",
-            desc: "Aggressive compounding engine · Index funds & PPF/EPF"
-          };
-        }
-      }
-
-      // Currency Formatting (Indian Lakhs / Crores)
-      function formatINR(val, compact = false) {
-        if (isNaN(val)) return "₹0";
-        val = Math.round(val);
-        if (compact) {
-          if (val >= 10000000) {
-            return "₹" + (val / 10000000).toFixed(2).replace(/\.00$/, "") + " Cr";
-          }
-          if (val >= 100000) {
-            return "₹" + (val / 100000).toFixed(2).replace(/\.00$/, "") + " L";
-          }
-          if (val >= 1000) {
-            return "₹" + (val / 1000).toFixed(1).replace(/\.0$/, "") + " k";
-          }
-        }
-        return "₹" + val.toLocaleString("en-IN");
-      }
-
-      // Persistence
-      function loadGoals() {
-        try {
-          const stored = localStorage.getItem(STORAGE_KEY);
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              goals = parsed;
-              return;
-            }
-          }
-        } catch (e) {
-          console.warn("Could not load stored goals, falling back to defaults.", e);
-        }
-        goals = JSON.parse(JSON.stringify(DEFAULT_GOALS));
-        saveGoals();
-      }
-
-      function saveGoals() {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
-        } catch (e) {
-          console.error("Error saving goals to localStorage:", e);
-        }
-      }
-
-      // Toast Notification
-      function showToast(msg) {
-        let toast = document.getElementById("toastNotice");
-        if (!toast) {
-          toast = document.createElement("div");
-          toast.id = "toastNotice";
-          toast.className = "toast-notice";
-          document.body.appendChild(toast);
-        }
-        toast.textContent = msg;
-        toast.classList.add("show");
-        setTimeout(() => toast.classList.remove("show"), 3200);
-      }
-
-      // Render Functions
-      function render() {
-        renderMetrics();
-        renderGoals();
-      }
-
-      function renderMetrics() {
-        let totalPV = 0;
-        let totalFV = 0;
-        let totalSIP = 0;
-        let totalSaved = 0;
-
-        goals.forEach(g => {
-          const fv = calculateFutureValue(g.presentValue, g.years, g.inflationRate);
-          const { sip } = calculateMonthlySIP(fv, g.currentSavings, g.years, g.expectedReturn);
-          totalPV += g.presentValue;
-          totalFV += fv;
-          totalSIP += sip;
-          totalSaved += (g.currentSavings || 0);
-        });
-
-        document.getElementById("metricTotalCount").textContent = goals.length;
-        document.getElementById("metricTotalPV").textContent = formatINR(totalPV, true);
-        document.getElementById("metricTotalFV").textContent = formatINR(totalFV, true);
-        document.getElementById("metricTotalSIP").textContent = formatINR(totalSIP, true) + "/mo";
-
-        const fundedPct = totalFV > 0 ? Math.min(100, Math.round((totalSaved / totalPV) * 100)) : 0;
-        document.getElementById("metricFundedPct").textContent = fundedPct + "%";
-      }
-
-      function matchesFilter(g) {
-        // Search query
-        if (searchQuery) {
-          const q = searchQuery.toLowerCase();
-          const matchTitle = (g.title || "").toLowerCase().includes(q);
-          const matchDesc = (g.description || "").toLowerCase().includes(q);
-          const matchCat = (g.category || "").toLowerCase().includes(q);
-          if (!matchTitle && !matchDesc && !matchCat) return false;
-        }
-
-        // Horizon filter
-        if (activeHorizonFilter !== "all") {
-          if (activeHorizonFilter === "short" && g.years > 3) return false;
-          if (activeHorizonFilter === "medium" && (g.years <= 3 || g.years > 7)) return false;
-          if (activeHorizonFilter === "long" && g.years <= 7) return false;
-        }
-
-        // Category filter
-        if (activeCategoryFilter !== "all" && g.category !== activeCategoryFilter) {
-          return false;
-        }
-
-        // Status filter
-        if (activeStatusFilter !== "all") {
-          if (activeStatusFilter === "achieved" && g.status !== "achieved") return false;
-          if (activeStatusFilter === "in_progress" && g.status === "achieved") return false;
-        }
-
-        return true;
-      }
-
-      function createGoalCardElement(g) {
-        const card = document.createElement("article");
-        const horizonClass = g.years <= 3 ? "horizon-short" : (g.years <= 7 ? "horizon-medium" : "horizon-long");
-        const isAchieved = g.status === "achieved";
-
-        card.className = `goal-card ${horizonClass} ${isAchieved ? "status-achieved" : ""}`;
-        card.setAttribute("data-id", g.id);
-
-        const fv = calculateFutureValue(g.presentValue, g.years, g.inflationRate);
-        const { gap, sip, curFV } = calculateMonthlySIP(fv, g.currentSavings, g.years, g.expectedReturn);
-        const recipe = getAssetRecipe(g.years);
-        const targetYear = new Date().getFullYear() + Number(g.years);
-
-        const fundedPct = Math.min(100, Math.round((g.currentSavings / g.presentValue) * 100));
-
-        card.innerHTML = `
-          <div>
-            <div class="card-head">
-              <div class="card-meta">
-                <span class="tag-cat">${escapeHtml(g.category)}</span>
-                <span class="tag-horizon">${g.years} yrs &middot; ${targetYear}</span>
-                <span class="tag-priority ${g.priority || 'important'}">${escapeHtml(g.priority || 'important')}</span>
-              </div>
-              <div class="card-icon" aria-hidden="true">${g.icon || '🎯'}</div>
-            </div>
-
-            <h3>${escapeHtml(g.title)}</h3>
-            <p class="goal-desc">${escapeHtml(g.description || '')}</p>
-
-            <div class="goal-math-box">
-              <div class="math-item">
-                <span class="math-lbl">Cost Today</span>
-                <span class="math-val">${formatINR(g.presentValue, true)}</span>
-              </div>
-              <div class="math-item">
-                <span class="math-lbl">Inflation (@${g.inflationRate}%)</span>
-                <span class="math-val fv-val">${formatINR(fv, true)}</span>
-              </div>
-              <div class="math-item">
-                <span class="math-lbl">Saved Today</span>
-                <span class="math-val">${formatINR(g.currentSavings || 0, true)}</span>
-              </div>
-              <div class="math-item">
-                <span class="math-lbl">Required Monthly SIP</span>
-                <span class="math-val sip-val">${formatINR(sip)} /mo</span>
-              </div>
-            </div>
-
-            <div class="progress-section">
-              <div class="progress-labels">
-                <span>Funded: <strong>${fundedPct}%</strong> of today's cost</span>
-                <span>Gap: ${formatINR(gap, true)}</span>
-              </div>
-              <div class="progress-bar-wrap">
-                <div class="progress-bar-fill ${isAchieved ? 'achieved' : ''}" style="width: ${fundedPct}%"></div>
-              </div>
-            </div>
-
-            <div class="recipe-strip">
-              <span>Recipe:</span>
-              <strong>${recipe.recipe}</strong>
-            </div>
-          </div>
-
-          <div class="card-footer">
-            <select class="status-select" data-action="status" aria-label="Goal status">
-              <option value="in_progress" ${g.status === 'in_progress' ? 'selected' : ''}>🟢 In Progress</option>
-              <option value="on_track" ${g.status === 'on_track' ? 'selected' : ''}>⭐ On Track</option>
-              <option value="achieved" ${g.status === 'achieved' ? 'selected' : ''}>✅ Achieved</option>
-            </select>
-
-            <div class="card-btns">
-              <button class="icon-btn" data-action="edit" title="Edit Goal Details">✏️ Edit</button>
-              <button class="icon-btn delete" data-action="delete" title="Delete Goal">🗑️</button>
-            </div>
-          </div>
-        `;
-
-        // Event listeners for actions inside card
-        const statusSelect = card.querySelector(".status-select");
-        statusSelect.addEventListener("change", function (e) {
-          g.status = e.target.value;
-          saveGoals();
-          render();
-          showToast(`✓ Updated "${g.title}" status to ${e.target.value}`);
-        });
-
-        const editBtn = card.querySelector('[data-action="edit"]');
-        editBtn.addEventListener("click", () => openEditModal(g));
-
-        const deleteBtn = card.querySelector('[data-action="delete"]');
-        deleteBtn.addEventListener("click", () => {
-          if (confirm(`Delete the goal "${g.title}"?`)) {
-            goals = goals.filter(item => item.id !== g.id);
-            saveGoals();
-            render();
-            showToast(`✓ Deleted "${g.title}"`);
-          }
-        });
-
-        return card;
-      }
-
-      function renderGoals() {
-        const essentialGrid = document.getElementById("essentialGrid");
-        const aspirationalGrid = document.getElementById("aspirationalGrid");
-        essentialGrid.innerHTML = "";
-        aspirationalGrid.innerHTML = "";
-
-        const filtered = goals.filter(matchesFilter);
-
-        const essentialGoals = filtered.filter(g => g.priority === "essential" || g.category === "buffer" || g.category === "education");
-        const aspirationalGoals = filtered.filter(g => !essentialGoals.includes(g));
-
-        document.getElementById("essentialCountBadge").textContent = `${essentialGoals.length} goals`;
-        document.getElementById("aspirationalCountBadge").textContent = `${aspirationalGoals.length} goals`;
-
-        if (essentialGoals.length === 0) {
-          essentialGrid.innerHTML = `
-            <div class="empty-state" style="grid-column: 1 / -1;">
-              <p>No essential goals match the current filters.</p>
-              <button class="btn-action primary" onclick="document.getElementById('openAddModalBtn').click()">+ Create Essential Goal</button>
-            </div>
-          `;
-        } else {
-          essentialGoals.forEach(g => {
-            essentialGrid.appendChild(createGoalCardElement(g));
-          });
-        }
-
-        if (aspirationalGoals.length === 0) {
-          aspirationalGrid.innerHTML = `
-            <div class="empty-state" style="grid-column: 1 / -1;">
-              <p>No aspirational goals match the current filters.</p>
-              <button class="btn-action primary" onclick="document.getElementById('openAddModalBtn').click()">+ Create Aspirational Goal</button>
-            </div>
-          `;
-        } else {
-          aspirationalGoals.forEach(g => {
-            aspirationalGrid.appendChild(createGoalCardElement(g));
-          });
-        }
-      }
-
-      function escapeHtml(str) {
-        if (!str) return "";
-        return String(str)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
-      }
-
-      // Modal Logic
-      const modalOverlay = document.getElementById("goalModalOverlay");
-      const modalTitle = document.getElementById("modalTitle");
-      const goalForm = document.getElementById("goalForm");
-      const goalIdInput = document.getElementById("goalId");
-      const titleInput = document.getElementById("goalTitleInput");
-      const catInput = document.getElementById("goalCategoryInput");
-      const priorityInput = document.getElementById("goalPriorityInput");
-      const yearsInput = document.getElementById("goalYearsInput");
-      const pvInput = document.getElementById("goalPvInput");
-      const infInput = document.getElementById("goalInflationInput");
-      const retInput = document.getElementById("goalReturnInput");
-      const savedInput = document.getElementById("goalSavedInput");
-      const statusInput = document.getElementById("goalStatusInput");
-      const descInput = document.getElementById("goalDescInput");
-
-      // Live Modal Preview Calculation
-      function updateModalPreview() {
-        const pv = parseFloat(pvInput.value) || 0;
-        const years = parseFloat(yearsInput.value) || 0;
-        const inf = parseFloat(infInput.value) || 0;
-        const ret = parseFloat(retInput.value) || 0;
-        const saved = parseFloat(savedInput.value) || 0;
-
-        const fv = calculateFutureValue(pv, years, inf);
-        const { gap, sip } = calculateMonthlySIP(fv, saved, years, ret);
-
-        document.getElementById("prevFv").textContent = formatINR(fv, true);
-        document.getElementById("prevGap").textContent = formatINR(gap, true);
-        document.getElementById("prevSip").textContent = formatINR(sip) + " /mo";
-      }
-
-      [pvInput, yearsInput, infInput, retInput, savedInput].forEach(inp => {
-        inp.addEventListener("input", updateModalPreview);
-      });
-
-      // Auto update inflation & return defaults when category changes
-      catInput.addEventListener("change", function () {
-        const cat = catInput.value;
-        if (CATEGORY_DEFAULTS[cat]) {
-          infInput.value = CATEGORY_DEFAULTS[cat].inflation;
-          retInput.value = CATEGORY_DEFAULTS[cat].return;
-          updateModalPreview();
-        }
-      });
-
-      function openCreateModal() {
-        modalTitle.textContent = "Create New Life Goal";
-        goalForm.reset();
-        goalIdInput.value = "";
-        catInput.value = "retirement";
-        priorityInput.value = "essential";
-        yearsInput.value = "10";
-        pvInput.value = "2500000";
-        infInput.value = "6.0";
-        retInput.value = "11.5";
-        savedInput.value = "0";
-        statusInput.value = "in_progress";
-        updateModalPreview();
-        modalOverlay.classList.add("open");
-        titleInput.focus();
-      }
-
-      function openEditModal(g) {
-        modalTitle.textContent = "Edit Life Goal";
-        goalIdInput.value = g.id;
-        titleInput.value = g.title || "";
-        catInput.value = g.category || "retirement";
-        priorityInput.value = g.priority || "important";
-        yearsInput.value = g.years || 5;
-        pvInput.value = g.presentValue || 1000000;
-        infInput.value = g.inflationRate !== undefined ? g.inflationRate : 6.0;
-        retInput.value = g.expectedReturn !== undefined ? g.expectedReturn : 11.5;
-        savedInput.value = g.currentSavings || 0;
-        statusInput.value = g.status || "in_progress";
-        descInput.value = g.description || "";
-        updateModalPreview();
-        modalOverlay.classList.add("open");
-        titleInput.focus();
-      }
-
-      function closeModal() {
-        modalOverlay.classList.remove("open");
-      }
-
-      document.getElementById("openAddModalBtn").addEventListener("click", openCreateModal);
-      document.getElementById("closeGoalModalBtn").addEventListener("click", closeModal);
-      document.getElementById("cancelGoalModalBtn").addEventListener("click", closeModal);
-      modalOverlay.addEventListener("click", function (e) {
-        if (e.target === modalOverlay) closeModal();
-      });
-
-      goalForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const existingId = goalIdInput.value;
-        const cat = catInput.value;
-        const icon = (CATEGORY_DEFAULTS[cat] && CATEGORY_DEFAULTS[cat].icon) || "🎯";
-
-        const goalData = {
-          id: existingId || ("goal-" + Date.now()),
-          title: titleInput.value.trim(),
-          category: cat,
-          priority: priorityInput.value,
-          icon: icon,
-          years: Math.max(1, parseInt(yearsInput.value, 10) || 1),
-          presentValue: Math.max(0, parseFloat(pvInput.value) || 0),
-          inflationRate: Math.max(0, parseFloat(infInput.value) || 0),
-          expectedReturn: Math.max(0, parseFloat(retInput.value) || 0),
-          currentSavings: Math.max(0, parseFloat(savedInput.value) || 0),
-          status: statusInput.value,
-          description: descInput.value.trim()
-        };
-
-        if (existingId) {
-          const index = goals.findIndex(item => item.id === existingId);
-          if (index !== -1) {
-            goals[index] = goalData;
-            showToast(`✓ Updated "${goalData.title}"`);
-          }
-        } else {
-          goals.unshift(goalData);
-          showToast(`✓ Added goal "${goalData.title}"`);
-        }
-
-        saveGoals();
-        render();
-        closeModal();
-      });
-
-      // Filter Handlers
-      document.querySelectorAll("[data-horizon]").forEach(btn => {
-        btn.addEventListener("click", function () {
-          document.querySelectorAll("[data-horizon]").forEach(b => b.classList.remove("active"));
-          this.classList.add("active");
-          activeHorizonFilter = this.getAttribute("data-horizon");
-          renderGoals();
-        });
-      });
-
-      document.querySelectorAll("[data-category]").forEach(btn => {
-        btn.addEventListener("click", function () {
-          document.querySelectorAll("[data-category]").forEach(b => b.classList.remove("active"));
-          this.classList.add("active");
-          activeCategoryFilter = this.getAttribute("data-category");
-          renderGoals();
-        });
-      });
-
-      document.querySelectorAll("[data-status]").forEach(btn => {
-        btn.addEventListener("click", function () {
-          document.querySelectorAll("[data-status]").forEach(b => b.classList.remove("active"));
-          this.classList.add("active");
-          activeStatusFilter = this.getAttribute("data-status");
-          renderGoals();
-        });
-      });
-
-      // Search Box Handler
-      const searchInput = document.getElementById("searchInput");
-      const searchClear = document.getElementById("searchClearBtn");
-
-      searchInput.addEventListener("input", function () {
-        searchQuery = this.value.trim();
-        searchClear.classList.toggle("visible", searchQuery.length > 0);
-        renderGoals();
-      });
-
-      searchClear.addEventListener("click", function () {
-        searchInput.value = "";
-        searchQuery = "";
-        this.classList.remove("visible");
-        renderGoals();
-        searchInput.focus();
-      });
-
-      // Reset Button
-      document.getElementById("resetGoalsBtn").addEventListener("click", function () {
-        if (confirm("Reset all goals to the default starting blueprint? Custom goals will be replaced.")) {
-          localStorage.removeItem(STORAGE_KEY);
-          loadGoals();
-          render();
-          showToast("✓ Reset goals to default starting blueprint");
-        }
-      });
-
-      // Unified KYF Vault Integration (Cadence + Portfolio + Goals)
-      if (window.KYF_VAULT) {
-        window.KYF_VAULT.registerPageHook({
-          pageName: "goals",
-          getLocalData: () => {
-            saveGoals();
-            return { goals: goals };
-          },
-          onAfterOpen: (vaultData, summary) => {
-            loadGoals();
-            render();
-          }
-        });
-        window.KYF_VAULT.bindPageUI({
-          fileInputId: "kyfFileInput",
-          openBtnId: "navOpenFileBtn",
-          saveBtnId: "navSaveDataBtn"
-        });
-      }
-
-      // Initialize
-      loadGoals();
-      render();
-    })();
-  </script>
-  <script src="js/kyf-footer.js?v=1.5.1"></script>
+  <script src="js/goals-app.js?v=1.6.0"></script>
+  <script src="js/kyf-footer.js?v=1.6.0"></script>
 </body>
 </html>
 

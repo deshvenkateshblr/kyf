@@ -21,8 +21,8 @@
  *    Unifies all KYF storage domains across localStorage and IndexedDB:
  *    - Cadence activities (localStorage: kyf_cadence_v3)
  *    - Portfolio holdings (IndexedDB: KYF_PORTFOLIO_DB / holdings + localStorage cache)
- *    - Portfolio goals / envelopes (IndexedDB: KYF_PORTFOLIO_DB / goals + localStorage cache)
- *    - Life planner goals (localStorage: kyf_goals_v1)
+ *    - Goals — ONE unified list (IndexedDB: KYF_PORTFOLIO_DB / goals + localStorage cache), see js/kyf-goals.js
+ *    - Family members (IndexedDB / members)
  *    - Extra metadata / custom settings (preserved in _kyf_vault_extra)
  *
  * Guaranteed: Opening and saving from ANY page preserves 100% of the user's data.
@@ -674,6 +674,13 @@
   // --------------------------------------------------------------------------
   // KYF Payload Normalizer (Intelligently handles legacy files from old pages)
   // --------------------------------------------------------------------------
+  function unifyGoals(...lists) {
+    if (global.KYF_GOALS) return global.KYF_GOALS.mergeGoalLists(...lists);
+    const out = [];
+    for (const l of lists) if (Array.isArray(l)) out.push(...l);
+    return out;
+  }
+
   function normalizeKyfPayload(parsed) {
     if (!parsed) return null;
 
@@ -687,11 +694,9 @@
       if (sample && (sample.assetClass || sample.instrumentMeta || sample.pricingMode)) {
         return { data: { portfolio: parsed } };
       }
-      if (sample && (sample.presentValue !== undefined || sample.inflationRate !== undefined || sample.expectedReturn !== undefined)) {
-        return { data: { goals: parsed } };
-      }
-      if (sample && (sample.baseTargetINR !== undefined || sample.targetYear !== undefined || sample.secondaryTarget !== undefined)) {
-        return { data: { portfolioGoals: parsed } };
+      if (sample && (sample.presentValue !== undefined || sample.inflationRate !== undefined || sample.expectedReturn !== undefined ||
+                     sample.baseTargetINR !== undefined || sample.targetYear !== undefined || sample.secondaryTarget !== undefined)) {
+        return { data: { goals: unifyGoals(parsed) } };
       }
       // Fallback
       return { data: { cadence: parsed } };
@@ -716,36 +721,20 @@
       normalizedData.portfolio = rawData.holdings;
     }
 
-    // Portfolio Goals (Envelopes)
-    if (Array.isArray(rawData.portfolioGoals)) {
-      normalizedData.portfolioGoals = rawData.portfolioGoals;
-    }
-
     // Family Members (First-Class Entity)
     if (Array.isArray(rawData.members)) {
       normalizedData.members = rawData.members;
     }
 
-    // Disambiguate rawData.goals (Planner goals vs Portfolio Envelopes)
-    if (Array.isArray(rawData.goals)) {
-      const sample = rawData.goals[0];
-      const isPortfolioGoal = sample && (sample.baseTargetINR !== undefined || sample.targetYear !== undefined || sample.secondaryTarget !== undefined);
-      const isPlannerGoal = sample && (sample.presentValue !== undefined || sample.inflationRate !== undefined || sample.expectedReturn !== undefined);
+    // Goals: v1/v2 files kept two goal lists (planner `goals` + portfolio `portfolioGoals`).
+    // Both are merged into the single unified v3 `goals` list.
+    if (Array.isArray(rawData.goals) || Array.isArray(rawData.portfolioGoals)) {
+      normalizedData.goals = unifyGoals(rawData.portfolioGoals, rawData.goals);
+    }
 
-      if (isPortfolioGoal) {
-        if (!normalizedData.portfolioGoals) {
-          normalizedData.portfolioGoals = rawData.goals;
-        }
-      } else if (isPlannerGoal) {
-        normalizedData.goals = rawData.goals;
-      } else {
-        // If ambiguous and portfolio holdings are present, prioritize portfolioGoals unless already set
-        if (!normalizedData.portfolioGoals && normalizedData.portfolio) {
-          normalizedData.portfolioGoals = rawData.goals;
-        } else {
-          normalizedData.goals = rawData.goals;
-        }
-      }
+    // Older files carried generic milestone cards in Cadence; Goals owns milestones from v3 on.
+    if (Array.isArray(normalizedData.cadence) && !/^3\./.test(String(parsed.version || ""))) {
+      normalizedData.cadence = global.KYF_GOALS ? global.KYF_GOALS.migrateCadence(normalizedData.cadence) : normalizedData.cadence;
     }
 
     // Retain all other keys into normalizedData so they are never lost
@@ -757,7 +746,7 @@
 
     return {
       app: parsed.app || "Know Your Finance",
-      version: parsed.version || "2.0.0",
+      version: "3.0.0",
       fileType: parsed.fileType || "kyf-vault",
       encrypted: parsed.encrypted || false,
       savedAt: parsed.savedAt || new Date().toISOString(),
@@ -773,7 +762,7 @@
     appSlug: "kyf",
     fileExtension: ".kyf",
     fileType: "kyf-vault",
-    version: "2.0.0",
+    version: "3.0.0",
     defaultBaseName: "my-kyf-data",
     extraStorageKey: "_kyf_vault_extra",
     normalizePayload: normalizeKyfPayload
@@ -845,64 +834,50 @@
   });
 
   // --------------------------------------------------------------------------
-  // Register Section 3: Portfolio Goals (Envelopes)
-  // --------------------------------------------------------------------------
-  KYF_VAULT.registerSection("portfolioGoals", {
-    read: async () => {
-      // 1. Try IndexedDB first
-      const stored = await readPortfolioStore(KYF_STORE_GOALS);
-      if (stored && stored.length > 0) return stored;
-
-      // 2. Fallback to localStorage cache
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY_USER_GOALS);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) return parsed;
-        }
-      } catch {}
-
-      return [];
-    },
-    write: async (goals) => {
-      if (Array.isArray(goals)) {
-        // Persist to IndexedDB
-        await writePortfolioStore(KYF_STORE_GOALS, goals);
-
-        // Also cache in localStorage
-        try {
-          localStorage.setItem(STORAGE_KEY_USER_GOALS, JSON.stringify(goals));
-        } catch {}
-      }
-    },
-    summary: (goals) => (Array.isArray(goals) ? `${goals.length} portfolio goals` : ""),
-    validate: (data) => Array.isArray(data)
-  });
-
-  // --------------------------------------------------------------------------
-  // Register Section 4: Life Goals Planner
+  // Register Section 3: Goals (single unified list — see js/kyf-goals.js)
   // --------------------------------------------------------------------------
   KYF_VAULT.registerSection("goals", {
     read: async () => {
+      let stored = await readPortfolioStore(KYF_STORE_GOALS);
+      if (!stored || stored.length === 0) {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_USER_GOALS);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) stored = parsed;
+          }
+        } catch {}
+      }
+      // One-time absorb of the retired planner store (kyf_goals_v1) so nobody loses goals.
+      let legacy = [];
       try {
         const raw = localStorage.getItem(STORAGE_KEY_GOALS);
-        if (!raw) return [];
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) legacy = parsed;
+        }
+      } catch {}
+      const list = unifyGoals(stored || [], legacy.length ? legacy : []);
+      if (legacy.length) {
+        await writePortfolioStore(KYF_STORE_GOALS, list);
+        try {
+          localStorage.setItem(STORAGE_KEY_USER_GOALS, JSON.stringify(list));
+          localStorage.removeItem(STORAGE_KEY_GOALS);
+        } catch {}
       }
+      return list;
     },
     write: async (goals) => {
       if (Array.isArray(goals)) {
+        const list = unifyGoals(goals);
+        await writePortfolioStore(KYF_STORE_GOALS, list);
         try {
-          localStorage.setItem(STORAGE_KEY_GOALS, JSON.stringify(goals));
-        } catch (err) {
-          console.error("[KYF Vault] Error persisting life goals to localStorage:", err);
-        }
+          localStorage.setItem(STORAGE_KEY_USER_GOALS, JSON.stringify(list));
+          localStorage.removeItem(STORAGE_KEY_GOALS);
+        } catch {}
       }
     },
-    summary: (goals) => (Array.isArray(goals) ? `${goals.length} life goals` : ""),
+    summary: (goals) => (Array.isArray(goals) ? `${goals.length} goals` : ""),
     validate: (data) => Array.isArray(data)
   });
 
@@ -946,7 +921,7 @@
       const d = normalized ? normalized.data : {};
       return {
         holdings: d.portfolio || [],
-        goals: d.portfolioGoals || (Array.isArray(d.goals) && d.goals[0]?.baseTargetINR ? d.goals : []),
+        goals: d.goals || [],
         members: d.members || [],
         hasCadence: !!(d.cadence && d.cadence.length)
       };
