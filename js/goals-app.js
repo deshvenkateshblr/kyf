@@ -1,5 +1,6 @@
 /**
  * Goals page controller (`js/goals-app.js`)
+ * Discovery first: a single "What are you saving for?" box suggests goals; the user supplies every number.
  * One unified goal list (see js/kyf-goals.js). "Saved so far" comes from Portfolio allocations.
  */
 (function () {
@@ -15,9 +16,8 @@
   let funding = { asOf: null, byGoal: {} };
   let settings = {};
 
-  let searchTerm = "";
   let statusFilter = "open";
-  let horizonFilter = "all";
+  const expanded = new Set();
 
   // -------------------------------------------------------------------------
   // Formatting
@@ -97,9 +97,7 @@
   // -------------------------------------------------------------------------
   // Derived data
   // -------------------------------------------------------------------------
-  function computed(g) {
-    return G.computeGoal(g, funding.byGoal[g.id] || 0);
-  }
+  const computed = (g) => G.computeGoal(g, funding.byGoal[g.id] || 0);
 
   function ownerName(g) {
     if (!g.ownerId) return "";
@@ -113,103 +111,173 @@
     return { total: G.checklistFor(g).length, done: 0 };
   }
 
-  function matches(g, c) {
-    if (statusFilter === "open" && g.status === "ACHIEVED") return false;
-    if (statusFilter === "achieved" && g.status !== "ACHIEVED") return false;
-    if (horizonFilter === "short" && c.years > 3) return false;
-    if (horizonFilter === "medium" && (c.years <= 3 || c.years > 7)) return false;
-    if (horizonFilter === "long" && c.years <= 7) return false;
-    if (searchTerm) {
-      const cat = (G.CATEGORIES[g.category] || {}).label || "";
-      const hay = `${g.name} ${g.notes} ${cat} ${ownerName(g)}`.toLowerCase();
-      if (!hay.includes(searchTerm)) return false;
+  // -------------------------------------------------------------------------
+  // Discovery: ask box + idea chips
+  // -------------------------------------------------------------------------
+  let askItems = [];
+  let askActive = -1;
+
+  function renderIdeaChips() {
+    const used = new Set(goals.map((g) => g.templateId).filter(Boolean));
+    const groups = G.IDEA_GROUPS.map((grp) => {
+      const chips = G.TEMPLATES.filter((t) => t.group === grp.id).map((t) =>
+        `<button type="button" class="idea-chip" data-idea="${t.id}" title="${escapeHtml(t.blurb)}">
+           <span aria-hidden="true">${t.icon}</span> ${escapeHtml(t.name)}${used.has(t.id) ? ' <span class="idea-have" aria-label="already added">✓</span>' : ""}
+         </button>`).join("");
+      return `<div class="idea-group"><span class="idea-group-label">${escapeHtml(grp.label)}</span>${chips}</div>`;
+    }).join("");
+    const open = goals.length === 0 ? " open" : "";
+    $("ideaChips").innerHTML = `<details class="idea-details"${open}><summary>${goals.length ? "More ideas" : "Or pick an idea"}</summary>${groups}</details>`;
+  }
+
+  function buildAskItems(q) {
+    const items = [];
+    const query = q.trim().toLowerCase();
+    if (!query) return items;
+    goals.forEach((g) => {
+      if (`${g.name} ${g.notes}`.toLowerCase().includes(query)) {
+        items.push({ kind: "goal", id: g.id, icon: g.icon, label: g.name, hint: "Your goal — open it" });
+      }
+    });
+    G.searchIdeas(query).slice(0, 4).forEach((t) => {
+      items.push({ kind: "idea", id: t.id, icon: t.icon, label: t.name, hint: t.blurb });
+    });
+    items.push({ kind: "custom", icon: "✏️", label: `Create “${q.trim()}” as my own goal`, hint: "You set the details" });
+    return items;
+  }
+
+  function renderAsk() {
+    const q = $("askInput").value;
+    const box = $("askResults");
+    askItems = buildAskItems(q);
+    askActive = askItems.length ? 0 : -1;
+    $("askClearBtn").style.visibility = q ? "visible" : "hidden";
+    if (!askItems.length) {
+      box.hidden = true;
+      $("askInput").setAttribute("aria-expanded", "false");
+      return;
     }
-    return true;
+    box.innerHTML = askItems.map((it, i) => `
+      <button type="button" role="option" class="ask-item${i === askActive ? " active" : ""}" data-i="${i}">
+        <span class="ask-icon" aria-hidden="true">${escapeHtml(it.icon)}</span>
+        <span class="ask-text"><span class="ask-label">${escapeHtml(it.label)}</span><span class="ask-hint">${escapeHtml(it.hint)}</span></span>
+      </button>`).join("");
+    box.hidden = false;
+    $("askInput").setAttribute("aria-expanded", "true");
+  }
+
+  function closeAsk() {
+    $("askResults").hidden = true;
+    $("askInput").setAttribute("aria-expanded", "false");
+  }
+
+  function pickAskItem(it) {
+    const typed = $("askInput").value.trim();
+    $("askInput").value = "";
+    closeAsk();
+    $("askClearBtn").style.visibility = "hidden";
+    if (!it) return;
+    if (it.kind === "goal") {
+      const g = goals.find((x) => x.id === it.id);
+      if (g) openDrawer(g, { isNew: false });
+    } else if (it.kind === "idea") {
+      startFromIdea(it.id);
+    } else {
+      const g = G.normalizeGoal({ name: typed, baseTargetINR: 0, targetYear: 0 });
+      g.targetYear = 0;
+      openDrawer(g, { isNew: true });
+    }
+  }
+
+  function startFromIdea(id) {
+    const t = G.templateById(id);
+    if (t) openDrawer(G.goalFromIdea(t), { isNew: true });
   }
 
   // -------------------------------------------------------------------------
-  // Rendering
+  // Goal list
   // -------------------------------------------------------------------------
-  function healthBadge(g, c) {
-    if (c.health === "achieved") return `<span class="health health--done">✅ Achieved</span>`;
-    if (c.health === "funded") return `<span class="health health--ok">✔ Fully funded by growth</span>`;
-    if (c.health === "due") return `<span class="health health--warn">Due now — ${formatINR(c.gap, true)} short</span>`;
-    return `<span class="health health--sip">Needs ${formatINR(c.sip)} / month</span>`;
+  function statusLine(g, c) {
+    switch (c.health) {
+      case "achieved": return { cls: "done", text: "✅ Achieved" };
+      case "needs_number": return { cls: "needs", text: "Needs a number — add what it costs today" };
+      case "funded": return { cls: "ok", text: "✔ Fully funded by growth" };
+      case "due": return { cls: "warn", text: `Due now — ${formatINR(c.gap, true)} short` };
+      default: return { cls: "sip", text: `Needs ${formatINR(c.sip)} / month` };
+    }
   }
 
-  function cardHtml(g, c) {
+  function rowHtml(g, c) {
     const cat = G.CATEGORIES[g.category] || G.CATEGORIES.other;
-    const horizonClass = c.years <= 3 ? "horizon-short" : (c.years <= 7 ? "horizon-medium" : "horizon-long");
     const owner = ownerName(g);
+    const st = statusLine(g, c);
     const list = checklistState(g);
+    const horizonClass = c.years <= 3 ? "horizon-short" : (c.years <= 7 ? "horizon-medium" : "horizon-long");
     const savedParts = [];
     if (c.portfolioSaved) savedParts.push(`${formatINR(c.portfolioSaved, true)} in Portfolio`);
     if (g.manualSavedINR) savedParts.push(`${formatINR(g.manualSavedINR, true)} set aside`);
     const savedNote = savedParts.length ? savedParts.join(" + ") : "Nothing tagged yet";
     const infl = g.inflationCategory === "CUSTOM" ? "your rate" : g.inflationCategory.toLowerCase();
+    const isOpen = expanded.has(g.id) ? " open" : "";
+
+    const detail = c.hasAmount ? `
+        <div class="goal-math-box">
+          <div class="math-item"><span class="math-lbl">Cost today</span><span class="math-val">${formatINR(g.baseTargetINR, true)}</span></div>
+          <div class="math-item"><span class="math-lbl">In ${g.targetYear} (${c.inflationRate}% ${escapeHtml(infl)})</span><span class="math-val fv-val">${formatINR(c.futureCost, true)}</span></div>
+          <div class="math-item"><span class="math-lbl">Saved so far</span><span class="math-val">${formatINR(c.saved, true)}</span></div>
+          <div class="math-item"><span class="math-lbl">Monthly SIP</span><span class="math-val sip-val">${c.sip ? formatINR(c.sip) : "—"}</span></div>
+        </div>
+        <p class="saved-note">${escapeHtml(savedNote)}</p>
+        <div class="recipe-strip">
+          <span>${escapeHtml(c.horizon.label)}:</span>
+          <strong>${escapeHtml(c.horizon.recipe)}</strong>
+          <span class="glide">${escapeHtml(c.glide)}</span>
+        </div>` : `
+        <p class="needs-help">We have not priced this yet. Add what it would cost <strong>today</strong> and we will work out the rest. Not sure? We will show you how to estimate it.</p>`;
 
     return `
-      <article class="goal-card ${horizonClass} ${g.status === "ACHIEVED" ? "status-achieved" : ""}" data-id="${escapeHtml(g.id)}">
-        <div>
-          <div class="card-head">
-            <div class="card-meta">
-              <span class="tag-cat">${escapeHtml(cat.label)}</span>
-              <span class="tag-horizon">${c.years === 0 ? "Due now" : c.years + " yrs"} &middot; ${g.targetYear}</span>
-              ${owner ? `<span class="tag-owner">👤 ${escapeHtml(owner)}</span>` : ""}
+      <details class="goal-row ${horizonClass}${g.status === "ACHIEVED" ? " status-achieved" : ""}" data-id="${escapeHtml(g.id)}"${isOpen}>
+        <summary class="goal-row-head">
+          <span class="row-icon" aria-hidden="true">${escapeHtml(g.icon || cat.icon)}</span>
+          <span class="row-main">
+            <span class="row-name">${escapeHtml(g.name)}</span>
+            <span class="row-sub">${escapeHtml(cat.label)} &middot; ${g.targetYear ? (c.years === 0 ? "due now" : g.targetYear) : "no date"}${owner ? ` &middot; 👤 ${escapeHtml(owner)}` : ""}</span>
+          </span>
+          <span class="row-status row-status--${st.cls}">${escapeHtml(st.text)}</span>
+          <span class="row-bar" aria-hidden="true"><span class="row-bar-fill" style="width:${c.hasAmount ? c.fundedPct : 0}%"></span></span>
+          <span class="row-chevron" aria-hidden="true">▾</span>
+        </summary>
+        <div class="goal-row-body">
+          ${detail}
+          <div class="card-footer">
+            <a class="checklist-link" href="cadence.html?goal=${encodeURIComponent(g.id)}">☑ ${list.done}/${list.total} steps</a>
+            <div class="card-btns">
+              ${c.hasAmount ? "" : `<button class="icon-btn primary-soft" data-action="number">➕ Add a number</button>`}
+              <button class="icon-btn" data-action="toggle">${g.status === "ACHIEVED" ? "↩ Reopen" : "✅ Achieved"}</button>
+              <button class="icon-btn" data-action="edit" aria-label="Edit ${escapeHtml(g.name)}">✏️ Edit</button>
+              <button class="icon-btn delete" data-action="delete" aria-label="Delete ${escapeHtml(g.name)}">🗑️</button>
             </div>
-            <div class="card-icon" aria-hidden="true">${escapeHtml(g.icon || cat.icon)}</div>
-          </div>
-
-          <h3>${escapeHtml(g.name)}</h3>
-          ${g.notes ? `<p class="goal-desc">${escapeHtml(g.notes)}</p>` : ""}
-
-          <div class="goal-math-box">
-            <div class="math-item"><span class="math-lbl">Cost today</span><span class="math-val">${formatINR(g.baseTargetINR, true)}</span></div>
-            <div class="math-item"><span class="math-lbl">In ${g.targetYear} (${c.inflationRate}% ${escapeHtml(infl)})</span><span class="math-val fv-val">${formatINR(c.futureCost, true)}</span></div>
-            <div class="math-item"><span class="math-lbl">Saved so far</span><span class="math-val">${formatINR(c.saved, true)}</span></div>
-            <div class="math-item"><span class="math-lbl">Monthly SIP</span><span class="math-val sip-val">${c.sip ? formatINR(c.sip) : "—"}</span></div>
-          </div>
-
-          <div class="progress-section">
-            <div class="progress-labels">
-              <span>${healthBadge(g, c)}</span>
-              <span>${c.fundedPct}% of future cost</span>
-            </div>
-            <div class="progress-bar-wrap"><div class="progress-bar-fill ${g.status === "ACHIEVED" ? "achieved" : ""}" style="width:${c.fundedPct}%"></div></div>
-            <p class="saved-note">${escapeHtml(savedNote)}</p>
-          </div>
-
-          <div class="recipe-strip">
-            <span>${escapeHtml(c.horizon.label)}:</span>
-            <strong>${escapeHtml(c.horizon.recipe)}</strong>
-            <span class="glide">${escapeHtml(c.glide)}</span>
           </div>
         </div>
-
-        <div class="card-footer">
-          <a class="checklist-link" href="cadence.html?goal=${encodeURIComponent(g.id)}">☑ ${list.done}/${list.total} steps</a>
-          <div class="card-btns">
-            <button class="icon-btn" data-action="toggle">${g.status === "ACHIEVED" ? "↩ Reopen" : "✅ Achieved"}</button>
-            <button class="icon-btn" data-action="edit" aria-label="Edit ${escapeHtml(g.name)}">✏️ Edit</button>
-            <button class="icon-btn delete" data-action="delete" aria-label="Delete ${escapeHtml(g.name)}">🗑️</button>
-          </div>
-        </div>
-      </article>`;
+      </details>`;
   }
 
   function renderMetrics() {
     const open = goals.filter((g) => g.status !== "ACHIEVED");
-    const list = open.map((g) => ({ g, c: computed(g) }));
-    const totalNow = list.reduce((s, x) => s + x.g.baseTargetINR, 0);
-    const totalFuture = list.reduce((s, x) => s + x.c.futureCost, 0);
-    const totalSavedFV = list.reduce((s, x) => s + Math.min(x.c.savedFV, x.c.futureCost), 0);
-    const afford = G.affordability(list.map((x) => x.c), settings.monthlySurplusINR);
+    const priced = open.map((g) => ({ g, c: computed(g) })).filter((x) => x.c.hasAmount);
+    const unpriced = open.length - priced.length;
+    const totalFuture = priced.reduce((s, x) => s + x.c.futureCost, 0);
+    const totalSavedFV = priced.reduce((s, x) => s + Math.min(x.c.savedFV, x.c.futureCost), 0);
+    const afford = G.affordability(priced.map((x) => x.c), settings.monthlySurplusINR);
 
     $("metricTotalCount").textContent = open.length;
-    $("metricTotalPV").textContent = formatINR(totalNow, true);
     $("metricTotalFV").textContent = formatINR(totalFuture, true);
     $("metricTotalSIP").textContent = formatINR(afford.totalSip, true);
     $("metricFundedPct").textContent = (totalFuture > 0 ? Math.round((totalSavedFV / totalFuture) * 100) : 0) + "%";
+
+    const note = $("needsNumberNote");
+    note.hidden = unpriced === 0;
+    note.textContent = unpriced ? `${unpriced} goal${unpriced === 1 ? " needs" : "s need"} a number before ${unpriced === 1 ? "it counts" : "they count"} in these totals.` : "";
 
     const box = $("planCheck");
     const msg = $("planCheckMsg");
@@ -221,54 +289,35 @@
       msg.textContent = `Your goals need ${formatINR(afford.totalSip)} a month and you can put in ${formatINR(afford.surplus)}. The plan fits, with ${formatINR(afford.surplus - afford.totalSip)} to spare.`;
     } else {
       box.classList.add("plan-check--stretched");
-      const worst = list.filter((x) => x.c.sip > 0 && x.g.priority !== "ESSENTIAL").sort((a, b) => b.c.sip - a.c.sip)[0];
+      const worst = priced.filter((x) => x.c.sip > 0 && x.g.priority !== "ESSENTIAL").sort((a, b) => b.c.sip - a.c.sip)[0];
       const tip = worst ? ` Easing “${worst.g.name}” is the quickest way to close the gap.` : " Consider moving a goal later or shrinking it.";
       msg.textContent = `Your goals need ${formatINR(afford.totalSip)} a month but you can put in ${formatINR(afford.surplus)} — short by ${formatINR(afford.totalSip - afford.surplus)}.${tip}`;
     }
   }
 
-  function renderTemplates() {
-    const have = new Set(goals.map((g) => g.templateId).filter(Boolean));
-    $("templateGrid").innerHTML = G.TEMPLATES.map((t) => `
-      <button type="button" class="template-card" data-template="${t.id}" ${have.has(t.id) ? "disabled" : ""}>
-        <span class="template-icon" aria-hidden="true">${t.icon}</span>
-        <span class="template-name">${escapeHtml(t.name)}</span>
-        <span class="template-meta">${formatINR(t.costToday, true)} &middot; ${t.years} yr${t.years > 1 ? "s" : ""}</span>
-      </button>`).join("");
-  }
-
   function render() {
+    renderIdeaChips();
+    const has = goals.length > 0;
+    $("planSection").hidden = !has;
+    $("goalsSection").hidden = !has;
+    if (!has) return;
     renderMetrics();
-    renderTemplates();
 
-    // Nothing to summarise until the first goal exists
-    document.querySelector(".metric-strip").hidden = goals.length === 0;
-    $("planCheck").hidden = goals.length === 0;
-    $("discoverPanel").hidden = goals.length > 0;
-    $("goalSections").hidden = goals.length === 0;
+    const rank = { ESSENTIAL: 0, IMPORTANT: 1, FLEXIBLE: 2 };
+    const shown = goals
+      .map((g) => ({ g, c: computed(g) }))
+      .filter((x) => (statusFilter === "all") || (statusFilter === "achieved" ? x.g.status === "ACHIEVED" : x.g.status !== "ACHIEVED"))
+      .sort((a, b) => (rank[a.g.priority] - rank[b.g.priority]) || ((a.g.targetYear || 9999) - (b.g.targetYear || 9999)));
 
-    const buckets = { ESSENTIAL: [], IMPORTANT: [], FLEXIBLE: [] };
-    let shown = 0;
-    goals.forEach((g) => {
-      const c = computed(g);
-      if (!matches(g, c)) return;
-      shown++;
-      (buckets[g.priority] || buckets.IMPORTANT).push({ g, c });
-    });
-
-    Object.keys(buckets).forEach((p) => {
-      const items = buckets[p].sort((a, b) => a.g.targetYear - b.g.targetYear);
-      $("grid" + p).innerHTML = items.map((x) => cardHtml(x.g, x.c)).join("");
-      $("count" + p).textContent = `${items.length} goal${items.length === 1 ? "" : "s"}`;
-      $("group" + p).hidden = items.length === 0;
-    });
-    $("noMatchState").hidden = !(goals.length > 0 && shown === 0);
+    $("goalList").innerHTML = shown.map((x) => rowHtml(x.g, x.c)).join("");
+    $("noMatchState").hidden = shown.length > 0;
   }
 
   // -------------------------------------------------------------------------
   // Drawer (add / edit)
   // -------------------------------------------------------------------------
   const overlay = $("goalModalOverlay");
+  let currentIdea = null;
 
   function fillSelects() {
     $("goalCategoryInput").innerHTML = Object.entries(G.CATEGORIES)
@@ -277,8 +326,9 @@
       .map(([k, v]) => `<option value="${k}">${escapeHtml(v)}</option>`).join("");
     $("goalOwnerInput").innerHTML = `<option value="">Whole family</option>` +
       members.map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join("");
-    $("templateChips").innerHTML = G.TEMPLATES.map((t) =>
-      `<button type="button" class="filter-pill" data-template="${t.id}">${t.icon} ${escapeHtml(t.name)}</button>`).join("");
+    const cities = G.residexCities();
+    $("residexCity").innerHTML = cities.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+    if (cities.includes("Bengaluru")) $("residexCity").value = "Bengaluru";
   }
 
   function setForm(g) {
@@ -288,30 +338,34 @@
     $("goalCategoryInput").value = g.category || "other";
     $("goalPriorityInput").value = g.priority || "IMPORTANT";
     $("goalOwnerInput").value = g.ownerId || "";
-    $("goalYearInput").value = g.targetYear;
+    $("goalYearInput").value = g.targetYear || "";
+    $("goalYearInput").min = new Date().getFullYear();
     $("goalPvInput").value = g.baseTargetINR || "";
     $("goalSavedInput").value = g.manualSavedINR || 0;
     $("goalInflationInput").value = g.inflationCategory || "CPI";
     $("goalCustomRateInput").value = g.inflationRate != null ? g.inflationRate : 6;
     $("goalReturnInput").value = g.expectedReturn != null ? g.expectedReturn : "";
     $("goalDescInput").value = g.notes || "";
+    $("moreOptions").open = false;
     syncInflationField();
+    setupHelp(g);
     updatePreview();
   }
 
   function readForm() {
     const existing = goals.find((x) => x.id === $("goalId").value);
     const ret = $("goalReturnInput").value;
-    return G.normalizeGoal({
+    const year = Number($("goalYearInput").value) || 0;
+    const g = G.normalizeGoal({
       id: $("goalId").value || undefined,
       name: $("goalTitleInput").value.trim(),
       category: $("goalCategoryInput").value,
-      icon: existing ? existing.icon : (G.CATEGORIES[$("goalCategoryInput").value] || {}).icon,
+      icon: existing ? existing.icon : (currentIdea ? currentIdea.icon : (G.CATEGORIES[$("goalCategoryInput").value] || {}).icon),
       priority: $("goalPriorityInput").value,
       status: existing ? existing.status : "ACTIVE",
       ownerId: $("goalOwnerInput").value,
-      targetYear: Number($("goalYearInput").value),
-      baseTargetINR: Number($("goalPvInput").value),
+      targetYear: year,
+      baseTargetINR: Number($("goalPvInput").value) || 0,
       manualSavedINR: Number($("goalSavedInput").value) || 0,
       inflationCategory: $("goalInflationInput").value,
       inflationRate: Number($("goalCustomRateInput").value),
@@ -320,6 +374,8 @@
       templateId: $("goalTemplateId").value,
       createdAt: existing ? existing.createdAt : undefined
     });
+    if (g) g.targetYear = year;
+    return g;
   }
 
   function syncInflationField() {
@@ -328,66 +384,126 @@
 
   function updatePreview() {
     const g = readForm();
-    if (!g || !(g.baseTargetINR > 0)) {
-      $("prevFv").textContent = $("prevGap").textContent = $("prevSip").textContent = "₹0";
-      return;
+    const ready = g && g.baseTargetINR > 0 && g.targetYear >= new Date().getFullYear();
+    if (!ready) {
+      $("prevFv").textContent = $("prevGap").textContent = $("prevSip").textContent = "—";
+    } else {
+      const c = G.computeGoal(g, funding.byGoal[g.id] || 0);
+      $("prevFv").textContent = formatINR(c.futureCost, true);
+      $("prevGap").textContent = formatINR(c.gap, true);
+      $("prevSip").textContent = c.sip ? formatINR(c.sip) + " /mo" : "—";
+      $("goalReturnHint").textContent = `Leave blank for ${c.horizon.expectedReturn}% (${c.horizon.label.toLowerCase()}).`;
     }
-    const c = G.computeGoal(g, funding.byGoal[g.id] || 0);
-    $("prevFv").textContent = formatINR(c.futureCost, true);
-    $("prevGap").textContent = formatINR(c.gap, true);
-    $("prevSip").textContent = c.sip ? formatINR(c.sip) + " /mo" : "—";
-    $("goalReturnHint").textContent = `Leave blank for ${c.horizon.expectedReturn}% (${c.horizon.label.toLowerCase()}).`;
-    const pf = funding.byGoal[g.id] || 0;
+    const pf = g ? (funding.byGoal[g.id] || 0) : 0;
     $("goalPortfolioHint").textContent = pf
       ? `Plus ${formatINR(pf, true)} already tagged to this goal in Portfolio.`
       : "Money tagged to this goal in Portfolio is added automatically.";
   }
 
-  function openDrawer(g, isNew) {
-    $("modalTitle").textContent = isNew ? "Add a goal" : "Edit goal";
+  // --- "Help me work it out" ------------------------------------------------
+  function setupHelp(g) {
+    const idea = g.templateId ? G.templateById(g.templateId) : null;
+    currentIdea = idea;
+    $("helpPanel").hidden = true;
+    $("helpToggleBtn").setAttribute("aria-expanded", "false");
+    $("helpIntro").textContent = idea
+      ? "Here is how to find a realistic number. You decide the final figure."
+      : "Think of what you would pay if you did this today, then enter that total. We add inflation for you.";
+    $("helpList").innerHTML = (idea ? idea.ask : ["Price it as if you were buying it today", "Include fees, taxes and running costs", "Ask someone who has done the same recently"])
+      .map((a) => `<li>${escapeHtml(a)}</li>`).join("");
+    $("helpFormula").textContent = idea && idea.formula ? `The sum: ${idea.formula}` : "";
+    $("residexHelper").hidden = !(idea && idea.helper === "residex" && G.residexCities().length);
+    updateResidex();
+  }
+
+  function updateResidex() {
+    if ($("residexHelper").hidden) return;
+    const est = G.residexEstimate($("residexCity").value, $("residexSqft").value, $("residexDown").value);
+    const out = $("residexResult");
+    const buttons = [$("useDownPaymentBtn"), $("useFullCostBtn")];
+    if (!est) {
+      out.textContent = "Enter a carpet area to see an estimate.";
+      buttons.forEach((b) => { b.disabled = true; });
+      return;
+    }
+    buttons.forEach((b) => { b.disabled = false; });
+    out.innerHTML = `${escapeHtml(est.city)} carpet rate (NHB RESIDEX${est.quarter ? ", " + escapeHtml(est.quarter) : ""}): <strong>${formatINR(est.ratePerSqft)}/sq ft</strong>.
+      ${est.carpetSqft.toLocaleString("en-IN")} sq ft &asymp; <strong>${formatINR(est.price, true)}</strong>, plus about ${formatINR(est.friction, true)} stamp duty &amp; registration.
+      A ${est.downPaymentPct}% down payment with those costs is <strong>${formatINR(est.downPayment, true)}</strong>.
+      <span class="residex-note">Index-based average, not a quote for a specific home.</span>`;
+  }
+
+  function applyResidex(which) {
+    const est = G.residexEstimate($("residexCity").value, $("residexSqft").value, $("residexDown").value);
+    if (!est) return;
+    $("goalPvInput").value = which === "full" ? est.fullCost : est.downPayment;
+    updatePreview();
+  }
+
+  function openDrawer(g, opts) {
+    const isNew = !!(opts && opts.isNew);
+    $("modalTitle").textContent = isNew ? "New goal" : "Edit goal";
     $("saveGoalBtn").textContent = isNew ? "Save goal" : "Save changes";
-    $("templatePick").hidden = !isNew;
     setForm(g);
+    if (opts && opts.openHelp) {
+      $("helpPanel").hidden = false;
+      $("helpToggleBtn").setAttribute("aria-expanded", "true");
+    }
     overlay.classList.add("open");
-    setTimeout(() => $("goalTitleInput").focus(), 60);
+    setTimeout(() => (g.name ? $("goalYearInput") : $("goalTitleInput")).focus(), 60);
   }
 
   function closeDrawer() {
     overlay.classList.remove("open");
   }
 
-  function blankGoal() {
-    return G.normalizeGoal({
-      name: "", category: "other", priority: "IMPORTANT", baseTargetINR: 0,
-      targetYear: new Date().getFullYear() + 5, inflationCategory: "CPI"
-    });
-  }
-
-  function addFromTemplate(templateId) {
-    const t = G.templateById(templateId);
-    if (!t) return;
-    openDrawer(G.goalFromTemplate(t), true);
-  }
-
   // -------------------------------------------------------------------------
   // Events
   // -------------------------------------------------------------------------
   function bindEvents() {
-    $("openAddModalBtn").addEventListener("click", () => openDrawer(blankGoal(), true));
-    $("customGoalBtn").addEventListener("click", () => openDrawer(blankGoal(), true));
+    // Ask box
+    const ask = $("askInput");
+    ask.addEventListener("input", renderAsk);
+    ask.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        if (!askItems.length) return;
+        e.preventDefault();
+        askActive = (askActive + (e.key === "ArrowDown" ? 1 : -1) + askItems.length) % askItems.length;
+        $("askResults").querySelectorAll(".ask-item").forEach((el, i) => el.classList.toggle("active", i === askActive));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (askItems.length) pickAskItem(askItems[Math.max(0, askActive)]);
+      } else if (e.key === "Escape") {
+        closeAsk();
+      }
+    });
+    $("askResults").addEventListener("mousedown", (e) => {
+      const b = e.target.closest(".ask-item");
+      if (b) { e.preventDefault(); pickAskItem(askItems[Number(b.dataset.i)]); }
+    });
+    $("askClearBtn").addEventListener("click", () => { ask.value = ""; renderAsk(); ask.focus(); });
+    ask.addEventListener("blur", () => setTimeout(closeAsk, 120));
+    $("askClearBtn").style.visibility = "hidden";
+
+    $("ideaChips").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-idea]");
+      if (b) startFromIdea(b.dataset.idea);
+    });
+
+    // Drawer
     $("closeGoalModalBtn").addEventListener("click", closeDrawer);
     $("cancelGoalModalBtn").addEventListener("click", closeDrawer);
     overlay.addEventListener("click", (e) => { if (e.target === overlay) closeDrawer(); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay.classList.contains("open")) closeDrawer(); });
 
-    $("templateGrid").addEventListener("click", (e) => {
-      const b = e.target.closest("[data-template]");
-      if (b && !b.disabled) addFromTemplate(b.dataset.template);
+    $("helpToggleBtn").addEventListener("click", () => {
+      const hidden = $("helpPanel").hidden;
+      $("helpPanel").hidden = !hidden;
+      $("helpToggleBtn").setAttribute("aria-expanded", String(hidden));
     });
-    $("templateChips").addEventListener("click", (e) => {
-      const b = e.target.closest("[data-template]");
-      if (b) addFromTemplate(b.dataset.template);
-    });
+    ["residexCity", "residexSqft", "residexDown"].forEach((id) => $(id).addEventListener("input", updateResidex));
+    $("useDownPaymentBtn").addEventListener("click", () => applyResidex("down"));
+    $("useFullCostBtn").addEventListener("click", () => applyResidex("full"));
 
     $("goalInflationInput").addEventListener("change", () => { syncInflationField(); updatePreview(); });
     ["goalYearInput", "goalPvInput", "goalSavedInput", "goalCustomRateInput", "goalReturnInput"].forEach((id) =>
@@ -396,29 +512,40 @@
     $("goalForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const g = readForm();
-      if (!g || !g.name || !(g.baseTargetINR > 0)) return;
+      if (!g || !g.name || g.targetYear < new Date().getFullYear()) return;
       const i = goals.findIndex((x) => x.id === g.id);
       if (i >= 0) goals[i] = g; else goals.push(g);
+      expanded.add(g.id);
       await persistGoals();
       closeDrawer();
       render();
-      showToast(i >= 0 ? "✓ Goal updated" : "✓ Goal added");
+      showToast(g.baseTargetINR > 0 ? (i >= 0 ? "✓ Goal updated" : "✓ Goal added") : "✓ Goal added — add a number when you are ready");
     });
 
-    $("goalSections").addEventListener("click", async (e) => {
+    // Goal rows
+    $("goalList").addEventListener("toggle", (e) => {
+      const row = e.target.closest && e.target.closest(".goal-row");
+      if (!row) return;
+      if (row.open) expanded.add(row.dataset.id); else expanded.delete(row.dataset.id);
+    }, true);
+    $("goalList").addEventListener("click", async (e) => {
       const btn = e.target.closest("[data-action]");
-      const card = e.target.closest(".goal-card");
-      if (!btn || !card) return;
-      const g = goals.find((x) => x.id === card.dataset.id);
+      const row = e.target.closest(".goal-row");
+      if (!btn || !row) return;
+      const g = goals.find((x) => x.id === row.dataset.id);
       if (!g) return;
-      if (btn.dataset.action === "edit") {
-        openDrawer(g, false);
-      } else if (btn.dataset.action === "toggle") {
+      const action = btn.dataset.action;
+      if (action === "edit") {
+        openDrawer(g, { isNew: false });
+      } else if (action === "number") {
+        openDrawer(g, { isNew: false, openHelp: true });
+        setTimeout(() => $("goalPvInput").focus(), 80);
+      } else if (action === "toggle") {
         g.status = g.status === "ACHIEVED" ? "ACTIVE" : "ACHIEVED";
         await persistGoals();
         render();
         showToast(g.status === "ACHIEVED" ? "🎉 Marked as achieved" : "Goal reopened");
-      } else if (btn.dataset.action === "delete") {
+      } else if (action === "delete") {
         if (!window.confirm(`Delete “${g.name}”? Holdings tagged to it become unallocated.`)) return;
         goals = goals.filter((x) => x.id !== g.id);
         await persistGoals();
@@ -427,26 +554,10 @@
       }
     });
 
-    $("searchInput").addEventListener("input", (e) => {
-      searchTerm = e.target.value.trim().toLowerCase();
-      render();
-    });
-    $("searchClearBtn").addEventListener("click", () => {
-      $("searchInput").value = "";
-      searchTerm = "";
-      render();
-    });
-
     document.querySelectorAll(".filter-pill[data-status]").forEach((b) => b.addEventListener("click", () => {
       document.querySelectorAll(".filter-pill[data-status]").forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
       statusFilter = b.dataset.status;
-      render();
-    }));
-    document.querySelectorAll(".filter-pill[data-horizon]").forEach((b) => b.addEventListener("click", () => {
-      document.querySelectorAll(".filter-pill[data-horizon]").forEach((x) => x.classList.remove("active"));
-      b.classList.add("active");
-      horizonFilter = b.dataset.horizon;
       render();
     }));
 

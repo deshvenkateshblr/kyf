@@ -43,31 +43,48 @@
 
   const DEFAULT_MACRO = { cpiInflation: 5.4, educationInflation: 9.0, medicalInflation: 11.5 };
 
-  // Starter goals + the action checklist generated for each (Cadence tasks carry goalId).
+  // Goal ideas shown in discovery. NO default costs or dates: those are the user's to know.
+  // `ask` lists the questions that help someone find their own number; `formula` is the shape of the sum.
+  const IDEA_GROUPS = [
+    { id: "protect", label: "Stay protected" },
+    { id: "life", label: "Life events" },
+    { id: "freedom", label: "Freedom & growth" }
+  ];
+
   const TEMPLATES = [
     {
-      id: "peace_buffer", category: "buffer", priority: "ESSENTIAL", icon: "🛡️",
-      name: "6-Month Peace-of-Mind Buffer", costToday: 450000, years: 1, inflationCategory: "CPI",
+      id: "peace_buffer", group: "protect", category: "buffer", priority: "ESSENTIAL", icon: "🛡️", inflationCategory: "CPI",
+      name: "Emergency fund", blurb: "Months of expenses you can reach in a day",
+      keywords: ["emergency", "buffer", "rainy day", "job loss", "layoff", "safety", "peace"],
+      ask: ["Add up one month of must-pay costs: rent/EMI, food, bills, school fees, insurance premiums", "Multiply by the months you want covered (6 is common; 9–12 if income is irregular)"],
+      formula: "Monthly must-pay costs × months of cover",
       checklist: [
-        "Add up 6 months of must-pay expenses (rent/EMI, food, bills, school fees)",
+        "Add up one month of must-pay expenses (rent/EMI, food, bills, school fees)",
         "Open a separate sweep FD or liquid fund account for this buffer",
         "Set an auto-transfer on salary day until the buffer is full",
         "Check that term and health cover are in force before investing further"
       ]
     },
     {
-      id: "car_upgrade", category: "vehicle", priority: "FLEXIBLE", icon: "🚗",
-      name: "Car / Lifestyle Milestone", costToday: 1500000, years: 4, inflationCategory: "CPI",
+      id: "loan_payoff", group: "protect", category: "other", priority: "IMPORTANT", icon: "🏦", inflationCategory: "CUSTOM", inflationRate: 0,
+      name: "Pay off a loan early", blurb: "Clear a loan faster than the schedule",
+      keywords: ["loan", "debt", "emi", "prepay", "mortgage", "credit card", "pay off", "payoff"],
+      ask: ["Look up the outstanding principal on the loan statement", "Compare the loan's interest rate with what your savings earn after tax"],
+      formula: "Outstanding principal you want to clear",
       checklist: [
-        "Decide the budget: ex-showroom + insurance + 1 year of running cost",
-        "Compare a cash down payment against loan interest",
-        "Keep the monthly EMI under 15% of take-home pay",
-        "Move the money to debt funds 12 months before buying"
+        "Note the outstanding principal and interest rate from the latest statement",
+        "Ask the lender about prepayment charges",
+        "Prepay the highest-interest loan first",
+        "Re-check the outstanding balance every quarter"
       ]
     },
     {
-      id: "home_downpayment", category: "realestate", priority: "ESSENTIAL", icon: "🏠",
-      name: "Home Down Payment / Prepayment", costToday: 2500000, years: 5, inflationCategory: "CPI",
+      id: "home_downpayment", group: "life", category: "realestate", priority: "ESSENTIAL", icon: "🏠", inflationCategory: "CPI",
+      name: "Buy or upgrade a home", blurb: "Down payment, registration and move-in costs",
+      keywords: ["home", "house", "flat", "apartment", "property", "down payment", "downpayment", "real estate", "plot"],
+      ask: ["Pick the city and the carpet area you want, the helper below shows the price from NHB RESIDEX", "A down payment is usually 20–30% of the price; stamp duty and registration add about 6–8%"],
+      formula: "Price × down payment % + stamp duty & registration",
+      helper: "residex",
       checklist: [
         "Work out the target: 20–30% down payment plus 6–8% stamp duty and registration",
         "Stress-test the home loan EMI against your monthly surplus",
@@ -76,23 +93,94 @@
       ]
     },
     {
-      id: "child_education", category: "education", priority: "ESSENTIAL", icon: "🎓",
-      name: "Child's Higher Education", costToday: 3000000, years: 12, inflationCategory: "EDUCATION",
+      id: "child_education", group: "life", category: "education", priority: "ESSENTIAL", icon: "🎓", inflationCategory: "EDUCATION",
+      name: "Child's education", blurb: "College, a degree, or study abroad",
+      keywords: ["college", "education", "school", "degree", "university", "study", "abroad", "child", "kid", "mba", "engineering", "medicine", "masters"],
+      ask: ["Which course, and in which country?", "Look up this year's total fee for the full course, including hostel and living costs", "Add about 10% for travel, books and surprises"],
+      formula: "Today's total course cost (fees + living) for all years",
       checklist: [
-        "Estimate today's cost of the target course (India vs abroad)",
-        "Start a dedicated SIP in the child's name or earmarked to this goal",
-        "Add child-specific term and health cover for the earning parent",
+        "Estimate today's total cost of the target course (India vs abroad)",
+        "Start a dedicated SIP, or earmark an existing fund, for this goal",
+        "Add term and health cover for the earning parent",
         "Move to capital-protecting funds 3 years before the first fee payment"
       ]
     },
     {
-      id: "work_optional_freedom", category: "retirement", priority: "ESSENTIAL", icon: "🌴",
-      name: "Work-Optional Freedom (FI Corpus)", costToday: 30000000, years: 18, inflationCategory: "CPI",
+      id: "wedding", group: "life", category: "wedding", priority: "IMPORTANT", icon: "💍", inflationCategory: "CPI",
+      name: "Wedding", blurb: "Your own or a family member's",
+      keywords: ["wedding", "marriage", "shaadi", "engagement", "daughter", "son", "sister", "brother"],
+      ask: ["Number of guests × cost per guest (venue, food)", "Add jewellery, clothes, photography and travel", "Ask a recent family wedding for their actual spend"],
+      formula: "Guests × cost per guest + jewellery, clothes, travel",
+      checklist: [
+        "List the big items: venue, catering, jewellery, clothes, photography, travel",
+        "Get 2–3 real quotes for the largest items",
+        "Decide what is flexible and what is not",
+        "Book the date and move the money to debt funds 12 months before"
+      ]
+    },
+    {
+      id: "car_upgrade", group: "life", category: "vehicle", priority: "FLEXIBLE", icon: "🚗", inflationCategory: "CPI",
+      name: "Buy a car", blurb: "New or used, cash or part-loan",
+      keywords: ["car", "vehicle", "bike", "scooter", "suv", "ev", "electric"],
+      ask: ["On-road price of the model you want (ex-showroom + registration + insurance)", "Add a first-year running budget"],
+      formula: "On-road price − trade-in value",
+      checklist: [
+        "Decide the budget: on-road price + 1 year of running cost",
+        "Compare a cash down payment against loan interest",
+        "Keep the monthly EMI under 15% of take-home pay",
+        "Move the money to debt funds 12 months before buying"
+      ]
+    },
+    {
+      id: "sabbatical", group: "life", category: "lifestyle", priority: "FLEXIBLE", icon: "🏖️", inflationCategory: "CPI",
+      name: "Travel or a career break", blurb: "A big trip, a sabbatical, or time to retrain",
+      keywords: ["travel", "trip", "holiday", "vacation", "sabbatical", "break", "world tour", "honeymoon", "gap year", "retrain"],
+      ask: ["Months you will be away from income × monthly household costs", "Plus flights, stays and activities for the trip itself"],
+      formula: "Months off × monthly costs + trip costs",
+      checklist: [
+        "Decide how long you will be away and when",
+        "Price flights and stays for the main legs",
+        "Keep a separate cash pot so your emergency fund stays untouched",
+        "Review health cover for the period"
+      ]
+    },
+    {
+      id: "business", group: "freedom", category: "wealth", priority: "FLEXIBLE", icon: "🚀", inflationCategory: "CPI",
+      name: "Start a business", blurb: "Seed money plus a runway to live on",
+      keywords: ["business", "startup", "venture", "entrepreneur", "shop", "side hustle", "own company"],
+      ask: ["Setup costs: equipment, licences, stock, deposits", "Plus 6–12 months of your own household costs while it grows"],
+      formula: "Setup costs + months of runway × monthly household costs",
+      checklist: [
+        "List the one-time setup costs with real quotes",
+        "Decide how many months of personal runway you need",
+        "Keep this money separate from your emergency fund",
+        "Set a clear go / no-go date"
+      ]
+    },
+    {
+      id: "work_optional_freedom", group: "freedom", category: "retirement", priority: "ESSENTIAL", icon: "🌴", inflationCategory: "CPI",
+      name: "Retirement / work-optional", blurb: "A corpus that pays your expenses for life",
+      keywords: ["retire", "retirement", "freedom", "fire", "pension", "financial independence", "work optional", "corpus"],
+      ask: ["Estimate your yearly expenses in today's money", "A common rule of thumb is 25–30 times that amount", "Subtract anything already earmarked, such as EPF or NPS"],
+      formula: "Yearly expenses today × 25–30",
       checklist: [
         "Estimate yearly expenses in today's money (corpus ≈ 25–30× that)",
         "Maximise EPF/PPF/NPS contributions each financial year",
         "Raise your SIP by 10% every April",
         "Review the equity/debt split yearly and rebalance"
+      ]
+    },
+    {
+      id: "wealth_build", group: "freedom", category: "wealth", priority: "FLEXIBLE", icon: "📈", inflationCategory: "CPI",
+      name: "Build long-term wealth", blurb: "A target with no single purchase behind it",
+      keywords: ["wealth", "invest", "grow", "crore", "corpus", "net worth", "savings"],
+      ask: ["Pick the amount, in today's money, that you would call 'comfortable'", "Pick the year you want to reach it"],
+      formula: "The amount you choose",
+      checklist: [
+        "Write the target in today's money and the year",
+        "Set an auto-SIP into a broad index fund",
+        "Raise the SIP by 10% each year",
+        "Review progress every 6 months"
       ]
     }
   ];
@@ -230,6 +318,7 @@
     const o = opts || {};
     const baseYear = o.baseYear || currentYear();
     const years = Math.max(0, goal.targetYear - baseYear);
+    const hasAmount = goal.baseTargetINR > 0;
     const rate = inflationFor(goal, o.rates);
     const futureCost = Math.round(goal.baseTargetINR * Math.pow(1 + rate / 100, years));
     const horizon = horizonDefaults(years);
@@ -248,18 +337,19 @@
     } else if (gap > 0) {
       sip = gap; // due now: the whole gap is a lump sum
     }
-    const fundedPct = futureCost > 0 ? Math.min(100, Math.round((savedFV / futureCost) * 100)) : 100;
+    const fundedPct = futureCost > 0 ? Math.min(100, Math.round((savedFV / futureCost) * 100)) : 0;
     const todayPct = goal.baseTargetINR > 0 ? Math.min(100, Math.round((saved / goal.baseTargetINR) * 100)) : 100;
 
     let health;
     if (goal.status === "ACHIEVED") health = "achieved";
+    else if (!hasAmount) health = "needs_number";
     else if (gap <= 0) health = "funded";
     else if (years === 0) health = "due";
     else health = "needs_sip";
 
     return {
       years, inflationRate: rate, futureCost, expectedReturn, portfolioSaved, saved, savedFV,
-      gap, sip, fundedPct, todayPct, health, horizon, glide: glidePathNote(years)
+      hasAmount, gap, sip, fundedPct, todayPct, health, horizon, glide: glidePathNote(years)
     };
   }
 
@@ -296,19 +386,70 @@
     return TEMPLATES.find((t) => t.id === id) || null;
   }
 
-  function goalFromTemplate(template, baseYear) {
-    const year = baseYear || currentYear();
-    return normalizeGoal({
-      id: `goal_${template.id}_${Date.now().toString(36)}`,
-      name: template.name,
-      icon: template.icon,
-      category: template.category,
-      priority: template.priority,
-      baseTargetINR: template.costToday,
-      targetYear: year + template.years,
-      inflationCategory: template.inflationCategory,
-      templateId: template.id
-    }, year);
+  /** A goal seeded from an idea. Cost and date stay empty: they are the user's to fill in. */
+  function goalFromIdea(idea) {
+    const g = normalizeGoal({
+      id: `goal_${idea.id}_${Date.now().toString(36)}`,
+      name: idea.name,
+      icon: idea.icon,
+      category: idea.category,
+      priority: idea.priority,
+      baseTargetINR: 0,
+      targetYear: 0,
+      inflationCategory: idea.inflationCategory,
+      inflationRate: idea.inflationRate != null ? idea.inflationRate : null,
+      templateId: idea.id
+    });
+    g.targetYear = 0;
+    return g;
+  }
+
+  /** Rank ideas for a typed query. Empty query returns all ideas in catalog order. */
+  function searchIdeas(query) {
+    const q = String(query || "").trim().toLowerCase();
+    if (!q) return TEMPLATES.slice();
+    const scored = [];
+    TEMPLATES.forEach((t, i) => {
+      let score = 0;
+      const name = t.name.toLowerCase();
+      if (name === q) score = 100;
+      else if (name.startsWith(q)) score = 80;
+      else if (name.split(/\W+/).some((w) => w.startsWith(q))) score = 60;
+      t.keywords.forEach((k) => {
+        if (k === q) score = Math.max(score, 90);
+        else if (k.startsWith(q)) score = Math.max(score, 70);
+        else if (q.length >= 3 && k.includes(q)) score = Math.max(score, 40);
+      });
+      if (score === 0 && q.length >= 3 && t.blurb.toLowerCase().includes(q)) score = 20;
+      if (score > 0) scored.push({ t, score, i });
+    });
+    return scored.sort((a, b) => b.score - a.score || a.i - b.i).map((x) => x.t);
+  }
+
+  /**
+   * Home price helper: NHB RESIDEX carpet-area rate × the user's carpet area, plus ~7% friction
+   * (stamp duty and registration, as in the Real Estate calculator). Returns null if no data.
+   */
+  function residexEstimate(city, carpetSqft, downPaymentPct) {
+    const data = global.KYF_RESIDEX && global.KYF_RESIDEX.cities;
+    const c = data && data[city];
+    const rate = c && c.summary && Number(c.summary.carpet_price_sqft);
+    const sqft = Number(carpetSqft);
+    if (!rate || !(sqft > 0)) return null;
+    const price = Math.round(rate * sqft);
+    const friction = Math.round(price * 0.07);
+    const dp = Math.min(100, Math.max(0, Number(downPaymentPct) || 20));
+    return {
+      city, carpetSqft: sqft, ratePerSqft: rate, quarter: c.summary.latest_quarter || "",
+      price, friction, downPaymentPct: dp,
+      downPayment: Math.round(price * dp / 100) + friction,
+      fullCost: price + friction
+    };
+  }
+
+  function residexCities() {
+    const data = global.KYF_RESIDEX && global.KYF_RESIDEX.cities;
+    return data ? Object.keys(data) : [];
   }
 
   /** Checklist items (Cadence activities) for a goal. Stable ids so it never duplicates. */
@@ -365,6 +506,6 @@
     normalizeGoal, mergeGoalLists, inferCategory,
     macroRates, inflationFor, horizonDefaults, computeGoal, affordability,
     writeFundingCache, readFundingCache,
-    templateById, goalFromTemplate, checklistFor, withChecklist, withoutGoalTasks, taskProgress, migrateCadence
+    IDEA_GROUPS, templateById, goalFromIdea, searchIdeas, residexEstimate, residexCities, checklistFor, withChecklist, withoutGoalTasks, taskProgress, migrateCadence
   };
 })(typeof window !== "undefined" ? window : globalThis);

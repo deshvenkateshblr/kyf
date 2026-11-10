@@ -51,8 +51,10 @@ ok(a2.status === "stretched" && a2.coveragePct === 71, "SIPs above surplus → s
 ok(K.affordability([{ sip: 1 }], 0).status === "unknown", "no surplus entered → unknown");
 
 console.log("Templates & checklists");
-const t = K.goalFromTemplate(K.templateById("child_education"), 2026);
-ok(t.inflationCategory === "EDUCATION" && t.targetYear === 2038 && t.templateId === "child_education", "template → goal with education inflation and 12-yr horizon");
+const t = K.goalFromIdea(K.templateById("child_education"));
+ok(t.inflationCategory === "EDUCATION" && t.templateId === "child_education", "idea → goal with education inflation");
+ok(t.baseTargetINR === 0 && t.targetYear === 0, "an idea never pre-fills a cost or a date");
+ok(K.TEMPLATES.every((x) => x.costToday === undefined && x.years === undefined && x.ask.length >= 1 && x.formula), "no idea carries a default number; each explains how to find one");
 const list = K.checklistFor(t);
 ok(list.length === 4 && list.every((x) => x.goalId === t.id && x.section === "goals"), "template checklist: 4 steps linked by goalId");
 ok(K.withChecklist(K.withChecklist([], t), t).length === 4, "adding a checklist twice does not duplicate steps");
@@ -61,6 +63,28 @@ ok(K.taskProgress(withDone, t.id).done === 2 && K.taskProgress(withDone, t.id).t
 ok(K.withoutGoalTasks(withDone, t.id).length === 0, "deleting a goal removes its steps");
 const custom = K.normalizeGoal({ name: "Sabbatical", baseTargetINR: 1, targetYear: 2030 });
 ok(K.checklistFor(custom).length === 4, "custom goals get the generic checklist");
+
+console.log("Discovery search");
+const names = (q) => K.searchIdeas(q).map((x) => x.id);
+ok(names("college")[0] === "child_education", "'college' finds Child's education first");
+ok(names("wed")[0] === "wedding" && names("retire")[0] === "work_optional_freedom", "prefixes match: 'wed', 'retire'");
+ok(names("emergency")[0] === "peace_buffer" && names("loan")[0] === "loan_payoff", "'emergency' → buffer, 'loan' → pay off a loan");
+ok(names("house")[0] === "home_downpayment" && names("flat").includes("home_downpayment"), "'house' and 'flat' find the home goal");
+ok(names("zzzz").length === 0, "gibberish matches nothing");
+ok(names("").length === K.TEMPLATES.length, "empty query lists every idea");
+ok(K.IDEA_GROUPS.every((g) => K.TEMPLATES.some((t) => t.group === g.id)), "every group has ideas");
+
+console.log("Goals without a number");
+const unpriced = K.computeGoal(K.normalizeGoal({ id: "u", name: "College", baseTargetINR: 0, targetYear: 2036 }), 0, { baseYear: 2026 });
+ok(unpriced.health === "needs_number" && unpriced.sip === 0 && unpriced.hasAmount === false && unpriced.fundedPct === 0, "a goal without a cost is 'needs a number', no SIP, 0% funded");
+ok(K.affordability([unpriced].filter((c) => c.hasAmount), 50000).totalSip === 0, "unpriced goals stay out of the totals");
+
+console.log("Home price helper (NHB RESIDEX)");
+ctx.window.KYF_RESIDEX = { cities: { Pune: { summary: { carpet_price_sqft: 10000, latest_quarter: "Jun 2026" } } } };
+const est = K.residexEstimate("Pune", 1000, 20);
+ok(est.price === 10000000 && est.friction === 700000 && est.downPayment === 2700000 && est.fullCost === 10700000, "1,000 sq ft × ₹10,000 = ₹1 Cr; 20% down + 7% costs = ₹27 L");
+ok(K.residexEstimate("Nowhere", 1000, 20) === null && K.residexEstimate("Pune", 0, 20) === null, "unknown city or empty area → no estimate");
+ok(K.residexCities().join() === "Pune", "cities come from the RESIDEX data");
 
 console.log("Cadence migration");
 const migrated = K.migrateCadence([
