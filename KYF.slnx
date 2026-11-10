@@ -20,6 +20,19 @@
     <File Path="docs/kyf_family_portfolio_tracker_architecture_roadmap.md" />
     <File Path="docs/todo.md" />
   </Folder>
+  <Folder Name="/js/">
+    <File Path="js/db.js" />
+    <File Path="js/home.js" />
+    <File Path="js/kyf-footer.js" />
+    <File Path="js/kyf-vault.js" />
+    <File Path="js/kyf_portfolio_qa_defect_tracker_test_plan.md" />
+    <File Path="js/market-performance.js" />
+    <File Path="js/portfolio-app.js" />
+    <File Path="js/portfolio-data.js" />
+    <File Path="js/portfolio-engine.js" />
+    <File Path="js/portfolio-importer.js" />
+    <File Path="js/real-estate-calculator.js" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path="cadence.html" />
     <File Path="index.html" />

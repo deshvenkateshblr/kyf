@@ -75,6 +75,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     inputMemberName: document.getElementById("input-member-name"),
     selectMemberRole: document.getElementById("select-member-role"),
     selectMemberAvatar: document.getElementById("select-member-avatar"),
+    // Broker Importer Modal elements
+    btnOpenImportModal: document.getElementById("btn-open-import-modal"),
+    importModal: document.getElementById("import-modal"),
+    btnCloseImportModal: document.getElementById("btn-close-import-modal"),
+    btnCancelImport: document.getElementById("btn-cancel-import"),
+    btnConfirmImport: document.getElementById("btn-confirm-import"),
+    importDropzone: document.getElementById("import-dropzone"),
+    brokerFileInput: document.getElementById("broker-file-input"),
+    importControlsRow: document.getElementById("import-controls-row"),
+    importMemberSelect: document.getElementById("import-member-select"),
+    importStatsSummary: document.getElementById("import-stats-summary"),
+    importPreviewWrap: document.getElementById("import-preview-wrap"),
+    importPreviewTbody: document.getElementById("import-preview-tbody"),
     // Investment Holding Modal elements
     btnOpenHoldingModal: document.getElementById("btn-open-holding-modal"),
     holdingModal: document.getElementById("holding-modal"),
@@ -2056,6 +2069,165 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ==========================================================================
+  // Broker Portfolio Import Modal Controllers
+  // ==========================================================================
+  let pendingImportHoldings = [];
+  let pendingImportBrokers = [];
+  let pendingDetectedMembers = [];
+
+  function openImportModal() {
+    if (!els.importModal) return;
+    if (isDemoMode) {
+      leaveDemo().then(() => {
+        showToast("Demo closed — importing to your own portfolio", "info");
+        openImportModal();
+      });
+      return;
+    }
+
+    pendingImportHoldings = [];
+    pendingImportBrokers = [];
+    pendingDetectedMembers = [];
+
+    // Populate Member dropdown
+    if (els.importMemberSelect) {
+      els.importMemberSelect.innerHTML = "";
+      const autoOpt = document.createElement("option");
+      autoOpt.value = "";
+      autoOpt.textContent = "Auto-detect from file";
+      els.importMemberSelect.appendChild(autoOpt);
+
+      const members = rawMembers && rawMembers.length > 0 ? rawMembers : [{ id: "mem_self", name: "Self" }];
+      for (const m of members) {
+        const opt = document.createElement("option");
+        opt.value = m.name;
+        opt.textContent = m.name;
+        els.importMemberSelect.appendChild(opt);
+      }
+    }
+
+    // Reset dropzone & preview
+    if (els.brokerFileInput) els.brokerFileInput.value = "";
+    if (els.importControlsRow) els.importControlsRow.style.display = "none";
+    if (els.importPreviewWrap) els.importPreviewWrap.style.display = "none";
+    if (els.importStatsSummary) els.importStatsSummary.textContent = "";
+    if (els.importPreviewTbody) els.importPreviewTbody.innerHTML = "";
+    if (els.btnConfirmImport) els.btnConfirmImport.disabled = true;
+
+    els.importModal.style.display = "flex";
+    els.importModal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeImportModal() {
+    if (!els.importModal) return;
+    els.importModal.style.display = "none";
+    els.importModal.setAttribute("aria-hidden", "true");
+    pendingImportHoldings = [];
+    pendingImportBrokers = [];
+    pendingDetectedMembers = [];
+  }
+
+  async function handleBrokerFile(file) {
+    if (!file || !window.KYF_BROKER_IMPORTER) return;
+    try {
+      showToast(`Reading ${file.name}...`, "info");
+      const selectedMember = els.importMemberSelect && els.importMemberSelect.value ? els.importMemberSelect.value : null;
+      const parsed = await window.KYF_BROKER_IMPORTER.parseFiles([file], selectedMember || "Self");
+
+      if (!parsed.holdings || parsed.holdings.length === 0) {
+        showToast("No valid holdings detected in this file.", "warning");
+        return;
+      }
+
+      pendingImportHoldings = parsed.holdings;
+      pendingImportBrokers = parsed.brokers;
+      pendingDetectedMembers = parsed.detectedMembers || [];
+
+      // Update summary stats
+      const brokerLabel = parsed.broker || "Broker File";
+      const count = pendingImportHoldings.length;
+      const totalLive = pendingImportHoldings.reduce((sum, h) => sum + (Number(h.currentValue) || 0), 0);
+
+      if (els.importStatsSummary) {
+        els.importStatsSummary.textContent = `Detected: ${brokerLabel} • ${count} holdings • Live Value ₹${Math.round(totalLive).toLocaleString("en-IN")}`;
+      }
+      if (els.importControlsRow) els.importControlsRow.style.display = "flex";
+
+      // Render Preview Table
+      if (els.importPreviewTbody) {
+        els.importPreviewTbody.innerHTML = pendingImportHoldings.map((h) => {
+          const qtyStr = typeof h.units === "number" ? h.units.toLocaleString("en-IN", { maximumFractionDigits: 3 }) : (h.units || "—");
+          const invStr = h.investedValue != null ? `₹${Math.round(h.investedValue).toLocaleString("en-IN")}` : "—";
+          const curStr = h.currentValue != null ? `₹${Math.round(h.currentValue).toLocaleString("en-IN")}` : "—";
+          return `
+            <tr>
+              <td><strong>${escapeHTML(h.name)}</strong></td>
+              <td><span class="subcat-chip">${escapeHTML(h.assetClass)}</span></td>
+              <td>${escapeHTML(h.custodian || "Broker")}</td>
+              <td class="mono-num">${qtyStr}</td>
+              <td class="mono-num">${invStr}</td>
+              <td class="mono-num"><strong>${curStr}</strong></td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      if (els.importPreviewWrap) els.importPreviewWrap.style.display = "block";
+      if (els.btnConfirmImport) els.btnConfirmImport.disabled = false;
+
+      showToast(`Detected ${count} holdings from ${brokerLabel}.`, "info");
+    } catch (err) {
+      console.error("[Broker Import Error]", err);
+      showToast(err.message || "Failed to parse statement file.", "danger");
+    }
+  }
+
+  async function applyImportedHoldings() {
+    if (!pendingImportHoldings || pendingImportHoldings.length === 0) return;
+    if (isDemoMode) await leaveDemo();
+
+    const selectedMember = els.importMemberSelect && els.importMemberSelect.value ? els.importMemberSelect.value : null;
+    const finalIncoming = selectedMember
+      ? pendingImportHoldings.map(h => ({ ...h, member: selectedMember }))
+      : pendingImportHoldings;
+
+    // Check if new members need to be added to rawMembers
+    let membersAdded = false;
+    if (window.KYF_PORTFOLIO_DATA && typeof window.KYF_PORTFOLIO_DATA.saveMembersToDB === "function") {
+      const existingNames = new Set((rawMembers || []).map(m => m.name.toLowerCase()));
+      for (const h of finalIncoming) {
+        const memName = (h.member || "Self").trim();
+        if (memName && !existingNames.has(memName.toLowerCase())) {
+          existingNames.add(memName.toLowerCase());
+          const newMemId = `mem_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+          rawMembers.push({ id: newMemId, name: memName, role: "Family Member" });
+          membersAdded = true;
+        }
+      }
+      if (membersAdded) {
+        await window.KYF_PORTFOLIO_DATA.saveMembersToDB(rawMembers);
+      }
+    }
+
+    // Upsert into rawHoldings
+    const { holdings: merged, addedCount, updatedCount } = window.KYF_BROKER_IMPORTER.upsertHoldings(rawHoldings, finalIncoming);
+    rawHoldings = merged;
+    userHoldings = [...rawHoldings];
+    localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
+
+    if (window.KYF_PORTFOLIO_DATA && typeof window.KYF_PORTFOLIO_DATA.saveHoldingsToDB === "function") {
+      await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+    }
+
+    markDataChanged();
+    closeImportModal();
+    renderApp();
+
+    const brokerStr = pendingImportBrokers[0] || "Broker";
+    showToast(`✓ Imported ${addedCount} new, updated ${updatedCount} existing holdings from ${brokerStr}.`, "success");
+  }
+
+  // ==========================================================================
   // Action Handlers
   // ==========================================================================
   // Demo data is a read-only sandbox: it is never copied into the user's own portfolio.
@@ -2309,6 +2481,81 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.formAddHolding) {
       els.formAddHolding.addEventListener("submit", handleAddHoldingSubmit);
     }
+
+    // Broker Importer Modal Events
+    if (els.btnOpenImportModal) {
+      els.btnOpenImportModal.addEventListener("click", openImportModal);
+    }
+    if (els.btnCloseImportModal) {
+      els.btnCloseImportModal.addEventListener("click", closeImportModal);
+    }
+    if (els.btnCancelImport) {
+      els.btnCancelImport.addEventListener("click", closeImportModal);
+    }
+    if (els.btnConfirmImport) {
+      els.btnConfirmImport.addEventListener("click", applyImportedHoldings);
+    }
+    if (els.importDropzone) {
+      els.importDropzone.addEventListener("click", () => {
+        if (els.brokerFileInput) els.brokerFileInput.click();
+      });
+      els.importDropzone.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          if (els.brokerFileInput) els.brokerFileInput.click();
+        }
+      });
+      ["dragenter", "dragover"].forEach((eventName) => {
+        els.importDropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          els.importDropzone.classList.add("dragover");
+        });
+      });
+      ["dragleave", "dragend"].forEach((eventName) => {
+        els.importDropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          els.importDropzone.classList.remove("dragover");
+        });
+      });
+      els.importDropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        els.importDropzone.classList.remove("dragover");
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length > 0) {
+          handleBrokerFile(dt.files[0]);
+        }
+      });
+    }
+    if (els.brokerFileInput) {
+      els.brokerFileInput.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleBrokerFile(e.target.files[0]);
+        }
+      });
+    }
+    if (els.importMemberSelect) {
+      els.importMemberSelect.addEventListener("change", () => {
+        const selectedMember = els.importMemberSelect.value;
+        if (pendingImportHoldings.length > 0 && selectedMember) {
+          pendingImportHoldings = pendingImportHoldings.map(h => ({ ...h, member: selectedMember }));
+        }
+      });
+    }
+    if (els.importModal) {
+      els.importModal.addEventListener("click", (e) => {
+        if (e.target === els.importModal) {
+          closeImportModal();
+        }
+      });
+    }
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && els.importModal && els.importModal.style.display === "flex") {
+        closeImportModal();
+      }
+    });
 
     // Modal Live Calculation and Plan Variant Event Listeners
     if (els.inputHoldingCurVal) {

@@ -31,18 +31,21 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
   }
 
   let mfMap = null;
+  let equityIsinMap = null;
+  let mfIsinMap = null;
   let isIndexed = false;
 
   function ensureIndexed() {
     if (isIndexed) return;
 
-    // 1. Index NSE Equities (2,700+ stocks)
+    // 1. Index NSE Equities (2,700+ stocks) by Symbol & ISIN
     equityMap = new Map();
+    equityIsinMap = new Map();
     if (window.KYF_MARKET_EQUITIES && Array.isArray(window.KYF_MARKET_EQUITIES.stocks)) {
       for (const row of window.KYF_MARKET_EQUITIES.stocks) {
-        // columns: ["symbol", "companyName", "closePrice", "ret1m", "ret3m", "ret6m", "ret1y", "isN500"]
-        const [symbol, companyName, closePrice, ret1m, ret3m, ret6m, ret1y, isN500] = row;
-        equityMap.set(symbol.toUpperCase(), {
+        // columns: ["symbol", "companyName", "closePrice", "ret1m", "ret3m", "ret6m", "ret1y", "isN500", "isin"]
+        const [symbol, companyName, closePrice, ret1m, ret3m, ret6m, ret1y, isN500, isin] = row;
+        const stockObj = {
           symbol,
           companyName,
           closePrice: Number(closePrice) || 0,
@@ -50,18 +53,24 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           ret3m: ret3m != null ? Number(ret3m) : null,
           ret6m: ret6m != null ? Number(ret6m) : null,
           ret1y: ret1y != null ? Number(ret1y) : null,
-          isN500: isN500 === 1
-        });
+          isN500: isN500 === 1,
+          isin: isin ? String(isin).toUpperCase() : null
+        };
+        equityMap.set(symbol.toUpperCase(), stockObj);
+        if (stockObj.isin) {
+          equityIsinMap.set(stockObj.isin, stockObj);
+        }
       }
     }
 
-    // 2. Index AMFI Mutual Funds (1,700+ schemes)
+    // 2. Index AMFI Mutual Funds (1,700+ schemes) by Direct Code & Direct/Regular ISIN
     mfMap = new Map();
+    mfIsinMap = new Map();
     if (window.KYF_MARKET_MF && Array.isArray(window.KYF_MARKET_MF.schemes)) {
       for (const row of window.KYF_MARKET_MF.schemes) {
-        // columns: ["directCode", "fundName", "category", "directNav", "regularNav", "ret1m", "ret3m", "ret6m", "ret1y"]
-        const [directCode, fundName, category, directNav, regularNav, ret1m, ret3m, ret6m, ret1y] = row;
-        mfMap.set(Number(directCode), {
+        // columns: ["directCode", "fundName", "category", "directNav", "regularNav", "ret1m", "ret3m", "ret6m", "ret1y", "directIsin", "regularIsin"]
+        const [directCode, fundName, category, directNav, regularNav, ret1m, ret3m, ret6m, ret1y, directIsin, regularIsin] = row;
+        const schemeObj = {
           directCode: Number(directCode),
           fundName,
           category,
@@ -70,8 +79,17 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           ret1m: ret1m != null ? Number(ret1m) : null,
           ret3m: ret3m != null ? Number(ret3m) : null,
           ret6m: ret6m != null ? Number(ret6m) : null,
-          ret1y: ret1y != null ? Number(ret1y) : null
-        });
+          ret1y: ret1y != null ? Number(ret1y) : null,
+          directIsin: directIsin ? String(directIsin).toUpperCase() : null,
+          regularIsin: regularIsin ? String(regularIsin).toUpperCase() : null
+        };
+        mfMap.set(Number(directCode), schemeObj);
+        if (schemeObj.directIsin) {
+          mfIsinMap.set(schemeObj.directIsin, { scheme: schemeObj, planType: "DIRECT" });
+        }
+        if (schemeObj.regularIsin) {
+          mfIsinMap.set(schemeObj.regularIsin, { scheme: schemeObj, planType: "REGULAR" });
+        }
       }
     }
 
@@ -405,7 +423,10 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
       switch (h.pricingMode) {
         case "LIVE_EQUITY": {
           const sym = (meta.symbol || "").toUpperCase();
-          const stock = equityMap.get(sym);
+          let stock = equityMap.get(sym);
+          if (!stock && meta.isin && equityIsinMap) {
+            stock = equityIsinMap.get(String(meta.isin).trim().toUpperCase());
+          }
           const qty = Number(meta.quantity) || Number(h.units) || 0;
           if (stock && stock.closePrice > 0) {
             livePrice = stock.closePrice;
@@ -417,7 +438,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
             priceLabel = `₹${livePrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}/sh`;
             physicalUnitsLabel = `${qty.toLocaleString("en-IN")} shares`;
           } else {
-            priceLabel = `Symbol: ${sym}`;
+            priceLabel = sym ? `Symbol: ${sym}` : (meta.isin ? `ISIN: ${meta.isin}` : "Manual valuation");
             physicalUnitsLabel = `${qty.toLocaleString("en-IN")} shares`;
           }
           break;
@@ -425,9 +446,20 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
 
         case "LIVE_MF": {
           const code = Number(meta.amfiCode);
-          const scheme = mfMap.get(code);
+          let scheme = mfMap.get(code);
+          let isDirect = (meta.planType || "DIRECT").toUpperCase() === "DIRECT";
+
+          if (!scheme && meta.isin && mfIsinMap) {
+            const hit = mfIsinMap.get(String(meta.isin).trim().toUpperCase());
+            if (hit) {
+              scheme = hit.scheme;
+              if (!meta.planType) {
+                isDirect = hit.planType === "DIRECT";
+              }
+            }
+          }
+
           const units = Number(meta.units) || Number(h.units) || 0;
-          const isDirect = (meta.planType || "DIRECT").toUpperCase() === "DIRECT";
 
           if (scheme) {
             livePrice = isDirect ? (scheme.directNav || scheme.regularNav) : (scheme.regularNav || scheme.directNav);
@@ -452,7 +484,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           } else {
             livePrice = Number(meta.price) || 0;
             if (livePrice > 0 && units > 0) calculatedValue = units * livePrice;
-            priceLabel = Number.isFinite(code) && code > 0 ? `AMFI ${code}` : "Manual valuation";
+            priceLabel = Number.isFinite(code) && code > 0 ? `AMFI ${code}` : (meta.isin ? `ISIN: ${meta.isin}` : "Manual valuation");
             physicalUnitsLabel = `${units.toLocaleString("en-IN", { maximumFractionDigits: 3 })} units`;
           }
           break;
@@ -988,8 +1020,72 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     };
   }
 
+  function lookupByIsin(isin) {
+    ensureIndexed();
+    if (!isin) return null;
+    const key = String(isin).trim().toUpperCase();
+    if (equityIsinMap && equityIsinMap.has(key)) {
+      return { kind: "EQUITY", stock: equityIsinMap.get(key) };
+    }
+    if (mfIsinMap && mfIsinMap.has(key)) {
+      const hit = mfIsinMap.get(key);
+      return { kind: "MF", scheme: hit.scheme, planType: hit.planType };
+    }
+    return null;
+  }
+
+  function lookupEquityBySymbol(symbol) {
+    ensureIndexed();
+    if (!symbol) return null;
+    return equityMap.get(String(symbol).trim().toUpperCase()) || null;
+  }
+
+  function lookupMfByCode(amfiCode) {
+    ensureIndexed();
+    return mfMap.get(Number(amfiCode)) || null;
+  }
+
+  function lookupEquity(symbol, isin, name) {
+    ensureIndexed();
+    if (isin) {
+      const cleanIsin = String(isin).trim().toUpperCase();
+      if (equityIsinMap && equityIsinMap.has(cleanIsin)) {
+        return equityIsinMap.get(cleanIsin);
+      }
+    }
+    if (symbol) {
+      const cleanSym = String(symbol).trim().toUpperCase();
+      if (equityMap && equityMap.has(cleanSym)) {
+        return equityMap.get(cleanSym);
+      }
+    }
+    return null;
+  }
+
+  function lookupMf(amfiCode, isin, name) {
+    ensureIndexed();
+    if (isin) {
+      const cleanIsin = String(isin).trim().toUpperCase();
+      if (mfIsinMap && mfIsinMap.has(cleanIsin)) {
+        return mfIsinMap.get(cleanIsin);
+      }
+    }
+    if (amfiCode) {
+      const numCode = Number(amfiCode);
+      if (mfMap && mfMap.has(numCode)) {
+        return { scheme: mfMap.get(numCode), planType: "DIRECT" };
+      }
+    }
+    return null;
+  }
+
   return {
     ensureIndexed,
+    lookupByIsin,
+    lookupEquityBySymbol,
+    lookupMfByCode,
+    lookupEquity,
+    lookupMf,
     convertHoldingToGoldGrams,
     computeHoldingPhysicalUnits,
     calculateInflationAdjustedTarget,

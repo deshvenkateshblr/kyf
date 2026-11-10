@@ -166,6 +166,9 @@
 
         <!-- Toolbar Right Utilities: Add Holding, Collapse All & Search Box -->
         <div class="toolbar-right-utils">
+          <button type="button" class="action-pill-btn" id="btn-open-import-modal" title="Import holdings from Broker CSV or XLSX">
+            📥 Import
+          </button>
           <button type="button" class="action-pill-btn btn-add-holding-action" id="btn-open-holding-modal" title="Add investment holding">
             ＋ Add Holding
           </button>
@@ -426,6 +429,75 @@
   </div>
 
   <!-- ==========================================================================
+       IMPORT BROKER HOLDINGS MODAL (CSV / XLSX / HTML Table)
+       ========================================================================== -->
+  <div id="import-modal" class="drawer-overlay" role="dialog" aria-modal="true" aria-labelledby="import-modal-title" style="display:none;">
+    <div class="drawer-panel import-drawer-panel">
+      <div class="drawer-head">
+        <h3 id="import-modal-title">📥 Import Broker Portfolio</h3>
+        <button type="button" class="modal-close" id="btn-close-import-modal" aria-label="Close panel">✕</button>
+      </div>
+
+      <div class="drawer-body import-drawer-body">
+        <p class="import-help-text">
+          Import holdings from your broker exports. Supports Zerodha (Kite, Console, Coin), Groww, CAMS, KFintech CAS, ICICI Direct, HDFC Sec, SBI Sec, Angel One, Upstox, and Kuvera.
+        </p>
+
+        <!-- Dropzone -->
+        <div class="import-dropzone" id="import-dropzone" tabindex="0" role="button" aria-label="Drop files here or click to browse">
+          <input type="file" id="broker-file-input" accept=".csv,.tsv,.xlsx,.xls" hidden>
+          <div class="import-dropzone-icon">📄</div>
+          <div class="import-dropzone-text">
+            <strong>Click to select a file</strong> or drag &amp; drop here
+          </div>
+          <div class="import-dropzone-hint">CSV, TSV, or Excel (.xlsx / .xls)</div>
+        </div>
+
+        <!-- Controls Row: Target Family Member -->
+        <div class="import-controls-row" id="import-controls-row" style="display:none;">
+          <div class="form-field" style="flex: 1; max-width: 240px;">
+            <label class="form-label" for="import-member-select">Assign to Member</label>
+            <select id="import-member-select" class="form-control">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div class="import-stats-summary" id="import-stats-summary"></div>
+        </div>
+
+        <!-- Preview Table -->
+        <div class="import-preview-wrap" id="import-preview-wrap" style="display:none;">
+          <div class="import-preview-table-container">
+            <table class="import-preview-table" id="import-preview-table">
+              <thead>
+                <tr>
+                  <th>Holding / Instrument</th>
+                  <th>Type</th>
+                  <th>Custodian</th>
+                  <th style="text-align:right;">Qty / Units</th>
+                  <th style="text-align:right;">Invested (₹)</th>
+                  <th style="text-align:right;">Live Value (₹)</th>
+                </tr>
+              </thead>
+              <tbody id="import-preview-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions drawer-actions">
+        <div>
+          <button type="button" class="btn-pill btn-pill--ghost" id="btn-cancel-import">Cancel</button>
+        </div>
+        <div class="modal-actions-right">
+          <button type="button" class="btn-pill btn-pill--primary" id="btn-confirm-import" disabled>＋ Import Holdings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
        DATASETS (Auto-Generated Daily by admin/sync_market_data.py)
        ========================================================================== -->
   <script src="data/market-pulse.js?v=1.6.0"></script>
@@ -442,6 +514,7 @@
   <script src="js/kyf-vault.js?v=1.6.0"></script>
   <script src="js/portfolio-data.js?v=1.6.0"></script>
   <script src="js/portfolio-engine.js?v=1.6.0"></script>
+  <script src="js/portfolio-importer.js?v=1.6.0"></script>
   <script src="js/portfolio-app.js?v=1.6.0"></script>
   <script src="js/kyf-footer.js?v=1.6.0"></script>
 </body>

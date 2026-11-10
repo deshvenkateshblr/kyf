@@ -705,7 +705,7 @@ def parse_nse_csv(csv_text: str) -> dict:
     i_srs = idx(["SctySrs", "SERIES"])
     i_name = idx(["FinInstrmNm"])
     i_close = idx(["ClsPric", "CLOSE"])
-    i_isin = idx(["ISIN", "FinInstrmId"])
+    i_isin = idx(["ISIN", "ISIN_CODE", "FinInstrmId"])
 
     result = {}
     for row in reader:
@@ -717,7 +717,8 @@ def parse_nse_csv(csv_text: str) -> dict:
         name = row[i_name].strip() if (i_name != -1 and i_name < len(row) and row[i_name].strip()) else sym
         try:
             close_val = float(row[i_close].strip())
-            isin = row[i_isin].strip() if (i_isin != -1 and i_isin < len(row)) else ""
+            raw_isin = row[i_isin].strip().upper() if (i_isin != -1 and i_isin < len(row)) else ""
+            isin = raw_isin if re.match(r"^IN[EF0][0-9A-Z]{9}$", raw_isin) else ""
             if sym and close_val > 0:
                 result[sym] = {"name": name, "close": close_val, "isin": isin}
         except ValueError:
@@ -819,6 +820,7 @@ def build_equities_js(opener, horizons: dict, ca_data: dict = None):
             calc_h("m6", 220.0),
             calc_h("y1", 320.0),
             1 if sym in n500_symbols else 0,
+            cur_isin or None,
         ])
 
     horizon_iso = {k: v.isoformat() for k, v in horizons.items()}
@@ -828,7 +830,7 @@ def build_equities_js(opener, horizons: dict, ca_data: dict = None):
         f"window.KYF_MARKET_EQUITIES = {{\n"
         f'  asOf: "{horizons["latest"].isoformat()}",\n'
         f"  horizons: {json.dumps(horizon_iso)},\n"
-        f'  columns: ["symbol", "companyName", "closePrice", "ret1m", "ret3m", "ret6m", "ret1y", "isN500"],\n'
+        f'  columns: ["symbol", "companyName", "closePrice", "ret1m", "ret3m", "ret6m", "ret1y", "isN500", "isin"],\n'
         f"  nifty500Count: {len(n500_symbols)},\n"
         f"  stocks: [\n{body_lines}\n  ]\n"
         f"}};\n"
@@ -910,6 +912,14 @@ def parse_amfi_txt(raw_text: str, is_latest: bool, code_names: dict = None):
         by_code[code] = nav
 
         if is_latest:
+            # Extract Growth ISIN from AMFI semicolon-delimited columns (typically parts[1] or parts[2])
+            scheme_isin = None
+            for p_cand in parts[1:3]:
+                cand = p_cand.strip().upper()
+                if re.match(r"^INF[0-9A-Z]{9}$", cand):
+                    scheme_isin = cand
+                    break
+
             # Scheme name can be in parts[3] (8-column format) or parts[1] (6-column format)
             raw_name = parts[3].strip() if len(parts) > 3 and parts[3].strip() else parts[1].strip()
             plan = parts[4].strip() if len(parts) > 4 else ""
@@ -951,13 +961,19 @@ def parse_amfi_txt(raw_text: str, is_latest: bool, code_names: dict = None):
                     "category": normalize_mf_category(current_cat),
                     "directNav": None,
                     "regularNav": None,
+                    "directIsin": None,
+                    "regularIsin": None,
                 }
 
             if is_direct:
                 grouped[base_key]["directCode"] = code
                 grouped[base_key]["directNav"] = nav
+                if scheme_isin:
+                    grouped[base_key]["directIsin"] = scheme_isin
             elif is_regular:
                 grouped[base_key]["regularNav"] = nav
+                if scheme_isin:
+                    grouped[base_key]["regularIsin"] = scheme_isin
 
     return grouped if is_latest else by_code
 
@@ -1010,6 +1026,8 @@ def build_mf_js(opener, horizons: dict):
             calc_pct(nav, snapshots["m3"].get(code)),
             calc_pct(nav, snapshots["m6"].get(code)),
             calc_pct(nav, snapshots["y1"].get(code)),
+            item.get("directIsin"),
+            item.get("regularIsin"),
         ])
 
     tuples.sort(key=lambda x: x[0])
@@ -1020,7 +1038,7 @@ def build_mf_js(opener, horizons: dict):
         f"window.KYF_MARKET_MF = {{\n"
         f'  asOf: "{horizons["latest"].isoformat()}",\n'
         f"  horizons: {json.dumps(horizon_iso)},\n"
-        f'  columns: ["directCode", "fundName", "category", "directNav", "regularNav", "ret1m", "ret3m", "ret6m", "ret1y"],\n'
+        f'  columns: ["directCode", "fundName", "category", "directNav", "regularNav", "ret1m", "ret3m", "ret6m", "ret1y", "directIsin", "regularIsin"],\n'
         f"  schemes: [\n{body_lines}\n  ]\n"
         f"}};\n"
     )
