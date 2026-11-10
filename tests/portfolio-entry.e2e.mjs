@@ -104,6 +104,48 @@ try {
   }
   check((await holdingCount()) === 5, "five holdings are listed");
 
+  console.log("[2b] Row actions and drawer");
+  check(await page.locator(".btn-edit-leaf").first().isVisible(), "Edit button is visible without hovering");
+  check((await page.locator("#holding-more-details").count()) === 1 && (await page.locator(".leaf-name-text.is-editable").count()) === 5, "holding names are click-to-edit");
+  await page.locator(".leaf-name-text.is-editable").first().click();
+  await page.waitForSelector("#holding-modal", { state: "visible" });
+  await page.waitForTimeout(400); // let the slide-in animation finish
+  const box = await page.locator("#holding-modal .drawer-panel").boundingBox();
+  const vp = page.viewportSize();
+  check(Math.abs(box.x + box.width - vp.width) < 2 && box.height >= vp.height - 2, "edit opens as a right-hand slide-over drawer");
+  check(await page.locator("#btn-save-holding").isVisible(), "Save stays in view");
+  await page.click("#btn-cancel-holding");
+
+  console.log("[2c] Fund units follow the selected plan");
+  await page.click("#btn-open-holding-modal");
+  await page.fill("#modal-omni-search-input", "parag parikh flexi");
+  await page.waitForSelector("#modal-omni-search-results .omni-result-item");
+  await page.locator("#modal-omni-search-results .omni-result-item").first().click();
+  await page.fill("#input-holding-curval", "100000");
+  const directPrice = parseFloat(await page.inputValue("#input-holding-price"));
+  const directUnits = parseFloat(await page.inputValue("#input-holding-units"));
+  await page.click("#label-variant-regular");
+  const regPrice = parseFloat(await page.inputValue("#input-holding-price"));
+  const regUnits = parseFloat(await page.inputValue("#input-holding-units"));
+  check(directPrice > 0 && regPrice > 0 && regPrice !== directPrice, `NAV changes with the plan (${directPrice} -> ${regPrice})`);
+  check(Math.abs(regUnits * regPrice - 100000) < regPrice && regUnits > directUnits, `units recomputed from the Regular NAV (${directUnits} -> ${regUnits}); worth stays ₹1,00,000`);
+  check((await page.inputValue("#input-holding-curval")) === "100000", "worth today is unchanged by the plan switch");
+  await page.click("#btn-cancel-holding");
+
+  console.log("[2d] Family members drawer");
+  await page.click("#btn-open-member-modal");
+  await page.waitForSelector("#member-modal", { state: "visible" });
+  await page.waitForTimeout(400);
+  const mbox = await page.locator("#member-modal .drawer-panel").boundingBox();
+  check(Math.abs(mbox.x + mbox.width - page.viewportSize().width) < 2, "member dialog is a right-hand drawer too");
+  await page.fill("#input-member-name", "Asha");
+  await page.selectOption("#select-member-role", "Spouse");
+  await page.click("#form-add-member button[type=submit]");
+  await page.waitForFunction(() => document.getElementById("modal-members-list").textContent.includes("Asha"));
+  check(true, "a family member can be added from the drawer");
+  await page.click("#btn-close-member-modal");
+  await page.waitForSelector("#member-modal", { state: "hidden" });
+
   console.log("[3] Footer");
   check((await page.textContent("#kyf-footer")).includes("Questions, comments, feedback write to info@vividnova.com"), "footer shows the feedback line");
   check(/^KYF v\d+\.\d+\.\d+$/.test((await page.textContent(".kyf-footer-version")).trim()), "footer shows the app version");
@@ -156,6 +198,22 @@ try {
   await demoPage.reload();
   await demoPage.waitForSelector(".btn-edit-leaf");
   check((await demoPage.locator(".btn-edit-leaf").count()) === 1, "your holding survives a reload (demo stays off)");
+
+  console.log("[8] Loans subtract from net worth");
+  const nwBefore = (await demoPage.textContent("#kpi-net-worth")).trim();
+  await demoPage.click("#btn-open-holding-modal");
+  await demoPage.waitForSelector("#holding-modal", { state: "visible" });
+  await demoPage.selectOption("#select-holding-assetclass", "Liabilities");
+  check(!(await demoPage.locator("#field-holding-units").isVisible()) && !(await demoPage.locator("#field-holding-invval").isVisible()), "units and cost basis are hidden for a loan");
+  check((await demoPage.textContent("#label-holding-curval")).includes("Outstanding"), "worth field becomes 'Outstanding balance'");
+  await demoPage.fill("#modal-omni-search-input", "Car loan");
+  await demoPage.fill("#input-holding-curval", "20000");
+  await demoPage.click("#btn-save-holding");
+  await demoPage.waitForSelector("#holding-modal", { state: "hidden" });
+  const nwAfter = (await demoPage.textContent("#kpi-net-worth")).trim();
+  check(nwBefore === "₹50.0 K" && nwAfter === "₹30.0 K", `net worth drops by the loan (${nwBefore} -> ${nwAfter})`);
+  check((await demoPage.textContent("#kpi-net-worth-sub")).includes("Debt"), "Net Worth card shows Assets − Debt");
+  check((await demoPage.locator(".tag-badge--debt").count()) >= 1, "the loan row is tagged as Debt");
   check(demoErrors.length === 0, "no page errors in demo flow", demoErrors.join(" | "));
 
   check(errors.length === 0, "no uncaught page errors", errors.join(" | "));

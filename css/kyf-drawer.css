@@ -1,0 +1,113 @@
+/* ==========================================================================
+   KYF slide-over drawer — shared by Portfolio, Goals and Cadence
+   Right-hand inspector panel for add / edit forms.
+   Show it either by adding the `open` class or by setting inline display:flex.
+   Markup:
+     .drawer-overlay > .drawer-panel > .drawer-head + form.drawer-form(.drawer-body + .drawer-actions)
+   ========================================================================== */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  justify-content: flex-end;
+  align-items: stretch;
+  background: rgba(24, 38, 32, 0.45);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.drawer-overlay.open {
+  display: flex;
+}
+
+.drawer-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(var(--drawer-width, 460px), 100%);
+  height: 100%;
+  background: var(--panel, #ffffff);
+  border-left: 1px solid var(--line);
+  box-shadow: -16px 0 40px rgba(24, 38, 32, 0.18);
+  animation: drawer-slide-in 0.22s ease-out;
+}
+
+@keyframes drawer-slide-in {
+  from { transform: translateX(32px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+.drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawer-head h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.drawer-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px;
+}
+
+/* Save / Cancel stay in view however long the form gets */
+.drawer-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0;
+  padding: 12px 22px;
+  border-top: 1px solid var(--line);
+  background: var(--panel, #ffffff);
+}
+
+@media (max-width: 520px) {
+  .drawer-head { padding: 14px 16px 12px; }
+  .drawer-body { padding: 14px 16px; }
+  .drawer-actions { padding: 10px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-panel { animation: none; }
+}
+
+
+.drawer-panel--wide {
+  --drawer-width: 560px;
+}
+
+.drawer-head .modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.drawer-head .modal-close:hover {
+  color: var(--ink);
+}
+
+/* A form that is just a body (no pinned actions) still scrolls */
+.drawer-panel > .drawer-body {
+  flex: 1;
+}

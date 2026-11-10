@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>Financial Cadence — Secret sauce of success | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.5.1">
   <style>
     :root {
       --ink: #182620;
@@ -371,20 +372,7 @@
     }
     .empty-state p { color: var(--muted); margin: 0 0 12px; }
 
-    /* ---------- Modal for Custom Activity ---------- */
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 50;
-      background: rgba(24,38,32,.5); backdrop-filter: blur(4px);
-      display: none; place-items: center; padding: 20px;
-    }
-    .modal-overlay.open { display: grid; }
-    .modal-card {
-      background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
-      width: min(520px, 100%); max-height: 90vh; overflow-y: auto; padding: 28px 24px;
-      box-shadow: 0 20px 40px rgba(0,0,0,.15);
-    }
-    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); }
+    /* ---------- Activity drawer (shell styles live in css/kyf-drawer.css) ---------- */
     .form-group { margin-bottom: 16px; }
     .form-group label {
       display: block; font-family: var(--mono); font-size: 11.5px; text-transform: uppercase;
@@ -395,7 +383,6 @@
       border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink);
     }
     .form-control:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 
     /* ---------- Footer ---------- */
     footer {
@@ -537,13 +524,14 @@
   </main>
 
   <!-- ADD CUSTOM ACTIVITY MODAL -->
-  <div class="modal-overlay" id="addModalOverlay">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3 style="font-size:22px;">Add Custom Action Activity</h3>
-        <button class="modal-close" id="closeAddModalBtn" aria-label="Close modal">&times;</button>
+  <div class="drawer-overlay" id="addModalOverlay" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <h3 id="addModalTitle">Add Custom Action Activity</h3>
+        <button class="modal-close" id="closeAddModalBtn" aria-label="Close panel">&times;</button>
       </div>
-      <form id="addActivityForm">
+      <form id="addActivityForm" class="drawer-form">
+        <div class="drawer-body">
         <div class="form-group">
           <label for="actSection">Section Category</label>
           <select id="actSection" class="form-control" required>
@@ -580,7 +568,9 @@
           <label for="actDueDate">Target Work Date (Optional)</label>
           <input type="date" id="actDueDate" class="form-control">
         </div>
-        <div class="modal-actions">
+        </div>
+
+        <div class="drawer-actions">
           <button type="button" class="btn-action" id="cancelAddBtn">Cancel</button>
           <button type="submit" class="btn-action primary">Save Activity</button>
         </div>
@@ -1282,7 +1272,7 @@
       render();
     })();
   </script>
-  <script src="js/kyf-footer.js?v=1.5.0"></script>
+  <script src="js/kyf-footer.js?v=1.5.1"></script>
 </body>
 </html>
 

@@ -5,7 +5,7 @@
   "description": "Know Your Finance (KYF)",
   "type": "module",
   "scripts": {
-    "test": "node tests/vault.test.mjs",
+    "test": "node tests/vault.test.mjs && node tests/liabilities.test.mjs && node tests/holdings-workflow.test.mjs",
     "sync-data": "py admin/sync_market_data.py",
     "sync-data:force-nhb": "py admin/sync_market_data.py --force-nhb",
     "sync-and-push": "py admin/sync_market_data.py --commit-push",
