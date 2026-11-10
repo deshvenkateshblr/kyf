@@ -110,7 +110,7 @@ try {
   await page.locator(".leaf-name-text.is-editable").first().click();
   await page.waitForSelector("#holding-modal", { state: "visible" });
   await page.waitForTimeout(400); // let the slide-in animation finish
-  const box = await page.locator(".drawer-panel").boundingBox();
+  const box = await page.locator("#holding-modal .drawer-panel").boundingBox();
   const vp = page.viewportSize();
   check(Math.abs(box.x + box.width - vp.width) < 2 && box.height >= vp.height - 2, "edit opens as a right-hand slide-over drawer");
   check(await page.locator("#btn-save-holding").isVisible(), "Save stays in view");
@@ -131,6 +131,20 @@ try {
   check(Math.abs(regUnits * regPrice - 100000) < regPrice && regUnits > directUnits, `units recomputed from the Regular NAV (${directUnits} -> ${regUnits}); worth stays ₹1,00,000`);
   check((await page.inputValue("#input-holding-curval")) === "100000", "worth today is unchanged by the plan switch");
   await page.click("#btn-cancel-holding");
+
+  console.log("[2d] Family members drawer");
+  await page.click("#btn-open-member-modal");
+  await page.waitForSelector("#member-modal", { state: "visible" });
+  await page.waitForTimeout(400);
+  const mbox = await page.locator("#member-modal .drawer-panel").boundingBox();
+  check(Math.abs(mbox.x + mbox.width - page.viewportSize().width) < 2, "member dialog is a right-hand drawer too");
+  await page.fill("#input-member-name", "Asha");
+  await page.selectOption("#select-member-role", "Spouse");
+  await page.click("#form-add-member button[type=submit]");
+  await page.waitForFunction(() => document.getElementById("modal-members-list").textContent.includes("Asha"));
+  check(true, "a family member can be added from the drawer");
+  await page.click("#btn-close-member-modal");
+  await page.waitForSelector("#member-modal", { state: "hidden" });
 
   console.log("[3] Footer");
   check((await page.textContent("#kyf-footer")).includes("Questions, comments, feedback write to info@vividnova.com"), "footer shows the feedback line");

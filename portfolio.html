@@ -14,7 +14,8 @@
   <link rel="icon" href="css/kyf_logo.png">
 
   <!-- Application Stylesheet with v1.4.8 Cache-Busting -->
-  <link rel="stylesheet" href="css/portfolio.css?v=1.4.8">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.5.1">
+  <link rel="stylesheet" href="css/portfolio.css?v=1.5.1">
 </head>
 <body>
 
@@ -235,50 +236,52 @@
   <!-- Toast Notification Pill -->
   <div id="kyf-toast" class="toast-notice" role="alert" aria-live="polite"></div>
 
-  <!-- Manage Family Members Modal -->
-  <div id="member-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="member-modal-title">
-    <div class="modal-card">
-      <div class="modal-head">
+  <!-- Manage Family Members Drawer -->
+  <div id="member-modal" class="drawer-overlay" role="dialog" aria-modal="true" aria-labelledby="member-modal-title">
+    <div class="drawer-panel">
+      <div class="drawer-head">
         <h3 id="member-modal-title">👥 Family Members</h3>
-        <button type="button" class="modal-close" id="btn-close-member-modal" aria-label="Close dialog">✕</button>
+        <button type="button" class="modal-close" id="btn-close-member-modal" aria-label="Close panel">✕</button>
       </div>
 
-      <!-- Existing members list -->
-      <div style="margin-bottom: 20px;">
-        <label style="display:block; font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:8px;">Active Family Members</label>
-        <div id="modal-members-list" class="modal-members-list">
-          <!-- Populated dynamically -->
+      <div class="drawer-body">
+        <!-- Existing members list -->
+        <div class="member-drawer-section">
+          <span class="form-label">Active Family Members</span>
+          <div id="modal-members-list" class="modal-members-list">
+            <!-- Populated dynamically -->
+          </div>
         </div>
-      </div>
 
-      <!-- Add member form -->
-      <form id="form-add-member" style="border-top: 1px dashed var(--line); padding-top: 18px;">
-        <label style="display:block; font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:12px;">Add New Member</label>
-        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; margin-bottom: 16px;">
-          <div>
-            <label style="display:block; font-family:var(--mono); font-size:10.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;" for="input-member-name">Name *</label>
-            <input type="text" id="input-member-name" class="form-control" placeholder="e.g. Self, Priya, Aarav" required>
+        <!-- Add member form -->
+        <form id="form-add-member" class="member-add-form">
+          <span class="form-label">Add New Member</span>
+          <div class="holding-form-grid">
+            <div class="form-field">
+              <label class="form-label" for="input-member-name">Name *</label>
+              <input type="text" id="input-member-name" class="form-control" placeholder="e.g. Self, Priya, Aarav" required>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="select-member-role">Relationship / Role</label>
+              <select id="select-member-role" class="form-control">
+                <option value="Self">Self</option>
+                <option value="Spouse">Spouse</option>
+                <option value="Child">Child</option>
+                <option value="Father">Father</option>
+                <option value="Mother">Mother</option>
+                <option value="Parent">Parent</option>
+                <option value="Partner">Partner</option>
+                <option value="Sibling">Sibling</option>
+                <option value="Dependent">Dependent</option>
+                <option value="Family">Family Member</option>
+              </select>
+            </div>
+            <div class="form-field full member-add-actions">
+              <button type="submit" class="btn-pill btn-pill--primary">＋ Add Member</button>
+            </div>
           </div>
-          <div>
-            <label style="display:block; font-family:var(--mono); font-size:10.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;" for="select-member-role">Relationship / Role</label>
-            <select id="select-member-role" class="form-control">
-              <option value="Self">Self</option>
-              <option value="Spouse">Spouse</option>
-              <option value="Child">Child</option>
-              <option value="Father">Father</option>
-              <option value="Mother">Mother</option>
-              <option value="Parent">Parent</option>
-              <option value="Partner">Partner</option>
-              <option value="Sibling">Sibling</option>
-              <option value="Dependent">Dependent</option>
-              <option value="Family">Family Member</option>
-            </select>
-          </div>
-        </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="submit" class="btn" style="padding: 8px 18px; font-size: 11.5px; background: var(--teal); border-color: var(--teal); color: #fff; border-radius: 999px; cursor: pointer; font-weight:600;">＋ Add Member</button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -418,21 +421,21 @@
   <!-- ==========================================================================
        DATASETS (Auto-Generated Daily by admin/sync_market_data.py)
        ========================================================================== -->
-  <script src="data/market-pulse.js?v=1.4.8"></script>
-  <script src="data/market-corporate-actions.js?v=1.4.8"></script>
-  <script src="data/market-equities.js?v=1.4.8"></script>
-  <script src="data/market-mf.js?v=1.4.8"></script>
-  <script src="data/market-realestate.js?v=1.4.8"></script>
-  <script src="data/market-holidays.js?v=1.4.8"></script>
+  <script src="data/market-pulse.js?v=1.5.1"></script>
+  <script src="data/market-corporate-actions.js?v=1.5.1"></script>
+  <script src="data/market-equities.js?v=1.5.1"></script>
+  <script src="data/market-mf.js?v=1.5.1"></script>
+  <script src="data/market-realestate.js?v=1.5.1"></script>
+  <script src="data/market-holidays.js?v=1.5.1"></script>
 
   <!-- ==========================================================================
-       PORTFOLIO MODULE SCRIPTS (with ?v=1.4.8 Cache-Busting)
+       PORTFOLIO MODULE SCRIPTS (with ?v=1.5.1 Cache-Busting)
        ========================================================================== -->
-  <script src="js/kyf-vault.js?v=1.4.8"></script>
-  <script src="js/portfolio-data.js?v=1.4.8"></script>
-  <script src="js/portfolio-engine.js?v=1.4.8"></script>
-  <script src="js/portfolio-app.js?v=1.4.8"></script>
-  <script src="js/kyf-footer.js?v=1.5.0"></script>
+  <script src="js/kyf-vault.js?v=1.5.1"></script>
+  <script src="js/portfolio-data.js?v=1.5.1"></script>
+  <script src="js/portfolio-engine.js?v=1.5.1"></script>
+  <script src="js/portfolio-app.js?v=1.5.1"></script>
+  <script src="js/kyf-footer.js?v=1.5.1"></script>
 </body>
 </html>
 

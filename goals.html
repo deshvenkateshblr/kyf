@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>Life Goals Planner — Anchor Dreams to Math | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.5.1">
   <style>
     :root {
       --ink: #182620;
@@ -376,23 +377,14 @@
     }
     .empty-state p { color: var(--muted); margin: 0 0 12px; }
 
-    /* ---------- Modal for Custom Goal ---------- */
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 50;
-      background: rgba(24,38,32,.5); backdrop-filter: blur(4px);
-      display: none; place-items: center; padding: 20px;
-    }
-    .modal-overlay.open { display: grid; }
-    .modal-card {
-      background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
-      width: min(580px, 100%); max-height: 92vh; overflow-y: auto; padding: 28px 26px;
-      box-shadow: 0 20px 40px rgba(0,0,0,.15);
-    }
-    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); }
+    /* ---------- Goal drawer (shell styles live in css/kyf-drawer.css) ---------- */
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
     .form-group { margin-bottom: 14px; }
     .form-group.full { grid-column: span 2; }
+    @media (max-width: 520px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: auto; }
+    }
     .form-group label {
       display: block; font-family: var(--mono); font-size: 11px; text-transform: uppercase;
       letter-spacing: .08em; color: var(--muted); margin-bottom: 5px;
@@ -423,7 +415,6 @@
       font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--teal-deep); margin-top: 3px;
     }
 
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 
     /* ---------- Educational Callout Card ---------- */
     .edu-callout {
@@ -598,13 +589,14 @@
   </main>
 
   <!-- ADD / EDIT GOAL MODAL -->
-  <div class="modal-overlay" id="goalModalOverlay">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3 id="modalTitle" style="font-size:22px;">Create New Life Goal</h3>
-        <button class="modal-close" id="closeGoalModalBtn" aria-label="Close modal">&times;</button>
+  <div class="drawer-overlay" id="goalModalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="drawer-panel drawer-panel--wide">
+      <div class="drawer-head">
+        <h3 id="modalTitle">Create New Life Goal</h3>
+        <button class="modal-close" id="closeGoalModalBtn" aria-label="Close panel">&times;</button>
       </div>
-      <form id="goalForm">
+      <form id="goalForm" class="drawer-form">
+        <div class="drawer-body">
         <input type="hidden" id="goalId">
 
         <div class="form-grid">
@@ -692,7 +684,9 @@
           </div>
         </div>
 
-        <div class="modal-actions">
+        </div>
+
+        <div class="drawer-actions">
           <button type="button" class="btn-action" id="cancelGoalModalBtn">Cancel</button>
           <button type="submit" class="btn-action primary">Save Goal</button>
         </div>
@@ -1360,7 +1354,7 @@
       render();
     })();
   </script>
-  <script src="js/kyf-footer.js?v=1.5.0"></script>
+  <script src="js/kyf-footer.js?v=1.5.1"></script>
 </body>
 </html>
 
