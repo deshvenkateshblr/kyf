@@ -82,11 +82,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     btnCancelImport: document.getElementById("btn-cancel-import"),
     btnConfirmImport: document.getElementById("btn-confirm-import"),
     importDropzone: document.getElementById("import-dropzone"),
+    importDropzoneContent: document.getElementById("import-dropzone-content"),
     brokerFileInput: document.getElementById("broker-file-input"),
-    importControlsRow: document.getElementById("import-controls-row"),
     importMemberSelect: document.getElementById("import-member-select"),
     importStatsSummary: document.getElementById("import-stats-summary"),
     importPreviewWrap: document.getElementById("import-preview-wrap"),
+    importPreviewTitle: document.getElementById("import-preview-title"),
+    importPreviewCount: document.getElementById("import-preview-count"),
     importPreviewTbody: document.getElementById("import-preview-tbody"),
     // Investment Holding Modal elements
     btnOpenHoldingModal: document.getElementById("btn-open-holding-modal"),
@@ -2073,7 +2075,69 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================================================
   let pendingImportHoldings = [];
   let pendingImportBrokers = [];
-  let pendingDetectedMembers = [];
+  let currentLoadedFile = null;
+
+  function formatBytes(bytes) {
+    if (!bytes || bytes <= 0) return "0 B";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1048576).toFixed(1) + " MB";
+  }
+
+  function renderImportPreview(selectedMember) {
+    if (!pendingImportHoldings || pendingImportHoldings.length === 0) {
+      if (els.importPreviewWrap) els.importPreviewWrap.style.display = "none";
+      if (els.btnConfirmImport) els.btnConfirmImport.disabled = true;
+      return;
+    }
+
+    const count = pendingImportHoldings.length;
+
+    if (els.importPreviewTitle) {
+      els.importPreviewTitle.textContent = `Holdings to Import for ${escapeHTML(selectedMember)}`;
+    }
+    if (els.importPreviewCount) {
+      els.importPreviewCount.textContent = `${count} ${count === 1 ? "item" : "items"}`;
+    }
+
+    if (els.importPreviewTbody) {
+      els.importPreviewTbody.innerHTML = pendingImportHoldings.map((h) => {
+        const qtyStr = typeof h.units === "number" ? h.units.toLocaleString("en-IN", { maximumFractionDigits: 3 }) : (h.units || "—");
+        const invStr = h.investedValue != null ? `₹${Math.round(h.investedValue).toLocaleString("en-IN")}` : "—";
+        const curStr = h.currentValue != null ? `₹${Math.round(h.currentValue).toLocaleString("en-IN")}` : "—";
+        return `
+          <tr>
+            <td><strong>${escapeHTML(h.name)}</strong></td>
+            <td><span class="subcat-chip">${escapeHTML(h.assetClass)}</span></td>
+            <td>${escapeHTML(h.custodian || "Broker")}</td>
+            <td class="mono-num">${qtyStr}</td>
+            <td class="mono-num">${invStr}</td>
+            <td class="mono-num"><strong>${curStr}</strong></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    if (els.importPreviewWrap) els.importPreviewWrap.style.display = "block";
+    if (els.btnConfirmImport) {
+      els.btnConfirmImport.disabled = false;
+      els.btnConfirmImport.textContent = `＋ Import ${count} Holdings for ${selectedMember}`;
+    }
+  }
+
+  function resetImportDropzone() {
+    if (!els.importDropzone) return;
+    els.importDropzone.classList.remove("has-file", "is-reading", "dragover");
+    if (els.importDropzoneContent) {
+      els.importDropzoneContent.innerHTML = `
+        <div class="import-dropzone-icon">📄</div>
+        <div class="import-dropzone-text">
+          <strong>Click to select a file</strong> or drag &amp; drop here
+        </div>
+        <div class="import-dropzone-hint">CSV, TSV, or Excel (.xlsx / .xls)</div>
+      `;
+    }
+  }
 
   function openImportModal() {
     if (!els.importModal) return;
@@ -2087,32 +2151,50 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     pendingImportHoldings = [];
     pendingImportBrokers = [];
-    pendingDetectedMembers = [];
+    currentLoadedFile = null;
 
-    // Populate Member dropdown
+    // Explicit Member decision: populate with registered members (NO "Auto-detect")
     if (els.importMemberSelect) {
       els.importMemberSelect.innerHTML = "";
-      const autoOpt = document.createElement("option");
-      autoOpt.value = "";
-      autoOpt.textContent = "Auto-detect from file";
-      els.importMemberSelect.appendChild(autoOpt);
+      const members = (rawMembers && rawMembers.length > 0) ? rawMembers : [{ id: "mem_self", name: "Self" }];
 
-      const members = rawMembers && rawMembers.length > 0 ? rawMembers : [{ id: "mem_self", name: "Self" }];
+      // Determine default member: if single member currently active in scope, use that; else default to Self or first member
+      let defaultSelectedName = members[0].name;
+      if (activeMemberScope instanceof Set && activeMemberScope.size === 1) {
+        const activeName = Array.from(activeMemberScope)[0];
+        if (members.some(m => m.name.toLowerCase() === activeName.toLowerCase())) {
+          defaultSelectedName = activeName;
+        }
+      } else {
+        const selfMember = members.find(m => m.name.toLowerCase() === "self");
+        if (selfMember) defaultSelectedName = selfMember.name;
+      }
+
       for (const m of members) {
         const opt = document.createElement("option");
         opt.value = m.name;
-        opt.textContent = m.name;
+        opt.textContent = `${m.name}${m.role && m.role.toLowerCase() !== m.name.toLowerCase() ? ` (${m.role})` : ""}`;
+        if (m.name.toLowerCase() === defaultSelectedName.toLowerCase()) {
+          opt.selected = true;
+        }
         els.importMemberSelect.appendChild(opt);
       }
     }
 
     // Reset dropzone & preview
     if (els.brokerFileInput) els.brokerFileInput.value = "";
-    if (els.importControlsRow) els.importControlsRow.style.display = "none";
+    resetImportDropzone();
+    if (els.importStatsSummary) {
+      els.importStatsSummary.style.display = "none";
+      els.importStatsSummary.innerHTML = "";
+    }
     if (els.importPreviewWrap) els.importPreviewWrap.style.display = "none";
-    if (els.importStatsSummary) els.importStatsSummary.textContent = "";
     if (els.importPreviewTbody) els.importPreviewTbody.innerHTML = "";
-    if (els.btnConfirmImport) els.btnConfirmImport.disabled = true;
+    if (els.btnConfirmImport) {
+      const currentMember = els.importMemberSelect ? els.importMemberSelect.value : "Self";
+      els.btnConfirmImport.disabled = true;
+      els.btnConfirmImport.textContent = `＋ Import Holdings for ${currentMember}`;
+    }
 
     els.importModal.style.display = "flex";
     els.importModal.setAttribute("aria-hidden", "false");
@@ -2124,60 +2206,117 @@ document.addEventListener("DOMContentLoaded", async () => {
     els.importModal.setAttribute("aria-hidden", "true");
     pendingImportHoldings = [];
     pendingImportBrokers = [];
-    pendingDetectedMembers = [];
+    currentLoadedFile = null;
   }
 
   async function handleBrokerFile(file) {
     if (!file || !window.KYF_BROKER_IMPORTER) return;
+    currentLoadedFile = file;
+
+    const selectedMember = (els.importMemberSelect && els.importMemberSelect.value) ? els.importMemberSelect.value.trim() : "Self";
+
+    // 1. VISUAL CLUE: Immediate Reading / Analyzing State on the dropzone!
+    if (els.importDropzone) {
+      els.importDropzone.classList.remove("has-file");
+      els.importDropzone.classList.add("is-reading");
+    }
+    if (els.importDropzoneContent) {
+      els.importDropzoneContent.innerHTML = `
+        <div class="import-dropzone-status">
+          <div class="import-spinner"></div>
+          <div class="import-dropzone-text">
+            <strong>Reading &amp; analyzing ${escapeHTML(file.name)}...</strong>
+          </div>
+          <div class="import-dropzone-hint">${formatBytes(file.size)} • Detecting broker statement format</div>
+        </div>
+      `;
+    }
+    if (els.btnConfirmImport) els.btnConfirmImport.disabled = true;
+    showToast(`Reading ${file.name}...`, "info");
+
     try {
-      showToast(`Reading ${file.name}...`, "info");
-      const selectedMember = els.importMemberSelect && els.importMemberSelect.value ? els.importMemberSelect.value : null;
-      const parsed = await window.KYF_BROKER_IMPORTER.parseFiles([file], selectedMember || "Self");
+      // Yield to DOM so the spinner renders
+      await new Promise(resolve => setTimeout(resolve, 40));
+
+      const parsed = await window.KYF_BROKER_IMPORTER.parseFiles([file], selectedMember);
 
       if (!parsed.holdings || parsed.holdings.length === 0) {
+        if (els.importDropzone) {
+          els.importDropzone.classList.remove("is-reading", "has-file");
+        }
+        if (els.importDropzoneContent) {
+          els.importDropzoneContent.innerHTML = `
+            <div class="import-dropzone-status">
+              <div class="import-dropzone-icon" style="color: var(--rose);">⚠️</div>
+              <div class="import-dropzone-text" style="color: var(--rose);">
+                <strong>No valid holdings recognized in "${escapeHTML(file.name)}"</strong>
+              </div>
+              <div class="import-dropzone-hint">Supported formats: Zerodha (Coin, Kite, Console), Groww, CAMS, KFintech CAS, MFCentral, ICICI Direct, HDFC Sec, SBI Sec, Angel One, Upstox, Kuvera. Click to choose another file.</div>
+            </div>
+          `;
+        }
+        if (els.importStatsSummary) els.importStatsSummary.style.display = "none";
+        if (els.importPreviewWrap) els.importPreviewWrap.style.display = "none";
         showToast("No valid holdings detected in this file.", "warning");
         return;
       }
 
-      pendingImportHoldings = parsed.holdings;
+      // Explicitly assign EVERY holding to the user's chosen member
+      pendingImportHoldings = parsed.holdings.map(h => ({ ...h, member: selectedMember }));
       pendingImportBrokers = parsed.brokers;
-      pendingDetectedMembers = parsed.detectedMembers || [];
 
-      // Update summary stats
-      const brokerLabel = parsed.broker || "Broker File";
+      const brokerLabel = parsed.broker || "Broker Statement";
       const count = pendingImportHoldings.length;
       const totalLive = pendingImportHoldings.reduce((sum, h) => sum + (Number(h.currentValue) || 0), 0);
 
-      if (els.importStatsSummary) {
-        els.importStatsSummary.textContent = `Detected: ${brokerLabel} • ${count} holdings • Live Value ₹${Math.round(totalLive).toLocaleString("en-IN")}`;
+      // 2. VISUAL CLUE: Loaded File Banner in the dropzone!
+      if (els.importDropzone) {
+        els.importDropzone.classList.remove("is-reading");
+        els.importDropzone.classList.add("has-file");
       }
-      if (els.importControlsRow) els.importControlsRow.style.display = "flex";
+      if (els.importDropzoneContent) {
+        els.importDropzoneContent.innerHTML = `
+          <div class="import-dropzone-status">
+            <div class="import-file-pill">
+              <span class="import-file-icon">✓</span>
+              <span class="import-file-name">${escapeHTML(file.name)}</span>
+              <span class="import-file-size">(${formatBytes(file.size)})</span>
+              <span class="import-broker-tag">${escapeHTML(brokerLabel)}</span>
+            </div>
+            <div class="import-file-action">Click or drop another file to change</div>
+          </div>
+        `;
+      }
+
+      // Summary Stats
+      if (els.importStatsSummary) {
+        els.importStatsSummary.style.display = "flex";
+        els.importStatsSummary.innerHTML = `
+          <span>Detected: <strong>${escapeHTML(brokerLabel)}</strong> (${count} holdings)</span>
+          <span>Live Value: <strong>₹${Math.round(totalLive).toLocaleString("en-IN")}</strong></span>
+        `;
+      }
 
       // Render Preview Table
-      if (els.importPreviewTbody) {
-        els.importPreviewTbody.innerHTML = pendingImportHoldings.map((h) => {
-          const qtyStr = typeof h.units === "number" ? h.units.toLocaleString("en-IN", { maximumFractionDigits: 3 }) : (h.units || "—");
-          const invStr = h.investedValue != null ? `₹${Math.round(h.investedValue).toLocaleString("en-IN")}` : "—";
-          const curStr = h.currentValue != null ? `₹${Math.round(h.currentValue).toLocaleString("en-IN")}` : "—";
-          return `
-            <tr>
-              <td><strong>${escapeHTML(h.name)}</strong></td>
-              <td><span class="subcat-chip">${escapeHTML(h.assetClass)}</span></td>
-              <td>${escapeHTML(h.custodian || "Broker")}</td>
-              <td class="mono-num">${qtyStr}</td>
-              <td class="mono-num">${invStr}</td>
-              <td class="mono-num"><strong>${curStr}</strong></td>
-            </tr>
-          `;
-        }).join("");
-      }
+      renderImportPreview(selectedMember);
 
-      if (els.importPreviewWrap) els.importPreviewWrap.style.display = "block";
-      if (els.btnConfirmImport) els.btnConfirmImport.disabled = false;
-
-      showToast(`Detected ${count} holdings from ${brokerLabel}.`, "info");
+      showToast(`✓ Loaded ${count} holdings from ${brokerLabel}.`, "success");
     } catch (err) {
       console.error("[Broker Import Error]", err);
+      if (els.importDropzone) {
+        els.importDropzone.classList.remove("is-reading", "has-file");
+      }
+      if (els.importDropzoneContent) {
+        els.importDropzoneContent.innerHTML = `
+          <div class="import-dropzone-status">
+            <div class="import-dropzone-icon" style="color: var(--rose);">⚠️</div>
+            <div class="import-dropzone-text" style="color: var(--rose);">
+              <strong>Failed to read "${escapeHTML(file.name)}"</strong>
+            </div>
+            <div class="import-dropzone-hint">${escapeHTML(err.message || "Parse error")} • Click to retry with another file</div>
+          </div>
+        `;
+      }
       showToast(err.message || "Failed to parse statement file.", "danger");
     }
   }
@@ -2186,28 +2325,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!pendingImportHoldings || pendingImportHoldings.length === 0) return;
     if (isDemoMode) await leaveDemo();
 
-    const selectedMember = els.importMemberSelect && els.importMemberSelect.value ? els.importMemberSelect.value : null;
-    const finalIncoming = selectedMember
-      ? pendingImportHoldings.map(h => ({ ...h, member: selectedMember }))
-      : pendingImportHoldings;
+    const selectedMember = (els.importMemberSelect && els.importMemberSelect.value) ? els.importMemberSelect.value.trim() : "Self";
 
-    // Check if new members need to be added to rawMembers
-    let membersAdded = false;
-    if (window.KYF_PORTFOLIO_DATA && typeof window.KYF_PORTFOLIO_DATA.saveMembersToDB === "function") {
-      const existingNames = new Set((rawMembers || []).map(m => m.name.toLowerCase()));
-      for (const h of finalIncoming) {
-        const memName = (h.member || "Self").trim();
-        if (memName && !existingNames.has(memName.toLowerCase())) {
-          existingNames.add(memName.toLowerCase());
-          const newMemId = `mem_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-          rawMembers.push({ id: newMemId, name: memName, role: "Family Member" });
-          membersAdded = true;
-        }
-      }
-      if (membersAdded) {
-        await window.KYF_PORTFOLIO_DATA.saveMembersToDB(rawMembers);
-      }
-    }
+    // Explicit assignment: every single imported holding belongs to selectedMember
+    const finalIncoming = pendingImportHoldings.map(h => ({ ...h, member: selectedMember }));
 
     // Upsert into rawHoldings
     const { holdings: merged, addedCount, updatedCount } = window.KYF_BROKER_IMPORTER.upsertHoldings(rawHoldings, finalIncoming);
@@ -2224,7 +2345,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderApp();
 
     const brokerStr = pendingImportBrokers[0] || "Broker";
-    showToast(`✓ Imported ${addedCount} new, updated ${updatedCount} existing holdings from ${brokerStr}.`, "success");
+    showToast(`✓ Imported ${addedCount} new, updated ${updatedCount} existing holdings for ${selectedMember} from ${brokerStr}.`, "success");
   }
 
   // ==========================================================================
@@ -2497,12 +2618,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (els.importDropzone) {
       els.importDropzone.addEventListener("click", () => {
-        if (els.brokerFileInput) els.brokerFileInput.click();
+        if (els.brokerFileInput) {
+          els.brokerFileInput.value = "";
+          els.brokerFileInput.click();
+        }
       });
       els.importDropzone.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          if (els.brokerFileInput) els.brokerFileInput.click();
+          if (els.brokerFileInput) {
+            els.brokerFileInput.value = "";
+            els.brokerFileInput.click();
+          }
         }
       });
       ["dragenter", "dragover"].forEach((eventName) => {
@@ -2538,9 +2665,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (els.importMemberSelect) {
       els.importMemberSelect.addEventListener("change", () => {
-        const selectedMember = els.importMemberSelect.value;
-        if (pendingImportHoldings.length > 0 && selectedMember) {
+        const selectedMember = (els.importMemberSelect && els.importMemberSelect.value) ? els.importMemberSelect.value.trim() : "Self";
+        if (pendingImportHoldings && pendingImportHoldings.length > 0) {
           pendingImportHoldings = pendingImportHoldings.map(h => ({ ...h, member: selectedMember }));
+          renderImportPreview(selectedMember);
+        } else if (els.btnConfirmImport) {
+          els.btnConfirmImport.textContent = `＋ Import Holdings for ${selectedMember}`;
         }
       });
     }

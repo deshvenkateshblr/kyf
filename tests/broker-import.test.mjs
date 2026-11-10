@@ -339,6 +339,97 @@ test("Upsert matches hand-entered holding without ISIN by symbol and enriches it
   assert.equal(updated[0].allocations[0].goalId, "goal_car", "Goal allocation preserved");
 });
 
+console.log("\n[TEST GROUP 7] Explicit Member Assignment (No Auto-Guessing)");
+test("Explicit member decision strictly assigns all extracted holdings to chosen member", () => {
+  const matrix = [
+    ["Scheme Name", "Folio No", "Closing Unit Balance", "Cost Value", "Valuation (Market Value)", "Investor Name"],
+    ["Quantum Value Fund", "12345/0", "100", "10000", "12500", "Rajesh Kumar (Auto Guess Trait)"]
+  ];
+  // User explicitly selected member "GVD"
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  assert.equal(holdings.length, 1);
+  assert.equal(holdings[0].member, "GVD", "Member is explicitly GVD, never Rajesh or auto-guessed");
+});
+
+console.log("\n[TEST GROUP 8] Real-World Mutual Fund Statement Import & Edge Cases");
+test("Imports Zerodha Coin MF statements with Parag Parikh & HDFC schemes", () => {
+  const coinCsv = `Fund Name,Folio Number,Quantity Available,Average Price,Invested Amount,Current Value
+Parag Parikh Flexi Cap Fund - Direct Plan - Growth,123456/78,125.456,65.20,8179.73,9500.00
+HDFC Balanced Advantage Fund - Growth Option,987654/32,250.000,42.50,10625.00,12100.00`;
+
+  const matrix = importer.parseCSVToMatrix(coinCsv);
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  assert.equal(holdings.length, 2, "Both holdings extracted from Zerodha Coin");
+  assert.equal(holdings[0].member, "GVD");
+  assert.equal(holdings[0].assetClass, "Mutual Funds");
+  assert.equal(holdings[0].pricingMode, "LIVE_MF");
+  assert.ok(holdings[0].units > 0, "Units parsed");
+  assert.ok(holdings[0].currentValue > 0, "Current value computed");
+  assert.equal(holdings[0].notes, "Folio: 123456/78");
+});
+
+test("Imports CAMS CAS statement with blank column 0 (spacer column)", () => {
+  const camsCasCsv = `,Scheme Name,Folio No,Closing Unit Balance,Cost Value,Valuation (Market Value)
+,Parag Parikh Flexi Cap Fund - Direct Plan - Growth,998877/11,150.000,9000,14092
+,SBI Small Cap Fund - Direct Plan - Growth,665544/22,200.000,12000,41378`;
+
+  const matrix = importer.parseCSVToMatrix(camsCasCsv);
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  assert.equal(holdings.length, 2, "Both holdings extracted despite empty Col 0");
+  assert.equal(holdings[0].member, "GVD");
+  assert.equal(holdings[0].assetClass, "Mutual Funds");
+  assert.equal(holdings[0].pricingMode, "LIVE_MF");
+  assert.equal(holdings[0].units, 150);
+});
+
+test("Imports KFintech CAS statement with short column headers", () => {
+  const kfinCsv = `Scheme,Folio,Units,Cost,Market Value
+Mirae Asset Large & Midcap Fund - Direct Plan - Growth,112233/44,80.500,8000,14399
+DSP Midcap Fund - Regular Plan - Growth,556677/88,100.000,10000,14983`;
+
+  const matrix = importer.parseCSVToMatrix(kfinCsv);
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "Priya");
+  assert.equal(holdings.length, 2, "Short headers matched");
+  assert.equal(holdings[0].member, "Priya");
+  assert.equal(holdings[0].assetClass, "Mutual Funds");
+  assert.equal(holdings[0].units, 80.5);
+  assert.equal(holdings[1].instrumentMeta.planType, "REGULAR");
+});
+
+test("Auto-detects TSV delimiter in Mutual Fund statements", () => {
+  const tsv = `Scheme Name\tFolio No\tUnits\tCost Value\tMarket Value\nUTI Nifty 50 Index Fund - Direct Plan - Growth\t443322/11\t50.000\t5000\t8821`;
+  const matrix = importer.parseCSVToMatrix(tsv);
+  assert.equal(matrix.length, 2);
+  assert.equal(matrix[0].length, 5);
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  assert.equal(holdings.length, 1);
+  assert.equal(holdings[0].assetClass, "Mutual Funds");
+  assert.equal(holdings[0].units, 50);
+});
+
+test("Auto-detects Semicolon delimiter in Mutual Fund statements", () => {
+  const semi = `Scheme Name;Folio No;Units;Cost Value;Market Value\nNippon India Small Cap Fund - Direct Growth;778899/00;60.000;6000;12056`;
+  const matrix = importer.parseCSVToMatrix(semi);
+  assert.equal(matrix.length, 2);
+  assert.equal(matrix[0].length, 5);
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  assert.equal(holdings.length, 1);
+  assert.equal(holdings[0].units, 60);
+});
+
+test("Mutual Fund not indexed in AMFI retains LIVE_MF pricingMode with statement NAV", () => {
+  const customMfCsv = `Fund Name,Folio,Units,NAV,Current Value
+Custom Offshore Global Equity Fund,12345/67,100.000,25.50,2550`;
+  const matrix = importer.parseCSVToMatrix(customMfCsv);
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  assert.equal(holdings.length, 1);
+  assert.equal(holdings[0].assetClass, "Mutual Funds");
+  assert.equal(holdings[0].pricingMode, "LIVE_MF");
+  assert.equal(holdings[0].units, 100);
+  assert.equal(holdings[0].currentValue, 2550);
+  assert.equal(holdings[0].instrumentMeta.price, 25.5);
+});
+
 console.log(`\n========================================`);
 console.log(`TEST SUMMARY: ${totalPassed} passed, 0 failed`);
 console.log(`========================================\n`);

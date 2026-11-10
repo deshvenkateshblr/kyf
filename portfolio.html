@@ -443,29 +443,36 @@
           Import holdings from your broker exports. Supports Zerodha (Kite, Console, Coin), Groww, CAMS, KFintech CAS, ICICI Direct, HDFC Sec, SBI Sec, Angel One, Upstox, and Kuvera.
         </p>
 
-        <!-- Dropzone -->
+        <!-- Step 1: Explicit Family Member Assignment -->
+        <div class="form-field full import-member-field">
+          <label class="form-label" for="import-member-select">Assign to Family Member *</label>
+          <select id="import-member-select" class="form-control" required>
+            <!-- Populated dynamically with registered members -->
+          </select>
+          <div class="form-hint">All holdings from this statement will be assigned to this member.</div>
+        </div>
+
+        <!-- Step 2: Dropzone with Rich Visual Feedback -->
+        <input type="file" id="broker-file-input" accept=".csv,.tsv,.txt,.xlsx,.xls" style="display:none;" aria-hidden="true">
         <div class="import-dropzone" id="import-dropzone" tabindex="0" role="button" aria-label="Drop files here or click to browse">
-          <input type="file" id="broker-file-input" accept=".csv,.tsv,.xlsx,.xls" hidden>
-          <div class="import-dropzone-icon">📄</div>
-          <div class="import-dropzone-text">
-            <strong>Click to select a file</strong> or drag &amp; drop here
+          <div id="import-dropzone-content">
+            <div class="import-dropzone-icon">📄</div>
+            <div class="import-dropzone-text">
+              <strong>Click to select a file</strong> or drag &amp; drop here
+            </div>
+            <div class="import-dropzone-hint">CSV, TSV, or Excel (.xlsx / .xls)</div>
           </div>
-          <div class="import-dropzone-hint">CSV, TSV, or Excel (.xlsx / .xls)</div>
         </div>
 
-        <!-- Controls Row: Target Family Member -->
-        <div class="import-controls-row" id="import-controls-row" style="display:none;">
-          <div class="form-field" style="flex: 1; max-width: 240px;">
-            <label class="form-label" for="import-member-select">Assign to Member</label>
-            <select id="import-member-select" class="form-control">
-              <!-- Populated dynamically -->
-            </select>
-          </div>
-          <div class="import-stats-summary" id="import-stats-summary"></div>
-        </div>
+        <!-- Stats summary pill -->
+        <div class="import-stats-summary" id="import-stats-summary" style="display:none;"></div>
 
-        <!-- Preview Table -->
+        <!-- Preview Wrap -->
         <div class="import-preview-wrap" id="import-preview-wrap" style="display:none;">
+          <div class="import-preview-header">
+            <span class="import-preview-title" id="import-preview-title">Holdings to Import</span>
+            <span class="import-preview-count" id="import-preview-count"></span>
+          </div>
           <div class="import-preview-table-container">
             <table class="import-preview-table" id="import-preview-table">
               <thead>
