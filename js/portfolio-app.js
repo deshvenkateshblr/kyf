@@ -97,6 +97,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     selectHoldingMember: document.getElementById("select-holding-member"),
     inputHoldingCustodian: document.getElementById("input-holding-custodian"),
     inputHoldingPrice: document.getElementById("input-holding-price"),
+    inputHoldingRate: document.getElementById("input-holding-rate"),
     inputHoldingUnits: document.getElementById("input-holding-units"),
     inputHoldingCurVal: document.getElementById("input-holding-curval"),
     inputHoldingInvVal: document.getElementById("input-holding-invval"),
@@ -574,7 +575,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (activeMemberScope instanceof Set) {
         scopeLabel = Array.from(activeMemberScope).join(", ");
       }
-      els.kpiNetWorthSub.textContent = `Scope: ${scopeLabel} (${kpis.holdingsCount} ${activeDimension === "goal" ? "slices" : "holdings"})`;
+      const unitWord = activeDimension === "goal" ? "slices" : "holdings";
+      els.kpiNetWorthSub.textContent = kpis.totalLiabilities > 0
+        ? `Assets ${formatINR(kpis.totalAssets, true)} − Debt ${formatINR(kpis.totalLiabilities, true)} • ${scopeLabel} (${kpis.holdingsCount} ${unitWord})`
+        : `Scope: ${scopeLabel} (${kpis.holdingsCount} ${unitWord})`;
     }
 
     if (els.kpiReturnPct && els.kpiGainLoss) {
@@ -820,7 +824,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
 
             <!-- Col 4: Total Current Value (Visible on both Desktop and Mobile) -->
-            <div class="tree-group-num-cell tree-col-right mono-num" style="color:var(--teal);">
+            <div class="tree-group-num-cell tree-col-right mono-num group-value-cell${group.totalCurrentValue < 0 ? " is-debt" : ""}">
               ${formatINR(group.totalCurrentValue)}
             </div>
 
@@ -890,6 +894,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         </div>
                       </div>
                       <div class="leaf-tags">
+                        ${h.isLiability ? '<span class="tag-badge tag-badge--debt">Debt</span>' : ""}
                         <span class="tag-badge">${escapeHTML(h.subCategory || h.assetClass)}</span>
                         ${sliceTag}
                         ${custTag}
@@ -916,7 +921,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </div>
 
                     <!-- Col 4: Live Current Value (Visible on both Desktop and Mobile) -->
-                    <div class="leaf-num-cell tree-col-right mono-num" style="font-weight:700;">
+                    <div class="leaf-num-cell leaf-value-cell tree-col-right mono-num${h.isLiability ? " is-debt" : ""}">
                       ${formatINR(h.currentValue)}
                     </div>
 
@@ -1459,9 +1464,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       initiateAddHoldingFromSelection({
         type: "loan",
         tag: "Loan",
-        name: "Home Loan Outstanding",
-        assetClass: "Alternative",
-        subCategory: `Home Loan (${rate}%)`,
+        name: "Home Loan",
+        assetClass: "Liabilities",
+        interestRate: rate,
+        subCategory: "Home Loan",
         custodian: "Lending Bank"
       });
     }
@@ -1518,11 +1524,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.inputHoldingInvVal) {
       els.inputHoldingInvVal.value = "";
     }
+    if (els.inputHoldingRate) {
+      els.inputHoldingRate.value = item.interestRate != null ? item.interestRate : "";
+    }
 
     const modalTitle = document.getElementById("holding-modal-title");
     if (modalTitle) {
       modalTitle.textContent = `📈 Add ${item.tag || item.assetClass}`;
     }
+    applyHoldingTypeMode();
     if (els.btnSaveHolding) {
       els.btnSaveHolding.textContent = "＋ Save Holding";
     }
@@ -1533,6 +1543,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     setTimeout(() => {
       if (els.inputHoldingCurVal) els.inputHoldingCurVal.focus();
     }, 150);
+  }
+
+  // Loans and debts are "what you owe": relabel the form and hide fields that only make sense for
+  // things you own (units, cost basis, live price); show the interest rate where it matters.
+  function applyHoldingTypeMode() {
+    const cls = els.selectHoldingAssetClass ? els.selectHoldingAssetClass.value : "";
+    const debt = cls === "Liabilities";
+    const setHidden = (id, hide) => {
+      const el = document.getElementById(id);
+      if (el) el.hidden = hide;
+    };
+
+    setHidden("field-holding-units", debt);
+    setHidden("holding-units-hint", debt);
+    setHidden("field-holding-invval", debt);
+    setHidden("field-holding-price", debt);
+    setHidden("field-holding-rate", !(debt || cls === "Fixed Income"));
+
+    // With units hidden, the balance gets the full row
+    const worthField = document.getElementById("field-holding-curval");
+    if (worthField) worthField.classList.toggle("full", debt);
+    if (els.btnSaveHolding && !editingHoldingId) els.btnSaveHolding.textContent = debt ? "＋ Save Loan" : "＋ Save Holding";
+
+    const nameLabel = document.getElementById("label-holding-name");
+    if (nameLabel) nameLabel.textContent = debt ? "What do you owe? *" : "What do you own? *";
+    const worthLabel = document.getElementById("label-holding-curval");
+    if (worthLabel) worthLabel.textContent = debt ? "Outstanding balance (₹) *" : "Worth today (₹) *";
+    if (els.inputHoldingName) {
+      els.inputHoldingName.placeholder = debt
+        ? "e.g. Home loan, Car loan, Credit card dues"
+        : "Search a stock, fund or city — or type any name";
+    }
+
+    const title = document.getElementById("holding-modal-title");
+    if (title && !editingHoldingId) {
+      if (debt) title.textContent = "💳 Add Loan / Debt";
+      else if (title.textContent.includes("Loan / Debt")) title.textContent = "📈 Add Investment Holding";
+    }
   }
 
   function setupMfVariantBox(item, selectedPlan = "DIRECT") {
@@ -1707,7 +1755,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Pre-fill form
     if (els.inputHoldingName) els.inputHoldingName.value = holding.name || "";
-    if (els.selectHoldingAssetClass) els.selectHoldingAssetClass.value = holding.assetClass || "Equities";
+    const holdingIsDebt = window.KYF_PORTFOLIO_ENGINE.isLiabilityHolding(holding);
+    if (els.selectHoldingAssetClass) els.selectHoldingAssetClass.value = holdingIsDebt ? "Liabilities" : (holding.assetClass || "Equities");
     if (els.inputHoldingSubCategory) els.inputHoldingSubCategory.value = holding.subCategory || "";
     if (els.selectHoldingMember) els.selectHoldingMember.value = holding.member || "Self";
     if (els.inputHoldingCustodian) els.inputHoldingCustodian.value = holding.custodian || "";
@@ -1766,8 +1815,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.inputHoldingCurVal) els.inputHoldingCurVal.value = holding.currentValue != null ? holding.currentValue : "";
     if (els.inputHoldingInvVal) els.inputHoldingInvVal.value = holding.investedValue != null ? holding.investedValue : "";
 
+    if (els.inputHoldingRate) els.inputHoldingRate.value = meta.interestRate != null ? meta.interestRate : "";
+
     const goalId = (holding.allocations && holding.allocations.length > 0 && holding.allocations[0].goalId) || "";
     if (els.selectHoldingGoal) els.selectHoldingGoal.value = goalId;
+    applyHoldingTypeMode();
 
     // Physical units are the fact for an existing holding: a price/plan change moves the value
     holdingAnchor = unitsVal !== "" && unitsVal != null ? "units" : "curval";
@@ -1896,6 +1948,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       instrumentMeta.planType = isRegular ? "REGULAR" : "DIRECT";
     }
 
+    // A liability is just an amount owed: never live-priced, no units, no cost basis
+    const isLiability = assetClass === "Liabilities";
+    if (isLiability) {
+      pricingMode = "MANUAL";
+      instrumentMeta = {};
+      units = null;
+    }
+    const rateInput = els.inputHoldingRate ? els.inputHoldingRate.value.trim() : "";
+    const interestRate = rateInput !== "" && !isNaN(parseFloat(rateInput)) ? parseFloat(rateInput) : null;
+    if (isLiability || assetClass === "Fixed Income") {
+      if (interestRate != null) instrumentMeta.interestRate = interestRate;
+      else delete instrumentMeta.interestRate;
+    }
+
     // Gold and property are valued as quantity x live rate; without a quantity keep the typed value
     if ((pricingMode === "LIVE_GOLD" || pricingMode === "LIVE_RESIDEX") && !(units > 0)) {
       pricingMode = "MANUAL";
@@ -1907,7 +1973,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       else if (pricingMode === "LIVE_GOLD") instrumentMeta.grams = units;
       else if (pricingMode === "LIVE_RESIDEX") instrumentMeta.carpetSqft = units;
     }
-    if (price != null) {
+    if (price != null && !isLiability) {
       instrumentMeta.price = price;
     }
 
@@ -1922,8 +1988,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           assetClass,
           subCategory,
           pricingMode,
-          units: units != null ? units : rawHoldings[idx].units,
-          investedValue: investedVal,
+          units: isLiability ? null : (units != null ? units : rawHoldings[idx].units),
+          investedValue: isLiability ? null : investedVal,
+          isLiability,
           currentValue: currentVal,
           manualCurrentValue: currentVal,
           allocations: goalId ? [{ goalId, percentage: 100 }] : [],
@@ -1941,7 +2008,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         subCategory,
         pricingMode,
         units: units,
-        investedValue: investedVal,
+        investedValue: isLiability ? null : investedVal,
+        isLiability,
         currentValue: currentVal,
         manualCurrentValue: currentVal,
         allocations: goalId ? [{ goalId, percentage: 100 }] : [],
@@ -2235,6 +2303,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.selectHoldingAssetClass) {
       els.selectHoldingAssetClass.addEventListener("change", (e) => {
         const val = e.target.value;
+        applyHoldingTypeMode();
         if (val === "Mutual Funds") {
           if (activeModalInstrument && (activeModalInstrument.directNav != null || activeModalInstrument.regularNav != null)) {
             setupMfVariantBox(activeModalInstrument);

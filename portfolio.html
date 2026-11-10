@@ -298,7 +298,7 @@
         <div class="holding-form-grid">
           <!-- One box: search a stock/fund/city to auto-fill, or just type any name -->
           <div class="form-field full">
-            <label class="form-label" for="modal-omni-search-input">What do you own? *</label>
+            <label class="form-label" id="label-holding-name" for="modal-omni-search-input">What do you own? *</label>
             <div class="omni-search-wrapper omni-search-wrapper--modal">
               <div class="omni-search-input-box">
                 <span class="omni-search-icon">🔍</span>
@@ -319,6 +319,7 @@
               <option value="Real Estate">Real Estate</option>
               <option value="Cash &amp; Liquid">Cash &amp; Liquid</option>
               <option value="Alternative">Alternative</option>
+              <option value="Liabilities">Loans &amp; Debt (you owe)</option>
             </select>
           </div>
 
@@ -356,31 +357,36 @@
             </div>
           </div>
 
-          <div class="form-field">
+          <div class="form-field" id="field-holding-units">
             <label class="form-label" for="input-holding-units">How many? (units / qty)</label>
             <input type="number" id="input-holding-units" class="form-control" placeholder="e.g. 100 shares or 452.12 units" min="0" step="any">
           </div>
 
-          <div class="form-field">
-            <label class="form-label" for="input-holding-curval">Worth today (₹) *</label>
+          <div class="form-field" id="field-holding-curval">
+            <label class="form-label" id="label-holding-curval" for="input-holding-curval">Worth today (₹) *</label>
             <input type="number" id="input-holding-curval" class="form-control" placeholder="e.g. 150000" min="0" step="any" required>
           </div>
 
-          <div class="form-hint full">
+          <div class="form-hint full" id="holding-units-hint">
             💡 Enter either units or today's value &mdash; the other is filled in from the live price.
           </div>
 
           <details class="holding-more full" id="holding-more-details">
             <summary>More details <span class="holding-more-optional">(optional)</span></summary>
             <div class="holding-form-grid holding-more-grid">
-              <div class="form-field">
+              <div class="form-field" id="field-holding-invval">
                 <label class="form-label" for="input-holding-invval">Amount invested (₹)</label>
                 <input type="number" id="input-holding-invval" class="form-control" placeholder="Blank = no returns shown" min="0" step="any">
               </div>
 
-              <div class="form-field">
+              <div class="form-field" id="field-holding-price">
                 <label class="form-label" for="input-holding-price">Price / NAV (₹)</label>
                 <input type="number" id="input-holding-price" class="form-control" placeholder="Live price / NAV" min="0" step="any">
+              </div>
+
+              <div class="form-field" id="field-holding-rate" hidden>
+                <label class="form-label" for="input-holding-rate">Interest rate (% p.a.)</label>
+                <input type="number" id="input-holding-rate" class="form-control" placeholder="e.g. 8.65" min="0" step="any">
               </div>
 
               <div class="form-field">

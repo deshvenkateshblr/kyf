@@ -265,17 +265,22 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         const pct = alloc.percentage;
         const ratio = pct / 100;
 
-        const sliceInvested = isLast
-          ? (h.investedValue || 0) - allocatedInvested
-          : Math.round((h.investedValue || 0) * ratio);
+        // No cost basis (or a liability): the slice has none either, so it never counts as gain/loss
+        const hasBasis = h.investedValue != null;
+
+        const sliceInvested = !hasBasis
+          ? null
+          : isLast
+            ? (h.investedValue || 0) - allocatedInvested
+            : Math.round((h.investedValue || 0) * ratio);
 
         const sliceCurrent = isLast
           ? (h.currentValue || 0) - allocatedCurrent
           : Math.round((h.currentValue || 0) * ratio);
 
-        const sliceGainLoss = sliceCurrent - sliceInvested;
+        const sliceGainLoss = hasBasis ? sliceCurrent - sliceInvested : null;
 
-        allocatedInvested += sliceInvested;
+        if (hasBasis) allocatedInvested += sliceInvested;
         allocatedCurrent += sliceCurrent;
 
         const goalObj = goalMap.get(alloc.goalId) || UNALLOCATED_GOAL;
@@ -321,6 +326,17 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
       slices,
       goals: Array.from(goalMap.values())
     };
+  }
+
+  // ==========================================================================
+  // Liabilities (loans, credit-card dues): stored as a positive "amount owed", carried through
+  // the engine as a NEGATIVE currentValue so every total, group and member roll-up nets it off.
+  // ==========================================================================
+  function isLiabilityHolding(h) {
+    if (!h) return false;
+    if (h.isLiability === true || h.assetClass === "Liabilities") return true;
+    // Early builds saved the "Loan / Debt" quick-pick as an "Alternative" asset: recognise that exact signature
+    return h.assetClass === "Alternative" && h.custodian === "Lending Bank" && /^home loan/i.test(h.subCategory || "");
   }
 
   // ==========================================================================
@@ -485,6 +501,25 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           physicalUnitsLabel = h.subCategory || "Principal Amount";
           break;
         }
+      }
+
+      if (isLiabilityHolding(h)) {
+        const owed = Math.abs(Math.round(Number(h.manualCurrentValue) || Number(calculatedValue) || 0));
+        const rate = meta.interestRate != null && meta.interestRate !== "" ? Number(meta.interestRate) : null;
+        enriched.isLiability = true;
+        enriched.assetClass = "Liabilities";
+        enriched.currentValue = -owed;
+        enriched.investedValue = null;
+        enriched.gainLoss = null;
+        enriched.totalReturnPct = null;
+        enriched.returnPct = null;
+        enriched.activeHorizonReturn = null;
+        enriched.activeHorizonLabel = "Debt";
+        enriched.priceLabel = rate != null && !isNaN(rate) ? `Interest: ${rate}% p.a.` : "Outstanding balance";
+        enriched.physicalUnitsLabel = h.subCategory || "Loan outstanding";
+        enriched.ret1m = enriched.ret3m = enriched.ret6m = enriched.ret1y = null;
+        enriched.regularAlert = null;
+        return enriched;
       }
 
       const hasBasis = h.investedValue != null && h.investedValue !== "" && !isNaN(Number(h.investedValue)) && Number(h.investedValue) > 0;
@@ -666,8 +701,12 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     let grandWeightedHorizonBase = 0;
     let grandTrackedInvested = 0;
     let grandTrackedGainLoss = 0;
+    let grandAssets = 0;
+    let grandLiabilities = 0;
 
     for (const h of holdings) {
+      if ((h.currentValue || 0) < 0) grandLiabilities += -h.currentValue;
+      else grandAssets += h.currentValue || 0;
       if (h.investedValue != null) {
         grandInvested += h.investedValue;
         grandTrackedInvested += h.investedValue;
@@ -742,7 +781,8 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     const groupsArray = Array.from(groupsMap.values()).map((grp) => {
       grp.totalGainLoss = grp.trackedGainLoss;
       grp.totalReturnPct = grp.trackedInvested > 0 ? (grp.trackedGainLoss / grp.trackedInvested) * 100 : null;
-      grp.allocationPct = grandCurrent > 0 ? (grp.totalCurrentValue / grandCurrent) * 100 : 0;
+      // Share of gross assets (a debt group therefore shows as a negative % of what you own)
+      grp.allocationPct = grandAssets > 0 ? (grp.totalCurrentValue / grandAssets) * 100 : 0;
 
       // Goal progress calculation against inflation-adjusted target
       if (grp.adjustedTargetINR > 0) {
@@ -870,6 +910,8 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
       activeHorizon,
       kpis: {
         totalPortfolioValue: grandCurrent,
+        totalAssets: grandAssets,
+        totalLiabilities: grandLiabilities,
         totalPortfolioInvested: grandInvested,
         totalPortfolioGainLoss: grandGainLoss,
         totalPortfolioReturnPct: grandReturnPct != null ? Number(grandReturnPct.toFixed(2)) : null,
@@ -889,6 +931,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     calculateInflationAdjustedTarget,
     expandGoalSlices,
     enrichHoldingsWithLiveMarket,
+    isLiabilityHolding,
     filterHoldings,
     sortHoldings,
     groupBySingleDimension

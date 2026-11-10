@@ -198,6 +198,22 @@ try {
   await demoPage.reload();
   await demoPage.waitForSelector(".btn-edit-leaf");
   check((await demoPage.locator(".btn-edit-leaf").count()) === 1, "your holding survives a reload (demo stays off)");
+
+  console.log("[8] Loans subtract from net worth");
+  const nwBefore = (await demoPage.textContent("#kpi-net-worth")).trim();
+  await demoPage.click("#btn-open-holding-modal");
+  await demoPage.waitForSelector("#holding-modal", { state: "visible" });
+  await demoPage.selectOption("#select-holding-assetclass", "Liabilities");
+  check(!(await demoPage.locator("#field-holding-units").isVisible()) && !(await demoPage.locator("#field-holding-invval").isVisible()), "units and cost basis are hidden for a loan");
+  check((await demoPage.textContent("#label-holding-curval")).includes("Outstanding"), "worth field becomes 'Outstanding balance'");
+  await demoPage.fill("#modal-omni-search-input", "Car loan");
+  await demoPage.fill("#input-holding-curval", "20000");
+  await demoPage.click("#btn-save-holding");
+  await demoPage.waitForSelector("#holding-modal", { state: "hidden" });
+  const nwAfter = (await demoPage.textContent("#kpi-net-worth")).trim();
+  check(nwBefore === "₹50.0 K" && nwAfter === "₹30.0 K", `net worth drops by the loan (${nwBefore} -> ${nwAfter})`);
+  check((await demoPage.textContent("#kpi-net-worth-sub")).includes("Debt"), "Net Worth card shows Assets − Debt");
+  check((await demoPage.locator(".tag-badge--debt").count()) >= 1, "the loan row is tagged as Debt");
   check(demoErrors.length === 0, "no page errors in demo flow", demoErrors.join(" | "));
 
   check(errors.length === 0, "no uncaught page errors", errors.join(" | "));

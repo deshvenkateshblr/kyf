@@ -319,6 +319,23 @@ window.KYF_PORTFOLIO_DATA = (() => {
         { goalId: "goal_home", percentage: 100 }
       ],
       notes: "Primary family residence, benchmarked against NHB RESIDEX Bengaluru"
+    },
+    {
+      id: "hold_loan_home",
+      name: "Home Loan (HDFC)",
+      member: "Rajesh",
+      custodian: "HDFC Bank",
+      assetClass: "Liabilities",
+      isLiability: true,
+      subCategory: "Home Loan",
+      pricingMode: "MANUAL",
+      instrumentMeta: {
+        interestRate: 8.65
+      },
+      investedValue: null,
+      manualCurrentValue: 3500000,
+      allocations: [],
+      notes: "Outstanding principal on the Whitefield apartment loan"
     }
   ];
 

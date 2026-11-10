@@ -2828,3 +2828,27 @@ button {
   display: flex;
   justify-content: flex-end;
 }
+
+/* Debt (liability) rows and totals: negative amounts read in the rose accent */
+.leaf-value-cell {
+  font-weight: 700;
+}
+
+.group-value-cell {
+  color: var(--teal);
+}
+
+.leaf-value-cell.is-debt,
+.group-value-cell.is-debt {
+  color: var(--rose);
+}
+
+.tag-badge--debt {
+  background: var(--rose-soft);
+  border-color: var(--rose);
+  color: var(--rose);
+}
+
+.holding-form-grid [hidden] {
+  display: none !important;
+}
