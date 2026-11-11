@@ -8,15 +8,17 @@
   "use strict";
 
   var VERSION = (window.KYF_APP_VERSION) || "";
-  var MENU = [
-    { href: "index.html", label: "Home", icon: "🏠" },
-    { href: "goals.html", label: "Goals", icon: "🎯", desc: "What are you saving for?" },
-    { href: "cadence.html", label: "Cadence", icon: "🗓️", desc: "Money habits and goal steps" },
-    { href: "portfolio.html", label: "Portfolio", icon: "💼", desc: "Everything you own and owe" },
-    { href: "market-performance.html", label: "Market Benchmarks", icon: "📊", desc: "Indices, funds, gold, property" },
-    { href: "real-estate-calculator.html", label: "Real Estate Calculator", icon: "🏙️", desc: "Rent vs buy, price per sq ft" },
-    { href: "index.html#framework", label: "Framework", icon: "🧭", desc: "How KYF thinks about money" }
+  var FALLBACK = [
+    { href: "index.html", name: "Home", icon: "🏠" },
+    { href: "goals.html", name: "Goals", icon: "🎯", tagline: "What are you saving for?" },
+    { href: "cadence.html", name: "Cadence", icon: "🗓️", tagline: "Money habits and goal steps" },
+    { href: "portfolio.html", name: "Portfolio", icon: "💼", tagline: "Everything you own and owe" },
+    { href: "market-performance.html", name: "Market Benchmarks", icon: "📊", tagline: "Where markets stand" }
   ];
+  var CATALOG = window.KYF_FEATURES;
+  var MENU = (CATALOG ? CATALOG.menu() : FALLBACK).map(function (m) {
+    return { href: m.href, label: m.name, icon: m.icon, desc: m.tagline || "", topBar: !!m.topBar };
+  });
 
   function pageName() {
     var p = (location.pathname.split("/").pop() || "index.html").toLowerCase();
@@ -49,7 +51,7 @@
     var anchors = nav.querySelectorAll(":scope > a");
     var first = anchors[0];
     var fragment = document.createDocumentFragment();
-    MENU.filter(function (m) { return m.label !== "Home" && m.label !== "Real Estate Calculator"; }).forEach(function (m) {
+    MENU.filter(function (m) { return m.topBar; }).forEach(function (m) {
       var a = el("a", isCurrent(m) ? "active" : "", m.label);
       a.href = m.href;
       if (isCurrent(m)) a.setAttribute("aria-current", "page");

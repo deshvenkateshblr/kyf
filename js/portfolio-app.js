@@ -11,6 +11,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   let rawHoldings = [];
   let rawGoals = [];
   let rawMembers = [];
+  // Home page "Try it with demo data" link: portfolio.html?demo=1
+  try {
+    if (new URLSearchParams(location.search).get("demo") === "1") localStorage.setItem("kyf_demo_mode", "true");
+  } catch (e) { /* storage blocked: fall through to normal mode */ }
   let isDemoMode = localStorage.getItem("kyf_demo_mode") === "true";
   let userHoldings = [];
   let userGoals = [];
