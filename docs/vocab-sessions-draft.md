@@ -1,142 +1,151 @@
-# Money Power: sessions 1 and 2 (draft for review)
+# Money Power: sessions 1 and 2 (draft v2, after review)
 
-Status: **content draft, nothing built yet.** Facts marked ⚠ need checking by a CFP or a good dictionary before shipping.
-All rupee figures use the live SBI FD rate in `market-pulse.js` (6.8%) on ₹1,00,000, so the learner sees numbers they will meet in real life. In the app these come from the learner's own goals and the Market Pulse data.
+Status: **content draft, nothing built yet.** ⚠ marks a fact to verify with a CFP or dictionary before shipping.
+Numbers use the live Market Pulse values (SBI FD 6.8%, CPI 5.4%). In the app they come from the learner's own goals.
 
-## How a session plays (like a Lewis chapter)
+## Design rules (from review)
 
-| Step | What the learner sees | Scored? |
-|---|---|---|
-| Teasers | 3 scenario questions, "I'm not sure" always allowed | No. Three right offers "skip ahead"; any miss goes into the lesson |
-| Idea cards | A chain of "Did you know…" cards, each opening to the words behind it | No |
-| Try it | 3-question quiz, mixed types (recognise, apply, spot the misuse) | Yes: progress only, never a lock |
-| Come back | Missed words reappear inside later sessions | No |
+1. **Context first.** Every session is an episode in one running family story. Goals emerge from the story, and each episode ends with "Add this to your own goals".
+2. **Real rates, real decisions.** No toy examples. Questions are the kind an accomplished adult would face (payout or reinvest? which FD is better?), not primary-school arithmetic.
+3. **Scoring is internal.** There is no pass mark and no grade shown. Answers only steer what comes next: right → jump up a grade; wrong → a short explanation and, if a similar question exists, one more; if none exists, move on as if understood.
+4. **Warm-up, not teasers.** Two or three realistic questions per session, silent, with "not sure" always allowed. They place the learner and make the topic feel relevant. Anyone who answers all correctly skips ahead.
+5. **Origins only when there is a story.** No "from Latin for first". Included only if it is surprising and makes the word stick (bank → bankrupt, tenure, credit, debit, deposit).
+6. **No "spot the misuse" questions.** Every question applies the idea to a number or a decision.
 
-**Card chain.** Every card has a *grade* (1 = everyday, 2 = needs one earlier idea, 3 = needs two or more). A card's "next" link only ever goes sideways or up one grade, so a path climbs steadily. The learner can leave and return anywhere: the app stores the last card seen and the cards finished, and offers "Pick up where you left off" on Learn and on Home.
+## The story: the Rastogi family
+Original characters in a Bollywood-family style. We should not use named characters, plots or titles from real films.
 
-**Card shape (for the build):** `id, session, idea, grade, hook (the "Did you know…" line), reveal (plain meaning + the learner's numbers), words[], origin, next[]`.
+- **Dadaji**: retired, loyal to fixed deposits. "₹68,000 every year, and I never touch the principal."
+- **Papa (Suresh)**: salaried, careful, 30% tax slab.
+- **Mummy (Kavita)**: runs a boutique, wants every rupee working.
+- **Anika (22)**: wants an MS abroad in five years.
+- **Rohan (19)**: wants to open a café one day.
+- **Sumitra Bua**: the relative with a "guaranteed" insurance plan for everyone (later episodes).
 
 ---
 
-## Session 1: How to talk about interest
+## Episode 1: Dadaji's FD
 *Helps to know: nothing.*
 
-### Teasers (not scored)
-1. You lend a friend ₹1,00,000 for a year and he returns ₹1,06,800. Which is the best description of the ₹6,800?
-   a) A gift b) The price he paid for using your money for a year ✔ c) A tax d) Profit from his business
-2. A bank says "6.8% per annum". What does *per annum* tell you?
-   a) Paid monthly b) The rate is quoted for one year ✔ c) The rate can change daily d) It is tax free
-3. Same ₹1,00,000, same 6.8%. Bank A pays you; Bank B charges you. What is different?
-   a) The rate b) Only which side of the counter you stand on ✔ c) The arithmetic d) The year
+**Scene.** Diwali dinner. Dadaji announces his ₹10 lakh FD at 6.8% pays him ₹68,000 a year. Anika mentions her MS abroad in five years. Papa says "keep it in the FD, it's safe." Mummy says "then reinvest the interest, don't spend it." Dadaji sighs: "In my day we just collected it."
 
-### Idea 1: Money has a rent
-**Did you know** the ₹6,800 isn't a bonus? It is rent. Whoever holds your money for a year pays you for the use of it.
+### Warm-up (silent)
+1. Dadaji's ₹10 lakh FD at 6.8% for 5 years. Papa wants the interest paid out each year and spent, Mummy wants it reinvested. After 5 years, the reinvested FD is worth about how much more?
+   a) The same b) ₹50,000 more ✔ c) ₹3 lakh more d) Double
+   *(₹13.89 lakh vs ₹13.40 lakh: ₹49,493 more)*
+2. Anika opens a 3-year FD where interest is paid only at maturity. When does the tax on that interest fall due?
+   a) Only at maturity b) Each year, as it builds up ✔ c) Never d) Only if she withdraws early
+   ⚠ *Interest on a cumulative FD is taxable each year on an accrual basis. Confirm and word with a CFP.*
+3. Papa is in the 30% slab (31.2% with cess ⚠). His 6.8% FD, against 5.4% inflation, gives him a real return of about…
+   a) +1.4% b) −0.7% ✔ c) +6.8% d) 0%
+   *(After tax 4.68%, inflation 5.4%.)*
+
+### Idea 1: Payout or pile it up?
+**Did you know** the FD form has one tick-box that changes the outcome by ₹49,000 on ₹10 lakh over 5 years?
 
 | Word | Plain meaning | Origin |
 |---|---|---|
-| **Principal** | The original amount that earns or owes interest | Latin *principalis*, "first, chief": the main sum ⚠ |
-| **Interest** | The rent paid for using money | Latin *interest*, "it matters" (*inter* + *esse*, "to be between") ⚠ |
-| **Rate** | The rent, as a percentage of the principal for a period | Latin *rata*, "reckoned, fixed" ⚠ |
-| **Per annum** | "For each year" | Latin, "by the year" |
-| **Tenure** | How long the money is held | Latin *tenere*, "to hold" ⚠ |
+| **Cumulative** | Interest stays in the FD and earns more interest | |
+| **Payout (non-cumulative)** | Interest is paid out to you regularly | |
+| **Maturity value** | What the FD pays on the last day | |
+| **Tenure** | How long the money is locked in | *tenere*, "to hold": the same root as *tenant*; the bank is, in a sense, your money's tenant ⚠ |
 
-Next card: *If rent is charged on the principal only, how much is it?*
+Next card: *The interest was earned in March. Why is the tax bill in March too?*
 
-### Idea 2: Simple interest and the ticking clock
-**Did you know** your FD earns about **₹18.63 every day** on ₹1,00,000 at 6.8%, even if the bank pays you only once a quarter?
+### Idea 2: Earned vs received
+**Did you know** your ₹10 lakh FD earns about **₹186 a day**, whether or not the bank pays you that day?
 
-- **Simple interest** is worked out on the principal only: `principal × rate × years`. ₹1,00,000 × 6.8% × 3 years = **₹20,400**.
-- **Accrue** means interest has been *earned* but not yet *paid out*. Daily accrual: 100,000 × 0.068 ÷ 365 = ₹18.63. Origin: Latin *accrescere*, "to grow to" ⚠.
+- **Accrued interest** is interest earned but not yet paid out. Accrual is why interest can be taxable before you receive a rupee.
+- It is also what you lose track of when you break an FD early: you get the accrued interest, minus a penalty.
 
-Next card: *What if the interest also earns interest?* (leads to Session 2)
+Next card: *Where does the bank get the money to pay Dadaji?*
 
-### Idea 3: Both sides of the counter
-**Did you know** the word *credit* means "he believes"? The lender trusts you will repay.
+### Idea 3: Where the bank sits
+**Did you know** *bankrupt* comes from the Italian *banca rotta*, "broken bench"? Early money-changers sat at benches in the market, and when one failed, his bench was broken ⚠.
 
 | Word | Plain meaning | Origin |
 |---|---|---|
 | **Deposit** | Money you place with a bank; you are the lender | Latin *depositum*, "put down" ⚠ |
-| **Loan** | Money you borrow; you pay interest | Old Norse *lán* ⚠ |
-| **Creditor / Debtor** | The one owed / the one who owes | Latin *credere*, "to believe"; *debere*, "to owe" |
+| **Credit** | An amount in your favour, a loan someone trusts you with | Latin *credere*, "to believe": the lender believes you will repay |
+| **Debit** | An amount you owe or have spent | Latin *debere*, "to owe" |
 
-Same 6.8% on ₹1,00,000: a deposit earns you ₹6,800 in a year, a loan costs you ₹6,800.
+Add this to your goals: **Anika's MS abroad in 5 years** → opens Goals with the idea filled in, number left for the learner.
 
-### Try it (3 questions)
-1. *Apply.* Your ₹2,00,000 in a 3-year deposit at 5% simple interest earns what in total?
-   a) ₹10,000 b) ₹30,000 ✔ c) ₹31,525 d) ₹6,000
-   *Why:* 2,00,000 × 5% × 3. (c is the compound answer, which comes next.)
-2. *Recognise.* "Accrued interest" is interest that…
-   a) is paid in cash today b) has been earned but not yet paid ✔ c) will be charged next year d) the bank can cancel
-3. *Spot the misuse.* A friend says "I earned ₹6,800 profit from the FD, so the bank gave me a bonus." What is wrong?
-   a) Nothing b) It is rent for lending your money, not a bonus ✔ c) FDs don't pay interest d) It should be 6%
+### Try it (silent scoring; 3 questions)
+1. Dadaji's ₹10 lakh FD matures after 5 years at 6.8% compounded yearly. Roughly what does it pay?
+   a) ₹13.4 lakh b) ₹13.9 lakh ✔ c) ₹16.8 lakh d) ₹14.8 lakh
+2. His FD earns ₹186 a day. By the end of Diwali week (7 days), how much has accrued?
+   a) About ₹1,300 ✔ b) ₹68,000 c) Nothing until March d) ₹186
+3. Anika's MS costs ₹60 lakh in 5 years. If Dadaji's FD is kept as is, roughly what share of it does it cover?
+   a) About 23% ✔ b) 50% c) 100% d) 12%
+   *(₹13.9 lakh ÷ ₹60 lakh ≈ 23%)*
 
 ---
 
-## Session 2: How to talk about compounding
-*Helps to know: How to talk about interest.*
+## Episode 2: Mummy's reinvestment
+*Helps to know: Episode 1, or comfort with cumulative vs payout.*
 
-### Teasers (not scored)
-1. ₹1,00,000 at 6.8% for 3 years. Simple interest gives ₹20,400. Interest on interest would give…
-   a) exactly ₹20,400 b) a little more ✔ c) a little less d) double
-2. Two FDs both say 6.8%, one pays interest yearly and one quarterly. Which earns more over a year?
-   a) The same b) Quarterly ✔ c) Yearly d) Depends on the bank's size
-3. Roughly how long does money take to double at 7% a year?
-   a) 5 years b) 10 years ✔ c) 14 years d) 20 years
+**Scene.** Mummy has already moved her boutique profit to a bank that "pays more". Papa checks and finds two banks: one pays 7.0% yearly, the other 6.9% "compounded quarterly". Rohan cheerfully says the first obviously wins.
+
+### Warm-up (silent)
+1. ₹10 lakh for 5 years. Bank A: 7.0% paid yearly. Bank B: 6.9% compounded quarterly. Which ends higher?
+   a) A, by a small amount b) B, by about ₹5,000 ✔ c) Exactly equal d) A, by ₹50,000
+   *(A ₹14.03 lakh, B ₹14.08 lakh)*
+2. Anika needs ₹30 lakh in 5 years. At 6.8% compounded yearly, roughly how much must go into the FD today?
+   a) ₹20 lakh b) ₹21.6 lakh ✔ c) ₹22.4 lakh d) ₹24 lakh
+3. Two investments of ₹10 lakh each. One grew 6.8% a year, the other 12% a year, for 6 years. How far ahead is the second?
+   a) About ₹2.5 lakh b) About ₹4.9 lakh ✔ c) About ₹7 lakh d) About ₹9 lakh
+   *(₹19.74 lakh vs ₹14.84 lakh. The 12% is an illustration, not a promise.)*
 
 ### Idea 1: Interest on interest
-**Did you know** after 3 years the same 6.8% gives **₹1,21,819** with compounding, but ₹1,20,400 without? The extra **₹1,419** is interest earning its own interest.
-
-| Word | Plain meaning | Origin |
-|---|---|---|
-| **Compound** | Add the interest to the principal so the next round earns on both | Latin *componere*, "to put together" ⚠ |
-| **Compounding** | The repeating process of earning on earnings | same |
-| **Exponential** | Growth by repeated multiplication, not repeated addition | Latin *ex* + *ponere*, "to put out" ⚠ |
-
-Formula for the curious: `principal × (1 + rate)^years`. Next card: *Does it matter how often the bank adds it?*
-
-### Idea 2: What is written vs what you earn
-**Did you know** an FD "at 6.8%" paid every quarter actually earns **6.975%** in a year? ₹1,00,000 becomes ₹1,06,975, not ₹1,06,800.
-
-| Compounded | Effective rate | ₹1,00,000 after a year |
-|---|---|---|
-| Yearly | 6.800% | ₹1,06,800 |
-| Half-yearly | 6.916% | ₹1,06,916 |
-| Quarterly | 6.975% | ₹1,06,975 |
-| Monthly | 7.016% | ₹1,07,016 |
-| Daily | 7.036% | ₹1,07,036 |
-
-| Word | Plain meaning | Origin |
-|---|---|---|
-| **Nominal rate** | The rate in the headline | Latin *nomen*, "name": the rate "in name only" ⚠ |
-| **Effective rate** | What you really earn in a year after compounding | Latin *efficere*, "to accomplish" ⚠ |
-| **Compounding frequency** | How often interest is added to the principal | |
-
-Real-life note ⚠: many Indian banks compound FD interest quarterly; check the bank's FD terms.
-Next card: *So how long until it doubles?*
-
-### Idea 3: The doubling shortcut
-**Did you know** dividing 72 by the rate gives the doubling time? 72 ÷ 6.8 ≈ **10.6 years** (the exact answer is 10.5). It is described in Luca Pacioli's 1494 book *Summa de arithmetica* ⚠.
-
-- ₹1,00,000 at 6.8% becomes ~₹1.93 lakh in 10 years and ~₹3.73 lakh in 20.
-- The second ten years add far more than the first ten. That is compounding.
+**Did you know** after 3 years, ₹10 lakh at 6.8% compounds to ₹12.18 lakh, against ₹12.04 lakh with simple interest? The ₹14,186 is interest earning its own interest. Between years 10 and 20 the same ₹10 lakh adds ₹18.0 lakh, far more than the first ten years' ₹9.3 lakh.
 
 | Word | Plain meaning |
 |---|---|
-| **Rule of 72** | 72 ÷ rate = years to double |
-| **Doubling time** | How long the money takes to become twice its size |
+| **Compounding** | Earnings are added to the principal, so the next round earns on both |
+| **Simple interest** | Interest worked out on the original amount only |
 
-### Try it (3 questions)
-1. *Recognise.* "Compounding" means…
-   a) interest paid only on the original amount b) interest added to the principal so it also earns interest ✔ c) a higher rate after a year d) paying a loan early
-2. *Apply.* An FD advertises 8% compounded quarterly. Its effective yearly rate is…
-   a) exactly 8% b) a little more than 8% ✔ c) a little less than 8% d) 4%
-3. *Spot the misuse.* "At 12% my ₹1 lakh will double in 12 years, because 12 × 12 = 144." What is wrong?
-   a) Nothing b) The rule is 72 ÷ 12 = 6 years ✔ c) It takes 24 years d) 12% is impossible
+### Idea 2: Written rate vs earned rate
+**Did you know** an FD "at 6.8%" paid quarterly really earns **6.975%**? That is the gap between the quoted rate and the real one.
+
+| Compounded | Effective rate | ₹10 lakh after a year |
+|---|---|---|
+| Yearly | 6.800% | ₹10,68,000 |
+| Half-yearly | 6.916% | ₹10,69,156 |
+| Quarterly | 6.975% | ₹10,69,754 |
+| Monthly | 7.016% | ₹10,70,160 |
+
+| Word | Plain meaning | Origin |
+|---|---|---|
+| **Nominal rate** | The headline rate | Latin *nomen*, "name": a rate "in name only" ⚠ |
+| **Effective rate** | What you actually earn in a year, after compounding | |
+
+Real-life note ⚠: many Indian banks compound FD interest quarterly. Check each bank's terms.
+
+### Idea 3: Doubling
+**Did you know** dividing 72 by the rate tells you how many years until the money doubles? 72 ÷ 6.8 ≈ 10.6 years (exact: 10.5). A version appears in Luca Pacioli's 1494 *Summa de arithmetica* ⚠.
+
+- At 6.8%, ₹10 lakh becomes about ₹19.3 lakh in 10 years and ₹37.3 lakh in 20.
+
+Add this to your goals: **A café for Rohan** → opens Goals with the idea filled in.
+
+### Try it (silent scoring; 3 questions)
+1. An 8% FD compounded quarterly has an effective yearly rate of…
+   a) Exactly 8% b) About 8.24% ✔ c) About 7.8% d) About 9%
+2. Rohan's café fund of ₹10 lakh at 6.8%: when is it about ₹20 lakh?
+   a) About 7 years b) About 10.5 years ✔ c) About 14 years d) About 20 years
+3. Mummy's ₹5 lakh at 6.8% grows for 10 years. Roughly how much is that?
+   a) ₹8.5 lakh b) ₹9.65 lakh ✔ c) ₹6.8 lakh d) ₹10 lakh
+   *(₹5 lakh × 1.068^10 = ₹9.65 lakh)*
 
 ---
 
-## Open questions for review
-1. Pass mark for "Try it": 2 of 3, with a retry that shows different questions?
-2. Are the teaser questions gentle enough for a first-time learner?
-3. Is the origin material a help or a distraction? Keep it to one line per word?
-4. Anything in ⚠ that you or a CFP would reword?
+## Card model for the build (unchanged in spirit)
+`id, episode, idea, grade, hook, reveal, words[], origin?, next[], questions[]`.
+Progress per learner: last card, cards seen, per-question outcomes (internal), words met. Stored locally and in the .kyf file.
+Selection rule: right → next card one grade up; wrong → explanation + one similar-grade question if it exists, otherwise move on.
+
+## Open questions
+1. Is the Rastogi family a good direction (original characters, Bollywood family drama)? What would you change in the tone?
+2. Any episode scenes that feel unrealistic for your audience?
+3. Anything in ⚠ you or a CFP would reword?
