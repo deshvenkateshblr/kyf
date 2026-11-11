@@ -81,4 +81,10 @@ ok(versions.size === 1 && versions.has(appVersion), `every page uses ?v=${appVer
 ok(!readdirSync("data").some((n) => n.endsWith(".js.js")) && existsSync("data/kyf-curriculum.js"), "no double-extension data files");
 ok(!/₹\$\{formatINR/.test(readFileSync("js/portfolio-app.js", "utf8")), "no '₹' stacked on formatINR() output");
 
+console.log("Protection goals are not funded from holdings");
+const slices = E.expandGoalSlices([{ id: "h", name: "FD", assetClass: "Fixed Income", currentValue: 100000, investedValue: 100000, allocations: [{ goalId: "cover1", percentage: 100 }] }], [
+  { id: "cover1", name: "Term cover", kind: "COVER", targetYear: 0, baseTargetINR: 0 },
+  { id: "save1", name: "Home", baseTargetINR: 1000000, targetYear: 2032, inflationCategory: "CPI" }
+]);
+ok(slices.slices.length === 1 && slices.slices[0].goalId !== "cover1", `money tagged to a cover goal falls to Unallocated, not into it (${slices.slices[0].goalId})`);
 console.log(`\n${passed} passed`);

@@ -106,6 +106,30 @@ const kept = K.normalizeGoal({ name: "R", baseTargetINR: 1, targetYear: 2046, re
 ok(kept.retirement.birthYear === 1988 && kept.retirement.retireAge === 58 && kept.retirement.postReturn === null, "retirement inputs survive normalising (numbers, blanks → null)");
 ok(K.templateById("work_optional_freedom").helper === "retirement", "the retirement idea turns the helper on");
 
+console.log("Protection (cover) goals");
+const cover = K.normalizeGoal({ id: "c1", name: "Term", kind: "COVER", coverNeededINR: 20000000, coverInPlaceINR: 5000000, annualPremiumINR: 18000, baseTargetINR: 999, targetYear: 2040 });
+ok(cover.kind === "COVER" && cover.coverNeededINR === 20000000 && cover.targetYear === 0 && cover.baseTargetINR === 0, "a cover goal keeps cover fields and drops savings/date fields");
+ok(K.normalizeGoal({ name: "x", baseTargetINR: 1, targetYear: 2030 }).kind === "SAVE", "older goals default to kind SAVE");
+const cc = K.computeGoal(cover, 123456);
+ok(cc.health === "cover_gap" && cc.coverGap === 15000000 && cc.coveredPct === 25 && cc.sip === 0, "cover gap = needed − in place; no SIP; 25% covered");
+ok(K.computeGoal(Object.assign({}, cover, { coverInPlaceINR: 20000000 }), 0).health === "covered", "in place ≥ needed → covered");
+ok(K.computeGoal(Object.assign({}, cover, { coverNeededINR: 0 }), 0).health === "needs_number", "no amount → needs a number");
+const ps = K.protectionSummary([cover, Object.assign({}, cover, { id: "c2", coverInPlaceINR: 20000000 }), Object.assign({}, cover, { id: "c3", coverNeededINR: 0 }), g]);
+ok(ps.total === 3 && ps.covered === 1 && ps.gaps === 1 && ps.unpriced === 1 && ps.annualPremiums === 54000, "protection summary counts covered, gaps, unsized, premiums (savings goals ignored)");
+const coverIdeas = K.TEMPLATES.filter((t) => t.kind === "COVER").map((t) => t.id);
+ok(["term_life", "health_cover", "accident_disability"].every((id) => coverIdeas.includes(id)), "term, health and accident/disability ideas exist");
+ok(K.TEMPLATES.filter((t) => t.kind === "COVER").every((t) => t.group === "protect" && t.ask.length >= 2 && t.checklist.length === 4), "cover ideas sit under 'Stay protected' with questions and a checklist");
+ok(K.goalFromIdea(K.templateById("term_life")).kind === "COVER", "an idea carries its kind into the goal");
+ok(names("insurance").some((id) => id === "term_life") && names("insurance").includes("health_cover") && names("mediclaim")[0] === "health_cover", "'insurance' finds term and health; 'mediclaim' → health");
+ok(K.templateById("term_life").helper === "term" && !K.templateById("health_cover").helper, "term has a helper; health stays question-only (no figures we cannot back)");
+
+console.log("Term cover sizing");
+const tp = K.termCoverPlan({ yearlyIncome: 2000000, loans: 3000000, goalsToFund: 5000000, yearlyFamilyExpenses: 600000, yearsOfSupport: 15, savings: 2500000, existingCover: 5000000 });
+ok(tp.ruleLow === 20000000 && tp.ruleHigh === 30000000, "rule of thumb: 10–15× ₹20 L income = ₹2–3 Cr");
+ok(tp.living === 9000000 && tp.gross === 17000000 && tp.offset === 7500000 && tp.needsBased === 9500000, "needs-based = loans + goals + living costs − savings − existing cover");
+ok(K.termCoverPlan({ yearlyIncome: 1000000, loans: 0, goalsToFund: 0, yearlyFamilyExpenses: 0, yearsOfSupport: 0, savings: 99999999 }).needsBased === 0, "never goes negative");
+ok(K.termCoverPlan({}) === null, "no figures → no plan");
+
 console.log("Cadence migration");
 const migrated = K.migrateCadence([
   { id: "goal-home", section: "goals", status: "active" },

@@ -200,7 +200,9 @@
   function statusLine(g, c) {
     switch (c.health) {
       case "achieved": return { cls: "done", text: "✅ Achieved" };
-      case "needs_number": return { cls: "needs", text: "Needs a number — add what it costs today" };
+      case "needs_number": return { cls: "needs", text: g.kind === "COVER" ? "Needs a number — how much cover do you need?" : "Needs a number — add what it costs today" };
+      case "covered": return { cls: "ok", text: "✔ Covered" };
+      case "cover_gap": return { cls: "warn", text: `Cover gap ${formatINR(c.coverGap, true)}` };
       case "funded": return { cls: "ok", text: "✔ Fully funded by growth" };
       case "due": return { cls: "warn", text: `Due now — ${formatINR(c.gap, true)} short` };
       default: return { cls: "sip", text: `Needs ${formatINR(c.sip)} / month` };
@@ -212,7 +214,7 @@
     const owner = ownerName(g);
     const st = statusLine(g, c);
     const list = checklistState(g);
-    const horizonClass = c.years <= 3 ? "horizon-short" : (c.years <= 7 ? "horizon-medium" : "horizon-long");
+    const horizonClass = g.kind === "COVER" ? "kind-cover" : (c.years <= 3 ? "horizon-short" : (c.years <= 7 ? "horizon-medium" : "horizon-long"));
     const savedParts = [];
     if (c.portfolioSaved) savedParts.push(`${formatINR(c.portfolioSaved, true)} in Portfolio`);
     if (g.manualSavedINR) savedParts.push(`${formatINR(g.manualSavedINR, true)} set aside`);
@@ -220,7 +222,16 @@
     const infl = g.inflationCategory === "CUSTOM" ? "your rate" : g.inflationCategory.toLowerCase();
     const isOpen = expanded.has(g.id) ? " open" : "";
 
-    const detail = c.hasAmount ? `
+    const isCover = g.kind === "COVER";
+    const coverDetail = `
+        <div class="goal-math-box">
+          <div class="math-item"><span class="math-lbl">Cover needed</span><span class="math-val">${formatINR(c.coverNeeded, true)}</span></div>
+          <div class="math-item"><span class="math-lbl">Cover in place</span><span class="math-val">${formatINR(c.coverInPlace, true)}</span></div>
+          <div class="math-item"><span class="math-lbl">Gap to close</span><span class="math-val ${c.coverGap ? "fv-val" : ""}">${c.coverGap ? formatINR(c.coverGap, true) : "None"}</span></div>
+          <div class="math-item"><span class="math-lbl">Yearly premium</span><span class="math-val">${c.annualPremium ? formatINR(c.annualPremium, true) : "—"}</span></div>
+        </div>
+        <p class="saved-note">Protection is not funded from your portfolio: it is bought as a policy.</p>`;
+    const detail = isCover && c.hasAmount ? coverDetail : c.hasAmount ? `
         <div class="goal-math-box">
           <div class="math-item"><span class="math-lbl">Cost today</span><span class="math-val">${formatINR(g.baseTargetINR, true)}</span></div>
           <div class="math-item"><span class="math-lbl">In ${g.targetYear} (${c.inflationRate}% ${escapeHtml(infl)})</span><span class="math-val fv-val">${formatINR(c.futureCost, true)}</span></div>
@@ -233,7 +244,7 @@
           <strong>${escapeHtml(c.horizon.recipe)}</strong>
           <span class="glide">${escapeHtml(c.glide)}</span>
         </div>` : `
-        <p class="needs-help">We have not priced this yet. Add what it would cost <strong>today</strong> and we will work out the rest. Not sure? We will show you how to estimate it.</p>`;
+        <p class="needs-help">${isCover ? "We have not sized this cover yet. Add the amount you think your family needs. Not sure? We will show you how to work it out." : "We have not priced this yet. Add what it would cost <strong>today</strong> and we will work out the rest. Not sure? We will show you how to estimate it."}</p>`;
 
     return `
       <details class="goal-row ${horizonClass}${g.status === "ACHIEVED" ? " status-achieved" : ""}" data-id="${escapeHtml(g.id)}"${isOpen}>
@@ -241,7 +252,7 @@
           <span class="row-icon" aria-hidden="true">${escapeHtml(g.icon || cat.icon)}</span>
           <span class="row-main">
             <span class="row-name">${escapeHtml(g.name)}</span>
-            <span class="row-sub">${escapeHtml(cat.label)} &middot; ${g.targetYear ? (c.years === 0 ? "due now" : g.targetYear) : "no date"}${owner ? ` &middot; 👤 ${escapeHtml(owner)}` : ""}</span>
+            <span class="row-sub">${escapeHtml(isCover ? "Protection" : cat.label)}${isCover ? "" : ` &middot; ${g.targetYear ? (c.years === 0 ? "due now" : g.targetYear) : "no date"}`}${owner ? ` &middot; 👤 ${escapeHtml(owner)}` : ""}</span>
           </span>
           <span class="row-status row-status--${st.cls}">${escapeHtml(st.text)}</span>
           <span class="row-bar" aria-hidden="true"><span class="row-bar-fill" style="width:${c.hasAmount ? c.fundedPct : 0}%"></span></span>
@@ -264,8 +275,9 @@
 
   function renderMetrics() {
     const open = goals.filter((g) => g.status !== "ACHIEVED");
-    const priced = open.map((g) => ({ g, c: computed(g) })).filter((x) => x.c.hasAmount);
-    const unpriced = open.length - priced.length;
+    const saveOpen = open.filter((g) => g.kind !== "COVER");
+    const priced = saveOpen.map((g) => ({ g, c: computed(g) })).filter((x) => x.c.hasAmount);
+    const unpriced = open.filter((g) => !computed(g).hasAmount).length;
     const totalFuture = priced.reduce((s, x) => s + x.c.futureCost, 0);
     const totalSavedFV = priced.reduce((s, x) => s + Math.min(x.c.savedFV, x.c.futureCost), 0);
     const afford = G.affordability(priced.map((x) => x.c), settings.monthlySurplusINR);
@@ -278,6 +290,18 @@
     const note = $("needsNumberNote");
     note.hidden = unpriced === 0;
     note.textContent = unpriced ? `${unpriced} goal${unpriced === 1 ? " needs" : "s need"} a number before ${unpriced === 1 ? "it counts" : "they count"} in these totals.` : "";
+
+    const prot = G.protectionSummary(goals);
+    const pn = $("protectionNote");
+    pn.hidden = prot.total === 0;
+    if (prot.total) {
+      const parts = [`${prot.covered} of ${prot.total} protection goal${prot.total === 1 ? "" : "s"} covered`];
+      if (prot.gaps) parts.push(`${prot.gaps} with a gap`);
+      if (prot.unpriced) parts.push(`${prot.unpriced} not sized yet`);
+      if (prot.annualPremiums) parts.push(`${formatINR(prot.annualPremiums, true)} a year in premiums`);
+      pn.textContent = "🛡️ " + parts.join(" · ");
+      pn.classList.toggle("protection-note--gap", prot.gaps + prot.unpriced > 0);
+    }
 
     const box = $("planCheck");
     const msg = $("planCheckMsg");
@@ -307,7 +331,7 @@
     const shown = goals
       .map((g) => ({ g, c: computed(g) }))
       .filter((x) => (statusFilter === "all") || (statusFilter === "achieved" ? x.g.status === "ACHIEVED" : x.g.status !== "ACHIEVED"))
-      .sort((a, b) => (rank[a.g.priority] - rank[b.g.priority]) || ((a.g.targetYear || 9999) - (b.g.targetYear || 9999)));
+      .sort((a, b) => ((a.g.kind === "COVER" ? 0 : 1) - (b.g.kind === "COVER" ? 0 : 1)) || (rank[a.g.priority] - rank[b.g.priority]) || ((a.g.targetYear || 9999) - (b.g.targetYear || 9999)));
 
     $("goalList").innerHTML = shown.map((x) => rowHtml(x.g, x.c)).join("");
     $("noMatchState").hidden = shown.length > 0;
@@ -331,7 +355,22 @@
     if (cities.includes("Bengaluru")) $("residexCity").value = "Bengaluru";
   }
 
+  function applyKind(kind) {
+    const cover = kind === "COVER";
+    $("goalKind").value = cover ? "COVER" : "SAVE";
+    document.querySelectorAll('#goalForm [data-kind="save"]').forEach((el) => { el.hidden = cover; });
+    document.querySelectorAll('#goalForm [data-kind="cover"]').forEach((el) => { el.hidden = !cover; });
+    $("goalYearInput").required = !cover;
+    $("goalOwnerLabel").textContent = cover ? "Who is covered?" : "Whose goal?";
+    $("helpToggleBtn").textContent = cover ? "Not sure how much cover? Help me work it out" : "Not sure of the number? Help me work it out";
+    if (cover) $("customInflationGroup").hidden = true;
+  }
+
   function setForm(g) {
+    applyKind(g.kind);
+    $("coverNeededInput").value = g.coverNeededINR || "";
+    $("coverInPlaceInput").value = g.coverInPlaceINR || 0;
+    $("coverPremiumInput").value = g.annualPremiumINR || 0;
     $("goalId").value = g.id || "";
     $("goalTemplateId").value = g.templateId || "";
     $("goalTitleInput").value = g.name || "";
@@ -383,9 +422,13 @@
       notes: $("goalDescInput").value.trim(),
       templateId: $("goalTemplateId").value,
       retirement: retirementForGoal(),
+      kind: $("goalKind").value,
+      coverNeededINR: Number($("coverNeededInput").value) || 0,
+      coverInPlaceINR: Number($("coverInPlaceInput").value) || 0,
+      annualPremiumINR: Number($("coverPremiumInput").value) || 0,
       createdAt: existing ? existing.createdAt : undefined
     });
-    if (g) g.targetYear = year;
+    if (g && g.kind !== "COVER") g.targetYear = year;
     return g;
   }
 
@@ -395,6 +438,7 @@
 
   function updatePreview() {
     const g = readForm();
+    if (g && g.kind === "COVER") return;
     const ready = g && g.baseTargetINR > 0 && g.targetYear >= new Date().getFullYear();
     if (!ready) {
       $("prevFv").textContent = $("prevGap").textContent = $("prevSip").textContent = "—";
@@ -425,7 +469,9 @@
     $("helpFormula").textContent = idea && idea.formula ? `The sum: ${idea.formula}` : "";
     $("residexHelper").hidden = !(idea && idea.helper === "residex" && G.residexCities().length);
     $("retireHelper").hidden = !(idea && idea.helper === "retirement");
+    $("termHelper").hidden = !(idea && idea.helper === "term");
     fillRetirement(g);
+    updateTerm();
     updateResidex();
     updateRetirement();
   }
@@ -445,6 +491,48 @@
       ${est.carpetSqft.toLocaleString("en-IN")} sq ft &asymp; <strong>${formatINR(est.price, true)}</strong>, plus about ${formatINR(est.friction, true)} stamp duty &amp; registration.
       A ${est.downPaymentPct}% down payment with those costs is <strong>${formatINR(est.downPayment, true)}</strong>.
       <span class="residex-note">Index-based average, not a quote for a specific home.</span>`;
+  }
+
+  // --- Term cover helper ---------------------------------------------------
+  const TERM_IDS = ["termIncome", "termLoans", "termGoals", "termExpenses", "termYears", "termOffset"];
+
+  function termPlan() {
+    return G.termCoverPlan({
+      yearlyIncome: $("termIncome").value, loans: $("termLoans").value, goalsToFund: $("termGoals").value,
+      yearlyFamilyExpenses: $("termExpenses").value, yearsOfSupport: $("termYears").value,
+      savings: $("termOffset").value, existingCover: 0
+    });
+  }
+
+  function updateTerm() {
+    if ($("termHelper").hidden) return;
+    const plan = termPlan();
+    const out = $("termResult");
+    $("useTermNeedsBtn").disabled = !(plan && plan.needsBased > 0);
+    $("useTermRuleBtn").disabled = !(plan && plan.ruleHigh > 0);
+    if (!plan) {
+      out.textContent = "Fill in your income or the family's needs to see two ways of sizing the cover.";
+      return;
+    }
+    const lines = [];
+    if (plan.ruleHigh > 0) lines.push(`<strong>Rule of thumb:</strong> 10–15× yearly income = ${formatINR(plan.ruleLow, true)} to ${formatINR(plan.ruleHigh, true)}.`);
+    if (plan.gross > 0) {
+      lines.push(`<strong>Needs-based:</strong> loans ${formatINR(plan.loans, true)} + goals ${formatINR(plan.goalsToFund, true)} + living costs ${formatINR(plan.living, true)}${plan.offset ? ` − savings and cover ${formatINR(plan.offset, true)}` : ""} = <strong>${formatINR(plan.needsBased, true)}</strong>.`);
+    }
+    out.innerHTML = lines.join("<br>");
+  }
+
+  function addUpOpenGoals() {
+    const total = goals.filter((g) => g.kind !== "COVER" && g.status !== "ACHIEVED").reduce((s, g) => s + (g.baseTargetINR || 0), 0);
+    $("termGoals").value = total;
+    updateTerm();
+    showToast(total ? `Added ${formatINR(total, true)} from your open goals` : "No priced goals to add yet");
+  }
+
+  function applyTerm(which) {
+    const plan = termPlan();
+    if (!plan) return;
+    $("coverNeededInput").value = which === "rule" ? plan.ruleHigh : plan.needsBased;
   }
 
   // --- Retirement helper ---------------------------------------------------
@@ -515,7 +603,7 @@
       $("helpToggleBtn").setAttribute("aria-expanded", "true");
     }
     overlay.classList.add("open");
-    setTimeout(() => (g.name ? $("goalYearInput") : $("goalTitleInput")).focus(), 60);
+    setTimeout(() => (g.name ? (g.kind === "COVER" ? $("coverNeededInput") : $("goalYearInput")) : $("goalTitleInput")).focus(), 60);
   }
 
   function closeDrawer() {
@@ -567,6 +655,10 @@
       $("helpToggleBtn").setAttribute("aria-expanded", String(hidden));
     });
     ["residexCity", "residexSqft", "residexDown"].forEach((id) => $(id).addEventListener("input", updateResidex));
+    TERM_IDS.forEach((id) => $(id).addEventListener("input", updateTerm));
+    $("termFromGoalsBtn").addEventListener("click", addUpOpenGoals);
+    $("useTermNeedsBtn").addEventListener("click", () => applyTerm("needs"));
+    $("useTermRuleBtn").addEventListener("click", () => applyTerm("rule"));
     RET_IDS.forEach((id) => $(id).addEventListener("input", updateRetirement));
     $("useRetirementBtn").addEventListener("click", applyRetirement);
     $("useDownPaymentBtn").addEventListener("click", () => applyResidex("down"));
@@ -579,14 +671,14 @@
     $("goalForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const g = readForm();
-      if (!g || !g.name || g.targetYear < new Date().getFullYear()) return;
+      if (!g || !g.name || (g.kind !== "COVER" && g.targetYear < new Date().getFullYear())) return;
       const i = goals.findIndex((x) => x.id === g.id);
       if (i >= 0) goals[i] = g; else goals.push(g);
       expanded.add(g.id);
       await persistGoals();
       closeDrawer();
       render();
-      showToast(g.baseTargetINR > 0 ? (i >= 0 ? "✓ Goal updated" : "✓ Goal added") : "✓ Goal added — add a number when you are ready");
+      showToast((g.kind === "COVER" ? g.coverNeededINR > 0 : g.baseTargetINR > 0) ? (i >= 0 ? "✓ Goal updated" : "✓ Goal added") : "✓ Goal added — add a number when you are ready");
     });
 
     // Goal rows
@@ -606,7 +698,7 @@
         openDrawer(g, { isNew: false });
       } else if (action === "number") {
         openDrawer(g, { isNew: false, openHelp: true });
-        setTimeout(() => $("goalPvInput").focus(), 80);
+        setTimeout(() => (g.kind === "COVER" ? $("coverNeededInput") : $("goalPvInput")).focus(), 80);
       } else if (action === "toggle") {
         g.status = g.status === "ACHIEVED" ? "ACTIVE" : "ACHIEVED";
         await persistGoals();

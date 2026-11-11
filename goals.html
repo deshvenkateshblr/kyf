@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>Goals | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.7.0">
-  <link rel="stylesheet" href="css/goals.css?v=1.7.0">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.8.0">
+  <link rel="stylesheet" href="css/goals.css?v=1.8.0">
 </head>
 <body>
 
@@ -73,6 +73,7 @@
           </div>
         </div>
         <p class="needs-number-note" id="needsNumberNote" hidden></p>
+        <p class="protection-note" id="protectionNote" hidden></p>
 
         <div class="plan-check" id="planCheck">
           <label for="surplusInput" class="plan-check-label">Monthly surplus I can put towards goals</label>
@@ -134,6 +135,7 @@
         <div class="drawer-body">
           <input type="hidden" id="goalId">
           <input type="hidden" id="goalTemplateId">
+          <input type="hidden" id="goalKind" value="SAVE">
 
           <div class="form-grid">
             <div class="form-group full">
@@ -141,14 +143,27 @@
               <input type="text" id="goalTitleInput" class="form-control" placeholder="e.g. Daughter's college, first home, 2-year sabbatical" required>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" data-kind="save">
               <label for="goalYearInput">When will you need it? (year)</label>
               <input type="number" id="goalYearInput" class="form-control" min="2026" max="2100" placeholder="e.g. 2036" required>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" data-kind="save">
               <label for="goalPvInput">Roughly how much, in today's money? (₹)</label>
               <input type="number" id="goalPvInput" class="form-control" min="0" step="1" placeholder="Leave empty if not sure">
+            </div>
+
+            <div class="form-group" data-kind="cover" hidden>
+              <label for="coverNeededInput">Cover I need (₹)</label>
+              <input type="number" id="coverNeededInput" class="form-control" min="0" step="1" placeholder="Leave empty if not sure">
+            </div>
+            <div class="form-group" data-kind="cover" hidden>
+              <label for="coverInPlaceInput">Cover I already have (₹)</label>
+              <input type="number" id="coverInPlaceInput" class="form-control" min="0" step="1" value="0">
+            </div>
+            <div class="form-group" data-kind="cover" hidden>
+              <label for="coverPremiumInput">Yearly premium I pay (₹, optional)</label>
+              <input type="number" id="coverPremiumInput" class="form-control" min="0" step="1" value="0">
             </div>
           </div>
 
@@ -190,6 +205,23 @@
               </div>
               <p class="residex-note">These are your assumptions, not predictions. Change any of them and see what moves.</p>
             </div>
+            <div class="term-helper" id="termHelper" hidden>
+              <div class="retire-grid">
+                <div class="form-group"><label for="termIncome">Your yearly income (₹)</label><input type="number" id="termIncome" class="form-control" min="0" step="1" inputmode="numeric"></div>
+                <div class="form-group"><label for="termLoans">Loans outstanding (₹)</label><input type="number" id="termLoans" class="form-control" min="0" step="1" inputmode="numeric" value="0"></div>
+                <div class="form-group"><label for="termGoals">Family goals to fund (₹)</label><input type="number" id="termGoals" class="form-control" min="0" step="1" inputmode="numeric" value="0"></div>
+                <div class="form-group"><label for="termExpenses">Family's yearly living costs (₹)</label><input type="number" id="termExpenses" class="form-control" min="0" step="1" inputmode="numeric"></div>
+                <div class="form-group"><label for="termYears">Years they would need support</label><input type="number" id="termYears" class="form-control" min="0" max="60" step="1" inputmode="numeric"></div>
+                <div class="form-group"><label for="termOffset">Savings + existing cover (₹)</label><input type="number" id="termOffset" class="form-control" min="0" step="1" inputmode="numeric" value="0"></div>
+              </div>
+              <button type="button" class="btn-action btn-small" id="termFromGoalsBtn">Add up my open goals</button>
+              <p class="residex-result" id="termResult">Fill in your income or the family's needs to see two ways of sizing the cover.</p>
+              <div class="residex-actions">
+                <button type="button" class="btn-action" id="useTermNeedsBtn" disabled>Use the needs-based figure</button>
+                <button type="button" class="btn-action" id="useTermRuleBtn" disabled>Use 15× income</button>
+              </div>
+              <p class="residex-note">Today's money, no inflation or investment growth on the payout. A rough guide to discuss with a CFP, not a quote.</p>
+            </div>
             <div class="residex-helper" id="residexHelper" hidden>
               <div class="residex-row">
                 <label for="residexCity">City</label>
@@ -207,7 +239,7 @@
             </div>
           </div>
 
-          <div class="modal-preview-box" id="modalPreviewBox">
+          <div class="modal-preview-box" id="modalPreviewBox" data-kind="save">
             <div class="prev-item">
               <div class="prev-lbl">Cost in future rupees</div>
               <div class="prev-val" id="prevFv">—</div>
@@ -234,15 +266,15 @@
                 <select id="goalPriorityInput" class="form-control"></select>
               </div>
               <div class="form-group">
-                <label for="goalOwnerInput">Whose goal?</label>
+                <label for="goalOwnerInput" id="goalOwnerLabel">Whose goal?</label>
                 <select id="goalOwnerInput" class="form-control"></select>
               </div>
-              <div class="form-group">
+              <div class="form-group" data-kind="save">
                 <label for="goalSavedInput">Already set aside outside Portfolio (₹)</label>
                 <input type="number" id="goalSavedInput" class="form-control" min="0" step="1" value="0">
                 <p class="field-hint" id="goalPortfolioHint"></p>
               </div>
-              <div class="form-group">
+              <div class="form-group" data-kind="save">
                 <label for="goalInflationInput">Price rises with</label>
                 <select id="goalInflationInput" class="form-control">
                   <option value="CPI">General inflation</option>
@@ -255,7 +287,7 @@
                 <label for="goalCustomRateInput">Inflation (% a year)</label>
                 <input type="number" id="goalCustomRateInput" class="form-control" min="0" max="25" step="0.5" value="6">
               </div>
-              <div class="form-group">
+              <div class="form-group" data-kind="save">
                 <label for="goalReturnInput">Expected return (% a year)</label>
                 <input type="number" id="goalReturnInput" class="form-control" min="3" max="20" step="0.5" placeholder="Auto">
                 <p class="field-hint" id="goalReturnHint">Leave blank to use the horizon default.</p>
@@ -293,15 +325,15 @@
 
 
   <!-- VAULT ENGINE -->
-  <script src="data/market-pulse.js?v=1.7.0"></script>
-  <script src="data/market-realestate.js?v=1.7.0"></script>
-  <script src="js/kyf-goals.js?v=1.7.0"></script>
-  <script src="js/kyf-vault.js?v=1.7.0"></script>
+  <script src="data/market-pulse.js?v=1.8.0"></script>
+  <script src="data/market-realestate.js?v=1.8.0"></script>
+  <script src="js/kyf-goals.js?v=1.8.0"></script>
+  <script src="js/kyf-vault.js?v=1.8.0"></script>
 
   <!-- SCRIPT -->
-  <script src="js/goals-app.js?v=1.7.0"></script>
-  <script src="js/kyf-footer.js?v=1.7.0"></script>
-  <script src="js/kyf-nav.js?v=1.7.0"></script>
+  <script src="js/goals-app.js?v=1.8.0"></script>
+  <script src="js/kyf-footer.js?v=1.8.0"></script>
+  <script src="js/kyf-nav.js?v=1.8.0"></script>
 </body>
 </html>
 

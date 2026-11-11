@@ -10,6 +10,8 @@
  *   expectedReturn (null = derive from horizon), manualSavedINR (money earmarked
  *   outside the Portfolio), ownerId (family member), notes, templateId,
  *   secondaryTarget (sqft / grams view, used by Portfolio), createdAt.
+ *   kind: "SAVE" (default: build a corpus by a date) | "COVER" (protection: get insured to a level).
+ *   COVER goals use coverNeededINR, coverInPlaceINR, annualPremiumINR and are never funded from holdings.
  *
  * "Saved so far" is NOT stored: it is derived from Portfolio allocations (cached
  * by the Portfolio page in localStorage `kyf_goal_funding_v1`) plus manualSavedINR.
@@ -52,6 +54,46 @@
   ];
 
   const TEMPLATES = [
+    {
+      id: "term_life", kind: "COVER", group: "protect", category: "other", priority: "ESSENTIAL", icon: "👨‍👩‍👧", inflationCategory: "CPI",
+      name: "Term life cover", blurb: "Money your family would need if your income stopped",
+      keywords: ["term", "life", "insurance", "cover", "family protection", "income replacement", "death", "dependents", "life cover"],
+      ask: ["Add up what your family would need: loans to clear, goals to fund (education, home), and years of living costs", "Subtract savings and cover you already have", "A rule of thumb is 10–15 times yearly income, a quick check on your own sum"],
+      formula: "Loans + goals for the family + living costs for the years they need support − savings and existing cover",
+      helper: "term",
+      checklist: [
+        "Work out the cover you need (loans + family goals + years of living costs − savings)",
+        "Compare 3 term plans from insurers with a high claim-settlement ratio",
+        "Disclose health, smoking and income details honestly on the form",
+        "Name nominees and tell your family where the policy is kept"
+      ]
+    },
+    {
+      id: "health_cover", kind: "COVER", group: "protect", category: "other", priority: "ESSENTIAL", icon: "🏥", inflationCategory: "MEDICAL",
+      name: "Health insurance", blurb: "Hospital bills should never touch your investments",
+      keywords: ["health", "medical", "mediclaim", "hospital", "insurance", "floater", "top up", "super top-up", "critical illness"],
+      ask: ["Who is covered: you, spouse, children, parents? Parents are often cheaper on a separate policy", "Ask a hospital in your city what a serious admission costs today, and pick a sum assured above that", "A base policy plus a super top-up gives a high cover for a lower premium", "Employer cover ends when you leave, so keep your own policy too"],
+      formula: "A sum assured above what a serious hospital stay costs in your city, for each person covered",
+      checklist: [
+        "List who needs cover and each person's pre-existing conditions",
+        "Check room-rent limits, co-pay, waiting periods and restoration benefit",
+        "Add a super top-up if the base cover is below what a serious admission costs",
+        "Keep your own policy even if your employer provides cover"
+      ]
+    },
+    {
+      id: "accident_disability", kind: "COVER", group: "protect", category: "other", priority: "IMPORTANT", icon: "🦺", inflationCategory: "CPI",
+      name: "Accident & disability cover", blurb: "Income protection if you cannot work",
+      keywords: ["accident", "disability", "personal accident", "pa cover", "income protection", "critical illness", "injury"],
+      ask: ["How many years of income would you need to replace if you could not work?", "Multiply by your yearly income, then subtract any cover you already have"],
+      formula: "Years of income to replace × yearly income − existing cover",
+      checklist: [
+        "Decide how many years of income you would need to replace",
+        "Check what your employer's group cover already pays",
+        "Compare personal accident and permanent-disability riders",
+        "Review the sum assured whenever your income changes"
+      ]
+    },
     {
       id: "peace_buffer", group: "protect", category: "buffer", priority: "ESSENTIAL", icon: "🛡️", inflationCategory: "CPI",
       name: "Emergency fund", blurb: "Months of expenses you can reach in a day",
@@ -267,6 +309,19 @@
       templateId: raw.templateId || "",
       createdAt: raw.createdAt || new Date().toISOString()
     };
+    goal.kind = String(raw.kind || "").toUpperCase() === "COVER" ? "COVER" : "SAVE";
+    if (goal.kind === "COVER") {
+      const n = (v) => Math.max(0, Number(v) || 0);
+      goal.coverNeededINR = n(raw.coverNeededINR);
+      goal.coverInPlaceINR = n(raw.coverInPlaceINR);
+      goal.annualPremiumINR = n(raw.annualPremiumINR);
+      goal.targetYear = 0;
+      goal.baseTargetINR = 0;
+      goal.manualSavedINR = 0;
+      goal.inflationCategory = "CPI";
+      goal.inflationRate = null;
+      goal.expectedReturn = null;
+    }
     if (raw.secondaryTarget) goal.secondaryTarget = raw.secondaryTarget;
     if (raw.retirement && typeof raw.retirement === "object") {
       const r = raw.retirement;
@@ -323,7 +378,40 @@
   }
 
   /** Compute everything the UI needs about one goal. */
+  function computeCover(goal) {
+    const needed = Number(goal.coverNeededINR) || 0;
+    const inPlace = Number(goal.coverInPlaceINR) || 0;
+    const gap = Math.max(0, needed - inPlace);
+    let health;
+    if (goal.status === "ACHIEVED") health = "achieved";
+    else if (needed <= 0) health = "needs_number";
+    else if (gap === 0) health = "covered";
+    else health = "cover_gap";
+    return {
+      kind: "COVER", hasAmount: needed > 0, coverNeeded: needed, coverInPlace: inPlace, coverGap: gap,
+      coveredPct: needed > 0 ? Math.min(100, Math.round((inPlace / needed) * 100)) : 0,
+      annualPremium: Number(goal.annualPremiumINR) || 0,
+      health, sip: 0, gap: 0, years: 0, futureCost: 0, saved: 0, savedFV: 0, portfolioSaved: 0,
+      fundedPct: needed > 0 ? Math.min(100, Math.round((inPlace / needed) * 100)) : 0,
+      inflationRate: 0, expectedReturn: 0, horizon: horizonDefaults(99), glide: ""
+    };
+  }
+
+  /** Summary of protection goals for the plan strip. */
+  function protectionSummary(goals) {
+    const covers = (goals || []).filter((g) => g.kind === "COVER" && g.status !== "ACHIEVED");
+    const computed = covers.map(computeCover);
+    return {
+      total: covers.length,
+      covered: computed.filter((c) => c.health === "covered").length,
+      gaps: computed.filter((c) => c.health === "cover_gap").length,
+      unpriced: computed.filter((c) => c.health === "needs_number").length,
+      annualPremiums: computed.reduce((s, c) => s + c.annualPremium, 0)
+    };
+  }
+
   function computeGoal(goal, savedFromPortfolio, opts) {
+    if (goal.kind === "COVER") return computeCover(goal);
     const o = opts || {};
     const baseYear = o.baseYear || currentYear();
     const years = Math.max(0, goal.targetYear - baseYear);
@@ -407,7 +495,8 @@
       targetYear: 0,
       inflationCategory: idea.inflationCategory,
       inflationRate: idea.inflationRate != null ? idea.inflationRate : null,
-      templateId: idea.id
+      templateId: idea.id,
+      kind: idea.kind || "SAVE"
     });
     g.targetYear = 0;
     return g;
@@ -492,6 +581,28 @@
     };
   }
 
+  /**
+   * Term cover, two ways a CFP cross-checks it. Everything is the user's own figures, in today's money.
+   * Needs-based ignores returns on the payout and inflation, which keeps the answer a little cautious.
+   */
+  function termCoverPlan(input) {
+    const i = input || {};
+    const n = (v) => Math.max(0, Number(v) || 0);
+    const income = n(i.yearlyIncome);
+    const loans = n(i.loans);
+    const goalsToFund = n(i.goalsToFund);
+    const living = n(i.yearlyFamilyExpenses) * n(i.yearsOfSupport);
+    const offset = n(i.savings) + n(i.existingCover);
+    if (!(income > 0) && !(loans + goalsToFund + living > 0)) return null;
+    const gross = loans + goalsToFund + living;
+    return {
+      ruleLow: Math.round(income * 10),
+      ruleHigh: Math.round(income * 15),
+      loans, goalsToFund, living, offset, gross,
+      needsBased: Math.max(0, Math.round(gross - offset))
+    };
+  }
+
   function residexCities() {
     const data = global.KYF_RESIDEX && global.KYF_RESIDEX.cities;
     return data ? Object.keys(data) : [];
@@ -549,8 +660,8 @@
   global.KYF_GOALS = {
     CATEGORIES, PRIORITIES, TEMPLATES, FUNDING_CACHE_KEY, LEGACY_PLANNER_KEY, LEGACY_MILESTONE_IDS,
     normalizeGoal, mergeGoalLists, inferCategory,
-    macroRates, inflationFor, horizonDefaults, computeGoal, affordability,
+    macroRates, inflationFor, horizonDefaults, computeGoal, computeCover, protectionSummary, affordability,
     writeFundingCache, readFundingCache,
-    IDEA_GROUPS, templateById, goalFromIdea, searchIdeas, retirementPlan, residexEstimate, residexCities, checklistFor, withChecklist, withoutGoalTasks, taskProgress, migrateCadence
+    IDEA_GROUPS, templateById, goalFromIdea, searchIdeas, retirementPlan, termCoverPlan, residexEstimate, residexCities, checklistFor, withChecklist, withoutGoalTasks, taskProgress, migrateCadence
   };
 })(typeof window !== "undefined" ? window : globalThis);

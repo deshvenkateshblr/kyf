@@ -590,3 +590,10 @@ footer {
 .retire-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 12px; }
 .retire-grid .form-group label { font-size: 12px; }
 @media (max-width: 560px) { .retire-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* ---------- Protection goals ---------- */
+.goal-row.kind-cover { border-left-color: var(--rose, #b8453f); }
+.protection-note { margin: 8px 0 0; font-size: 13px; font-weight: 600; color: var(--green); }
+.protection-note--gap { color: var(--rose, #b8453f); }
+.term-helper { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(31,122,108,.25); }
+.term-helper .btn-small { margin-top: 10px; padding: 6px 12px; font-size: 12px; }

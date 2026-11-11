@@ -1909,7 +1909,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         : (isDemoMode ? window.KYF_PORTFOLIO_DATA.getDemoGoals() : []);
 
       let goalOptions = `<option value="">None / General Wealth</option>`;
-      goalsList.forEach((g) => {
+      goalsList.filter((g) => g.kind !== "COVER").forEach((g) => {
         goalOptions += `<option value="${escapeHTML(g.id)}">${g.icon || "🎯"} ${escapeHTML(g.name)} (${g.targetYear || "Goal"})</option>`;
       });
       els.selectHoldingGoal.innerHTML = goalOptions;
