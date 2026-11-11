@@ -161,8 +161,9 @@
       id: "work_optional_freedom", group: "freedom", category: "retirement", priority: "ESSENTIAL", icon: "🌴", inflationCategory: "CPI",
       name: "Retirement / work-optional", blurb: "A corpus that pays your expenses for life",
       keywords: ["retire", "retirement", "freedom", "fire", "pension", "financial independence", "work optional", "corpus"],
-      ask: ["Estimate your yearly expenses in today's money", "A common rule of thumb is 25–30 times that amount", "Subtract anything already earmarked, such as EPF or NPS"],
-      formula: "Yearly expenses today × 25–30",
+      ask: ["Yearly household expenses in today's money. Leave out costs that will end before you retire, such as home-loan EMIs and school fees", "Retirement usually needs 70–100% of that; healthcare often rises", "Plan to a long age (90 or more): running out of money is a bigger risk than leaving some behind"],
+      formula: "Yearly need × years of retirement, adjusted for inflation and returns",
+      helper: "retirement",
       checklist: [
         "Estimate yearly expenses in today's money (corpus ≈ 25–30× that)",
         "Maximise EPF/PPF/NPS contributions each financial year",
@@ -267,6 +268,14 @@
       createdAt: raw.createdAt || new Date().toISOString()
     };
     if (raw.secondaryTarget) goal.secondaryTarget = raw.secondaryTarget;
+    if (raw.retirement && typeof raw.retirement === "object") {
+      const r = raw.retirement;
+      const num = (v) => (v === "" || v == null || isNaN(Number(v)) ? null : Number(v));
+      goal.retirement = {
+        birthYear: num(r.birthYear), retireAge: num(r.retireAge), lifeExpectancy: num(r.lifeExpectancy),
+        yearlyExpensesToday: num(r.yearlyExpensesToday), pctNeeded: num(r.pctNeeded), postReturn: num(r.postReturn)
+      };
+    }
     return goal;
   }
 
@@ -447,6 +456,42 @@
     };
   }
 
+  /**
+   * Retirement corpus, the way a CFP sizes it: withdrawals that rise with inflation, paid from a pot
+   * earning `postReturn`, for every year between retirement and the age you plan to live to.
+   * Because withdrawals and prices rise together, the corpus in TODAY'S money only depends on the
+   * real return and the number of retirement years: corpusToday = yearlyNeed × annuity-due factor.
+   * Returns null until the inputs are sensible. Every input is the user's; none are looked up.
+   */
+  function retirementPlan(input, inflationPct, baseYear) {
+    const i = input || {};
+    const age = Number(i.age);
+    const retireAge = Number(i.retireAge);
+    const lifeExpectancy = Number(i.lifeExpectancy);
+    const expenses = Number(i.yearlyExpensesToday);
+    const pct = i.pctNeeded === "" || i.pctNeeded == null ? 100 : Number(i.pctNeeded);
+    const postReturn = i.postReturn === "" || i.postReturn == null ? 7 : Number(i.postReturn);
+    if (!(age > 0) || !(retireAge > age) || !(lifeExpectancy > retireAge) || !(expenses > 0) || !(pct > 0)) return null;
+    const infl = Number(inflationPct) || 0;
+    const yearsToRetire = retireAge - age;
+    const retirementYears = lifeExpectancy - retireAge;
+    const need = expenses * pct / 100;
+    const real = (1 + postReturn / 100) / (1 + infl / 100) - 1;
+    const factor = Math.abs(real) < 1e-9
+      ? retirementYears
+      : ((1 - Math.pow(1 + real, -retirementYears)) / real) * (1 + real);
+    const corpusToday = Math.round(need * factor);
+    const yearlyAtRetirement = Math.round(need * Math.pow(1 + infl / 100, yearsToRetire));
+    return {
+      yearsToRetire, retirementYears, yearlyNeedToday: Math.round(need), yearlyAtRetirement,
+      realReturnPct: Math.round(real * 10000) / 100,
+      corpusToday,
+      corpusAtRetirement: Math.round(corpusToday * Math.pow(1 + infl / 100, yearsToRetire)),
+      multiple: Math.round((corpusToday / expenses) * 10) / 10,
+      retireYear: (baseYear || currentYear()) + yearsToRetire
+    };
+  }
+
   function residexCities() {
     const data = global.KYF_RESIDEX && global.KYF_RESIDEX.cities;
     return data ? Object.keys(data) : [];
@@ -506,6 +551,6 @@
     normalizeGoal, mergeGoalLists, inferCategory,
     macroRates, inflationFor, horizonDefaults, computeGoal, affordability,
     writeFundingCache, readFundingCache,
-    IDEA_GROUPS, templateById, goalFromIdea, searchIdeas, residexEstimate, residexCities, checklistFor, withChecklist, withoutGoalTasks, taskProgress, migrateCadence
+    IDEA_GROUPS, templateById, goalFromIdea, searchIdeas, retirementPlan, residexEstimate, residexCities, checklistFor, withChecklist, withoutGoalTasks, taskProgress, migrateCadence
   };
 })(typeof window !== "undefined" ? window : globalThis);

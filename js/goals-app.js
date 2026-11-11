@@ -352,6 +352,16 @@
     updatePreview();
   }
 
+  function retirementForGoal() {
+    if ($("retireHelper").hidden) return undefined;
+    const i = retirementInputs();
+    if (!(Number(i.age) > 0)) return undefined;
+    return {
+      birthYear: new Date().getFullYear() - Number(i.age), retireAge: i.retireAge, lifeExpectancy: i.lifeExpectancy,
+      yearlyExpensesToday: i.yearlyExpensesToday, pctNeeded: i.pctNeeded, postReturn: i.postReturn
+    };
+  }
+
   function readForm() {
     const existing = goals.find((x) => x.id === $("goalId").value);
     const ret = $("goalReturnInput").value;
@@ -372,6 +382,7 @@
       expectedReturn: ret === "" ? null : Number(ret),
       notes: $("goalDescInput").value.trim(),
       templateId: $("goalTemplateId").value,
+      retirement: retirementForGoal(),
       createdAt: existing ? existing.createdAt : undefined
     });
     if (g) g.targetYear = year;
@@ -413,7 +424,10 @@
       .map((a) => `<li>${escapeHtml(a)}</li>`).join("");
     $("helpFormula").textContent = idea && idea.formula ? `The sum: ${idea.formula}` : "";
     $("residexHelper").hidden = !(idea && idea.helper === "residex" && G.residexCities().length);
+    $("retireHelper").hidden = !(idea && idea.helper === "retirement");
+    fillRetirement(g);
     updateResidex();
+    updateRetirement();
   }
 
   function updateResidex() {
@@ -431,6 +445,57 @@
       ${est.carpetSqft.toLocaleString("en-IN")} sq ft &asymp; <strong>${formatINR(est.price, true)}</strong>, plus about ${formatINR(est.friction, true)} stamp duty &amp; registration.
       A ${est.downPaymentPct}% down payment with those costs is <strong>${formatINR(est.downPayment, true)}</strong>.
       <span class="residex-note">Index-based average, not a quote for a specific home.</span>`;
+  }
+
+  // --- Retirement helper ---------------------------------------------------
+  const RET_IDS = ["retireAge", "retireAt", "retireTill", "retireExpenses", "retirePct", "retireReturn"];
+
+  function fillRetirement(g) {
+    const r = g.retirement || {};
+    const year = new Date().getFullYear();
+    $("retireAge").value = r.birthYear ? year - r.birthYear : "";
+    $("retireAt").value = r.retireAge != null ? r.retireAge : "";
+    $("retireTill").value = r.lifeExpectancy != null ? r.lifeExpectancy : 90;
+    $("retireExpenses").value = r.yearlyExpensesToday != null ? r.yearlyExpensesToday : "";
+    $("retirePct").value = r.pctNeeded != null ? r.pctNeeded : 80;
+    $("retireReturn").value = r.postReturn != null ? r.postReturn : 7;
+  }
+
+  function retirementInputs() {
+    return {
+      age: $("retireAge").value, retireAge: $("retireAt").value, lifeExpectancy: $("retireTill").value,
+      yearlyExpensesToday: $("retireExpenses").value, pctNeeded: $("retirePct").value, postReturn: $("retireReturn").value
+    };
+  }
+
+  function currentRetirementPlan() {
+    const inflation = G.inflationFor(readForm());
+    return G.retirementPlan(retirementInputs(), inflation);
+  }
+
+  function updateRetirement() {
+    if ($("retireHelper").hidden) return;
+    const plan = currentRetirementPlan();
+    const out = $("retireResult");
+    const btn = $("useRetirementBtn");
+    if (!plan) {
+      out.textContent = "Fill in your age, when you want to retire, how long to plan for, and yearly expenses to see the corpus.";
+      btn.disabled = true;
+      return;
+    }
+    btn.disabled = false;
+    const infl = G.inflationFor(readForm());
+    out.innerHTML = `You would live off your savings for <strong>${plan.retirementYears} years</strong>, starting in <strong>${plan.retireYear}</strong>, when today's ${formatINR(plan.yearlyNeedToday, true)} a year becomes about <strong>${formatINR(plan.yearlyAtRetirement, true)}</strong> at ${infl}% inflation.
+      The corpus that pays for it is <strong>${formatINR(plan.corpusToday, true)}</strong> in today's money
+      (${formatINR(plan.corpusAtRetirement, true)} by then) &mdash; about <strong>${plan.multiple}&times;</strong> your yearly expenses. The usual 25&ndash;30&times; rule is a quick check on that.`;
+  }
+
+  function applyRetirement() {
+    const plan = currentRetirementPlan();
+    if (!plan) return;
+    $("goalPvInput").value = plan.corpusToday;
+    $("goalYearInput").value = plan.retireYear;
+    updatePreview();
   }
 
   function applyResidex(which) {
@@ -502,10 +567,12 @@
       $("helpToggleBtn").setAttribute("aria-expanded", String(hidden));
     });
     ["residexCity", "residexSqft", "residexDown"].forEach((id) => $(id).addEventListener("input", updateResidex));
+    RET_IDS.forEach((id) => $(id).addEventListener("input", updateRetirement));
+    $("useRetirementBtn").addEventListener("click", applyRetirement);
     $("useDownPaymentBtn").addEventListener("click", () => applyResidex("down"));
     $("useFullCostBtn").addEventListener("click", () => applyResidex("full"));
 
-    $("goalInflationInput").addEventListener("change", () => { syncInflationField(); updatePreview(); });
+    $("goalInflationInput").addEventListener("change", () => { syncInflationField(); updatePreview(); updateRetirement(); });
     ["goalYearInput", "goalPvInput", "goalSavedInput", "goalCustomRateInput", "goalReturnInput"].forEach((id) =>
       $(id).addEventListener("input", updatePreview));
 

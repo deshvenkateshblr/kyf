@@ -86,6 +86,26 @@ ok(est.price === 10000000 && est.friction === 700000 && est.downPayment === 2700
 ok(K.residexEstimate("Nowhere", 1000, 20) === null && K.residexEstimate("Pune", 0, 20) === null, "unknown city or empty area → no estimate");
 ok(K.residexCities().join() === "Pune", "cities come from the RESIDEX data");
 
+console.log("Retirement corpus");
+const rp = K.retirementPlan({ age: 38, retireAge: 58, lifeExpectancy: 90, yearlyExpensesToday: 1000000, pctNeeded: 80, postReturn: 7 }, 5.4, 2026);
+const realR = 1.07 / 1.054 - 1;
+const expectFactor = ((1 - Math.pow(1 + realR, -32)) / realR) * (1 + realR);
+ok(rp.yearsToRetire === 20 && rp.retirementYears === 32 && rp.retireYear === 2046, "20 years to retire, 32 years of retirement, retiring in 2046");
+ok(rp.yearlyNeedToday === 800000 && near(rp.corpusToday, Math.round(800000 * expectFactor), 1), `corpus (today's money) = need × annuity factor (${rp.corpusToday})`);
+ok(near(rp.yearlyAtRetirement, Math.round(800000 * Math.pow(1.054, 20)), 1), "yearly need grows with inflation until retirement");
+ok(near(rp.corpusAtRetirement, Math.round(rp.corpusToday * Math.pow(1.054, 20)), 1), "corpus at retirement is today's corpus inflated");
+ok(rp.multiple > 15 && rp.multiple < 30, `corpus is a sensible multiple of yearly expenses (${rp.multiple}×)`);
+const zeroReal = K.retirementPlan({ age: 40, retireAge: 60, lifeExpectancy: 80, yearlyExpensesToday: 100000, pctNeeded: 100, postReturn: 5 }, 5, 2026);
+ok(zeroReal.corpusToday === 2000000, "when return equals inflation, corpus = yearly need × years (20 × ₹1 L)");
+ok(K.retirementPlan({ age: 40, retireAge: 35, lifeExpectancy: 80, yearlyExpensesToday: 1 }, 5) === null, "retiring before today → no plan");
+ok(K.retirementPlan({ age: 40, retireAge: 60, lifeExpectancy: 55, yearlyExpensesToday: 1 }, 5) === null, "living till before retirement → no plan");
+ok(K.retirementPlan({ age: 40, retireAge: 60, lifeExpectancy: 90, yearlyExpensesToday: 0 }, 5) === null, "no expenses entered → no plan");
+const later = K.retirementPlan({ age: 38, retireAge: 61, lifeExpectancy: 90, yearlyExpensesToday: 1000000, pctNeeded: 80, postReturn: 7 }, 5.4, 2026);
+ok(later.corpusToday < rp.corpusToday, "retiring later needs a smaller corpus (fewer years to fund)");
+const kept = K.normalizeGoal({ name: "R", baseTargetINR: 1, targetYear: 2046, retirement: { birthYear: 1988, retireAge: "58", lifeExpectancy: 90, yearlyExpensesToday: 900000 } });
+ok(kept.retirement.birthYear === 1988 && kept.retirement.retireAge === 58 && kept.retirement.postReturn === null, "retirement inputs survive normalising (numbers, blanks → null)");
+ok(K.templateById("work_optional_freedom").helper === "retirement", "the retirement idea turns the helper on");
+
 console.log("Cadence migration");
 const migrated = K.migrateCadence([
   { id: "goal-home", section: "goals", status: "active" },

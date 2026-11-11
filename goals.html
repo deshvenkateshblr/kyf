@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>Goals | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.6.1">
-  <link rel="stylesheet" href="css/goals.css?v=1.6.1">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.7.0">
+  <link rel="stylesheet" href="css/goals.css?v=1.7.0">
 </head>
 <body>
 
@@ -157,6 +157,39 @@
             <p class="help-intro" id="helpIntro"></p>
             <ul class="help-list" id="helpList"></ul>
             <p class="help-formula" id="helpFormula"></p>
+            <div class="retire-helper" id="retireHelper" hidden>
+              <div class="retire-grid">
+                <div class="form-group">
+                  <label for="retireAge">Your age now</label>
+                  <input type="number" id="retireAge" class="form-control" min="18" max="80" inputmode="numeric" placeholder="e.g. 38">
+                </div>
+                <div class="form-group">
+                  <label for="retireAt">Retire at</label>
+                  <input type="number" id="retireAt" class="form-control" min="30" max="85" inputmode="numeric" placeholder="e.g. 58">
+                </div>
+                <div class="form-group">
+                  <label for="retireTill">Plan to live till</label>
+                  <input type="number" id="retireTill" class="form-control" min="60" max="110" inputmode="numeric" value="90">
+                </div>
+                <div class="form-group">
+                  <label for="retireExpenses">Yearly expenses today (₹)</label>
+                  <input type="number" id="retireExpenses" class="form-control" min="0" step="1" inputmode="numeric" placeholder="e.g. 900000">
+                </div>
+                <div class="form-group">
+                  <label for="retirePct">Needed in retirement (%)</label>
+                  <input type="number" id="retirePct" class="form-control" min="30" max="150" step="5" value="80">
+                </div>
+                <div class="form-group">
+                  <label for="retireReturn">Return after retiring (% a year)</label>
+                  <input type="number" id="retireReturn" class="form-control" min="3" max="12" step="0.5" value="7">
+                </div>
+              </div>
+              <p class="residex-result" id="retireResult">Fill in the first four boxes to see the corpus.</p>
+              <div class="residex-actions">
+                <button type="button" class="btn-action" id="useRetirementBtn" disabled>Use this corpus and year</button>
+              </div>
+              <p class="residex-note">These are your assumptions, not predictions. Change any of them and see what moves.</p>
+            </div>
             <div class="residex-helper" id="residexHelper" hidden>
               <div class="residex-row">
                 <label for="residexCity">City</label>
@@ -260,15 +293,15 @@
 
 
   <!-- VAULT ENGINE -->
-  <script src="data/market-pulse.js?v=1.6.1"></script>
-  <script src="data/market-realestate.js?v=1.6.1"></script>
-  <script src="js/kyf-goals.js?v=1.6.1"></script>
-  <script src="js/kyf-vault.js?v=1.6.1"></script>
+  <script src="data/market-pulse.js?v=1.7.0"></script>
+  <script src="data/market-realestate.js?v=1.7.0"></script>
+  <script src="js/kyf-goals.js?v=1.7.0"></script>
+  <script src="js/kyf-vault.js?v=1.7.0"></script>
 
   <!-- SCRIPT -->
-  <script src="js/goals-app.js?v=1.6.1"></script>
-  <script src="js/kyf-footer.js?v=1.6.1"></script>
-  <script src="js/kyf-nav.js?v=1.6.1"></script>
+  <script src="js/goals-app.js?v=1.7.0"></script>
+  <script src="js/kyf-footer.js?v=1.7.0"></script>
+  <script src="js/kyf-nav.js?v=1.7.0"></script>
 </body>
 </html>
 

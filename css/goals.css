@@ -584,3 +584,9 @@ footer {
 .residex-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .more-options { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
 .more-options > summary { cursor: pointer; font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+
+/* ---------- Retirement helper ---------- */
+.retire-helper { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(31,122,108,.25); }
+.retire-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 12px; }
+.retire-grid .form-group label { font-size: 12px; }
+@media (max-width: 560px) { .retire-grid { grid-template-columns: repeat(2, 1fr); } }
