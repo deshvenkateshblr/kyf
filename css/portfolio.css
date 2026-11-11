@@ -2005,34 +2005,8 @@ button {
     display: none;
   }
 
-  /* Compact Top Nav on Mobile */
-  .nav-inner {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    padding: 8px 0;
-  }
-
-  .nav img {
-    height: 32px;
-  }
-
-  .nav-links {
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-    gap: 12px;
-    font-size: 11px;
-  }
-
-  .nav-links a, .nav-links button {
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
+  /* Top nav on mobile is handled by css/kyf-nav.css (logo, Save, ☰ menu) */
+  .nav img { height: 32px; }
 
   /* Compact Market Pulse */
   .market-pulse-bar {

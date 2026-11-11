@@ -1,0 +1,54 @@
+/* Shared nav menu (js/kyf-nav.js): visible on phones, where page CSS hides the inline links */
+.kyf-menu-btn {
+  display: none; width: 42px; height: 42px; flex: 0 0 auto; margin-left: 8px;
+  align-items: center; justify-content: center;
+  border: 1px solid var(--line, #d7ddd2); border-radius: 10px; background: var(--panel, #fff); cursor: pointer;
+}
+.kyf-menu-bars, .kyf-menu-bars::before, .kyf-menu-bars::after {
+  display: block; width: 18px; height: 2px; background: var(--ink, #182620); border-radius: 2px; content: ""; position: relative;
+  transition: transform .18s ease, background .18s ease;
+}
+.kyf-menu-bars::before { position: absolute; top: -6px; }
+.kyf-menu-bars::after { position: absolute; top: 6px; }
+.kyf-menu-btn.open .kyf-menu-bars { background: transparent; }
+.kyf-menu-btn.open .kyf-menu-bars::before { transform: translateY(6px) rotate(45deg); }
+.kyf-menu-btn.open .kyf-menu-bars::after { transform: translateY(-6px) rotate(-45deg); }
+
+.kyf-menu-panel {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 60;
+  display: flex; flex-direction: column; padding: 8px 16px 14px;
+  background: var(--panel, #fff); border-bottom: 1px solid var(--line, #d7ddd2);
+  box-shadow: 0 16px 30px rgba(24, 38, 32, .14);
+}
+.kyf-menu-panel[hidden] { display: none; }
+.kyf-menu-item { display: flex; align-items: center; gap: 14px; padding: 12px 8px; text-decoration: none; color: var(--ink, #182620); border-radius: 10px; }
+.kyf-menu-item + .kyf-menu-item { border-top: 1px solid var(--line, #d7ddd2); }
+.kyf-menu-item:hover, .kyf-menu-item.current { background: var(--teal-soft, #e3f0ec); }
+.kyf-menu-icon { font-size: 22px; width: 28px; text-align: center; }
+.kyf-menu-text { display: flex; flex-direction: column; }
+.kyf-menu-label { font-weight: 700; font-size: 15px; }
+.kyf-menu-item.current .kyf-menu-label { color: var(--teal-deep, #145a4f); }
+.kyf-menu-desc { font-size: 12.5px; color: var(--muted, #6d786f); }
+
+@media (max-width: 820px) {
+  .kyf-menu-btn { display: inline-flex; }
+}
+@media (min-width: 821px) {
+  .kyf-menu-panel { display: none; }
+}
+
+/* Phones: one tidy row — logo, Save, ☰. Everything else lives in the menu. */
+@media (max-width: 820px) {
+  .nav-inner { flex-direction: row !important; align-items: center !important; flex-wrap: nowrap !important; gap: 8px !important; padding: 8px 0 !important; }
+  .nav img { height: 34px !important; }
+  .nav-left { min-width: 0; flex: 0 1 auto; }
+  .nav-left .back-btn { display: none !important; }
+  .nav-links { display: flex !important; width: auto !important; overflow: visible !important; margin-left: auto; gap: 8px !important; flex: 0 0 auto; }
+  .nav-links > a, .nav-links > .nav-dropdown, .nav-links > .btn { display: none !important; }
+}
+@media (max-width: 560px) {
+  .nav-links .nav-btn.secondary { display: none !important; }
+  .nav-links .nav-btn.primary { padding: 8px 12px !important; font-size: 11px !important; }
+}
+.kyf-menu-file { margin-top: 6px; border-top: 2px solid var(--line, #d7ddd2) !important; }
+@media (min-width: 561px) { .kyf-menu-file { display: none; } }
