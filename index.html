@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Know Your Finance (KYF) helps you understand your money across Goals, Cadence, and Freedom—then act with clarity. 100% educational, private, runs in your browser.">
+  <meta name="description" content="Know Your Finance (KYF) helps you understand your money across Goals, Holdings, and Cadence—then act with clarity. 100% educational, private, runs in your browser.">
   <meta name="theme-color" content="#1f7a6c">
   <title>KYF — Know Your Finance</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/home.css?v=1.9.0">
+  <link rel="stylesheet" href="css/home.css?v=1.9.1">
 </head>
 <body>
 
@@ -50,7 +50,7 @@
         </div>
         <div class="hero-art" aria-hidden="false">
           <div class="halo"></div>
-          <svg class="pyramid" viewBox="0 0 440 400" role="img" aria-label="Pyramid of three layers: Goals at the base, Cadence in the middle, Freedom at the top" xmlns="http://www.w3.org/2000/svg">
+          <svg class="pyramid" viewBox="0 0 440 400" role="img" aria-label="Pyramid of three layers: Goals at the base, Holdings in the middle, Cadence at the top" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="dL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3cb7a1"/><stop offset="1" stop-color="#1f8f7b"/></linearGradient>
               <linearGradient id="dR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c8573"/><stop offset="1" stop-color="#125a4e"/></linearGradient>
@@ -105,19 +105,19 @@
             <polygon points="220.0,50.0 220.0,152.6 272.7,135.0" fill="url(#dR)"/>
             <line x1="220" y1="50" x2="220" y2="152.6" stroke="#fff" stroke-opacity=".38" stroke-width="1.2"/>
             <!-- Layer Labels -->
-            <text x="220" y="113" font-size="22" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Freedom</text>
-            <text x="220" y="192" font-size="24" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Cadence</text>
+            <text x="220" y="113" font-size="22" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Cadence</text>
+            <text x="220" y="192" font-size="24" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Holdings</text>
             <text x="220" y="301" font-size="27" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Goals</text>
             <!-- NEW Finance Layer Icons (Replaces Apple, Runner & ECG) -->
-            <!-- Top Icon (Freedom): Shield / Compass Star -->
+            <!-- Top Icon (Cadence): Clock -->
             <g transform="translate(220 132) scale(1.15) translate(-12 -12)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              <path d="M9 12l2 2 4-4"/>
-            </g>
-            <!-- Middle Icon (Cadence): Action Rhythm / Clock -->
-            <g transform="translate(220 226) scale(1.55) translate(-12 -12)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="9"/>
               <path d="M12 7v5l3.5 2"/>
+            </g>
+            <!-- Middle Icon (Holdings): Briefcase -->
+            <g transform="translate(220 226) scale(1.55) translate(-12 -12)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="7" width="18" height="13" rx="2"/>
+              <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>
             </g>
             <!-- Base Icon (Goals): Bullseye Target -->
             <g transform="translate(220 328) scale(1.75) translate(-12 -12)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -126,7 +126,7 @@
               <circle cx="12" cy="12" r="1.5" fill="#fff"/>
             </g>
           </svg>
-          <span class="chip c1">Discipline</span>
+          <span class="chip c1">Discipline &rarr; Freedom</span>
           <span class="chip c2">Knowledge Base</span>
         </div>
       </div>
@@ -173,9 +173,9 @@
         <div class="wrap">
           <div class="section-head section-head--narrow reveal">
             <p class="eyebrow">The Unified Framework</p>
-            <h2>Three Pillars. One Disciplined Rhythm.</h2>
+            <h2>Three layers. One calm rhythm.</h2>
             <p class="framework-lede">
-              Most personal finance advice fails because it separates milestone planning from daily habits and long-term portfolio preservation. KYF connects them into an unbroken triad: <strong>Goals</strong> anchor your destination, <strong>Cadence</strong> builds your execution engine, and <strong>Freedom</strong> delivers peace of mind.
+              Most personal finance advice treats goals, savings and habits separately. KYF connects them: <strong>Goals</strong> say what the money is for, <strong>Holdings</strong> show what you have to meet them, and <strong>Cadence</strong> keeps you moving. Freedom is where they lead.
             </p>
           </div>
         </div>
@@ -185,8 +185,8 @@
       <section id="dimensions" class="alt section-tight">
         <div class="wrap">
           <div class="section-head reveal">
-            <p class="eyebrow">Dimension Triad</p>
-            <h2>One profile. Three interconnected lenses.</h2>
+            <p class="eyebrow">The three layers</p>
+            <h2>One profile. Three connected layers.</h2>
             <p>Generic financial advice is written for nobody. KYF weighs your life stage, family milestones, and money habits across three core dimensions:</p>
           </div>
           <div class="dims">
@@ -204,27 +204,27 @@
             </article>
             <article class="dim d2 reveal">
               <div class="num">Dimension 02</div>
-              <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
-              <h3>Cadence</h3>
-              <p>Establish your disciplined financial rhythm—organize life milestone dates, SIP automation, and recurring housekeeping.</p>
+              <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg></div>
+              <h3>Holdings</h3>
+              <p>See everything you own and owe in one place, and how much of it is already working toward each goal.</p>
               <ul>
-                <li>Action-oriented recurring milestones with target work dates</li>
-                <li>12-Month liquid peace buffer &amp; term insurance coverage</li>
-                <li>Annual rebalancing, CIBIL audit &amp; tax routine</li>
+                <li>Stocks, mutual funds, gold, property, FDs and loans</li>
+                <li>Import from a broker file, view by asset class, goal or family member</li>
+                <li>Spot Regular-plan funds that cost more than their Direct twin</li>
               </ul>
-              <a href="cadence.html" class="dim-link dim-link--amber">Open Action Cadence &rarr;</a>
+              <a href="portfolio.html" class="dim-link dim-link--teal">Open Portfolio &rarr;</a>
             </article>
             <article class="dim d3 reveal">
               <div class="num">Dimension 03</div>
-              <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-              <h3>Freedom</h3>
-              <p>Build a calm, work-optional roadmap with a balanced Equity, Debt, and Gold recipe tailored to your life stage.</p>
+              <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
+              <h3>Cadence</h3>
+              <p>Turn plans into habits: a checklist for every goal and the yearly chores that keep you on track.</p>
               <ul>
-                <li>3-Bucket Work-Optional Freedom architecture</li>
-                <li>Drawdown protection &amp; sequence-of-returns shield</li>
-                <li>Compounding wealth to focus on what matters most</li>
+                <li>Steps generated for each goal you add</li>
+                <li>Emergency fund, insurance, tax and rebalancing reminders</li>
+                <li>Tick steps off and set your own dates</li>
               </ul>
-              <a href="portfolio.html" class="dim-link dim-link--teal">Explore Portfolio Blueprint &rarr;</a>
+              <a href="cadence.html" class="dim-link dim-link--amber">Open Cadence &rarr;</a>
             </article>
           </div>
         </div>
@@ -240,10 +240,10 @@
           </div>
           <ol class="journey">
             <li class="step start reveal"><div class="pin">1</div><h3>Anchor Goals</h3><p>Define family milestones and price them against real inflation reality.</p><small>Dimension 01 &middot; Goals</small></li>
-            <li class="step reveal"><div class="pin">2</div><h3>Match Containers</h3><p>Select the right vehicles—Liquid, FDs, PPF, Gold &amp; Index Mutual Funds—by horizon.</p><small>Asset Allocation</small></li>
-            <li class="step reveal"><div class="pin">3</div><h3>Build Cadence</h3><p>Lock in a 12-month peace buffer, automate monthly SIPs, and shield against unseen risks.</p><small>Dimension 02 &middot; Cadence</small></li>
+            <li class="step reveal"><div class="pin">2</div><h3>Match Containers</h3><p>Select the right vehicles—Liquid, FDs, PPF, Gold &amp; Index Mutual Funds—by horizon.</p><small>Dimension 02 &middot; Holdings</small></li>
+            <li class="step reveal"><div class="pin">3</div><h3>Build Cadence</h3><p>Lock in a 12-month peace buffer, automate monthly SIPs, and shield against unseen risks.</p><small>Dimension 03 &middot; Cadence</small></li>
             <li class="step reveal"><div class="pin">4</div><h3>Stay Disciplined</h3><p>Review schedules annually, avoid emotional panic during dips, and rebalance calmly.</p><small>Systematic Habits</small></li>
-            <li class="step end reveal"><div class="pin" aria-label="Destination">★</div><h3>True Freedom</h3><p>Attain a work-optional life where money sustainably generates more money than you spend.</p><small>Dimension 03 &middot; Freedom</small></li>
+            <li class="step end reveal"><div class="pin" aria-label="Destination">★</div><h3>True Freedom</h3><p>Attain a work-optional life where money sustainably generates more money than you spend.</p><small>Where it leads</small></li>
           </ol>
         </div>
       </section>
@@ -301,9 +301,9 @@
   </footer>
 
 
-  <script src="js/kyf-footer.js?v=1.9.0"></script>
-  <script src="js/kyf-features.js?v=1.9.0"></script>
-  <script src="js/kyf-nav.js?v=1.9.0"></script>
-  <script src="js/kyf-home.js?v=1.9.0"></script>
+  <script src="js/kyf-footer.js?v=1.9.1"></script>
+  <script src="js/kyf-features.js?v=1.9.1"></script>
+  <script src="js/kyf-nav.js?v=1.9.1"></script>
+  <script src="js/kyf-home.js?v=1.9.1"></script>
 </body>
 </html>
