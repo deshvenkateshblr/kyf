@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>Goals | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.6.0">
-  <link rel="stylesheet" href="css/goals.css?v=1.6.0">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.9.1">
+  <link rel="stylesheet" href="css/goals.css?v=1.9.1">
 </head>
 <body>
 
@@ -29,29 +29,35 @@
   </header>
 
   <main>
-    <!-- HERO / OVERVIEW -->
+    <!-- ASK -->
     <section class="goals-hero">
       <div class="wrap">
-        <div class="hero-top">
-          <div>
-            <div class="privacy-badge"><span class="dot" aria-hidden="true"></span><span>100% private. Everything is calculated in your browser.</span></div>
-            <h1>Goals &mdash; what is the money for?</h1>
-            <p class="lede">Name what matters, price it in future rupees, and see the monthly amount that gets you there. Money you hold in <a href="portfolio.html">Portfolio</a> counts automatically once you tag it to a goal.</p>
+        <div class="privacy-badge"><span class="dot" aria-hidden="true"></span><span>100% private. Everything is calculated in your browser.</span></div>
+        <h1>What are you saving for?</h1>
+        <p class="lede">Start with something that matters to you. We will help you find a realistic number &mdash; you stay in charge of every figure. Money you hold in <a href="portfolio.html">Portfolio</a> counts once you tag it to a goal.</p>
+
+        <div class="ask-box">
+          <div class="search-box ask-search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="askInput" class="search-input" placeholder="Type a goal: college, home, wedding, retirement..." aria-label="What are you saving for?" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="askResults">
+            <button id="askClearBtn" class="search-clear" aria-label="Clear">&times;</button>
           </div>
-          <div class="action-buttons">
-            <button class="btn-action primary" id="openAddModalBtn">+ Add goal</button>
-          </div>
+          <div class="ask-results" id="askResults" role="listbox" hidden></div>
         </div>
 
-        <!-- PLAN SUMMARY -->
+        <div class="idea-chips" id="ideaChips" aria-label="Goal ideas"></div>
+      </div>
+    </section>
+
+    <!-- PLAN SUMMARY (only once goals exist) -->
+    <section class="plan-section" id="planSection" hidden>
+      <div class="wrap">
         <div class="metric-strip">
           <div class="metric-card">
             <div class="val" id="metricTotalCount">0</div>
             <div class="lbl">Open goals</div>
-          </div>
-          <div class="metric-card">
-            <div class="val" id="metricTotalPV">₹0</div>
-            <div class="lbl">Cost today</div>
           </div>
           <div class="metric-card">
             <div class="val val-amber" id="metricTotalFV">₹0</div>
@@ -66,8 +72,9 @@
             <div class="lbl">Funded so far</div>
           </div>
         </div>
+        <p class="needs-number-note" id="needsNumberNote" hidden></p>
+        <p class="protection-note" id="protectionNote" hidden></p>
 
-        <!-- AFFORDABILITY CHECK -->
         <div class="plan-check" id="planCheck">
           <label for="surplusInput" class="plan-check-label">Monthly surplus I can put towards goals</label>
           <div class="plan-check-input">
@@ -79,73 +86,26 @@
       </div>
     </section>
 
-    <!-- SEARCH & FILTERS TOOLBAR -->
-    <section class="controls-bar">
-      <div class="wrap controls-inner">
-        <div class="search-row">
-          <div class="search-box">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" id="searchInput" class="search-input" placeholder="Search goals (home, college, retirement...)" aria-label="Search goals">
-            <button id="searchClearBtn" class="search-clear" aria-label="Clear search">&times;</button>
+    <!-- YOUR GOALS -->
+    <section class="goals-section" id="goalsSection" hidden>
+      <div class="wrap">
+        <div class="list-toolbar">
+          <h2 class="list-title">Your goals</h2>
+          <div class="filter-pills-row">
+            <button class="filter-pill active" data-status="open">Open</button>
+            <button class="filter-pill" data-status="achieved">Achieved</button>
+            <button class="filter-pill" data-status="all">All</button>
           </div>
         </div>
-
-        <div class="filter-pills-row">
-          <span class="filter-label">Show:</span>
-          <button class="filter-pill active" data-status="open">Open</button>
-          <button class="filter-pill" data-status="achieved">Achieved</button>
-          <button class="filter-pill" data-status="all">All</button>
-
-          <span class="filter-label filter-label--gap">Horizon:</span>
-          <button class="filter-pill active" data-horizon="all">Any</button>
-          <button class="filter-pill" data-horizon="short">⚡ Under 3 yrs</button>
-          <button class="filter-pill" data-horizon="medium">🌱 3–7 yrs</button>
-          <button class="filter-pill" data-horizon="long">🌳 7+ yrs</button>
+        <div class="goal-list" id="goalList"></div>
+        <div class="empty-state" id="noMatchState" hidden>
+          <p>No goals in this view.</p>
         </div>
       </div>
     </section>
 
-    <!-- GOALS CONTAINER -->
     <section class="goals-section">
       <div class="wrap">
-        <!-- DISCOVERY: shown when there are no goals yet -->
-        <div class="discover" id="discoverPanel" hidden>
-          <h2>Start with a goal most families have</h2>
-          <p class="discover-sub">Tap one to add it with sensible defaults. You can change every number afterwards.</p>
-          <div class="template-grid" id="templateGrid"></div>
-          <button class="btn-action" id="customGoalBtn">Or create your own goal</button>
-        </div>
-
-        <div id="goalSections">
-          <div class="goal-group" id="groupESSENTIAL">
-            <div class="section-title-wrap">
-              <h2>🔴 Essential</h2>
-              <span class="section-badge" id="countESSENTIAL">0 goals</span>
-            </div>
-            <div class="cards-grid" id="gridESSENTIAL"></div>
-          </div>
-          <div class="goal-group" id="groupIMPORTANT">
-            <div class="section-title-wrap">
-              <h2>🟡 Important</h2>
-              <span class="section-badge" id="countIMPORTANT">0 goals</span>
-            </div>
-            <div class="cards-grid" id="gridIMPORTANT"></div>
-          </div>
-          <div class="goal-group" id="groupFLEXIBLE">
-            <div class="section-title-wrap">
-              <h2>🔵 Flexible</h2>
-              <span class="section-badge" id="countFLEXIBLE">0 goals</span>
-            </div>
-            <div class="cards-grid" id="gridFLEXIBLE"></div>
-          </div>
-          <div class="empty-state" id="noMatchState" hidden>
-            <p>No goals match this filter.</p>
-          </div>
-        </div>
-
-        <!-- EDUCATIONAL CALLOUT -->
         <div class="edu-callout">
           <div class="edu-col">
             <h4>1. Inflate the cost</h4>
@@ -153,7 +113,7 @@
           </div>
           <div class="edu-col">
             <h4>2. Match money to time</h4>
-            <p><strong>Under 3 years:</strong> debt/liquid only. <strong>3–7 years:</strong> a hybrid mix. <strong>7+ years:</strong> equity-led. Each card says when to start shifting to safety.</p>
+            <p><strong>Under 3 years:</strong> debt/liquid only. <strong>3–7 years:</strong> a hybrid mix. <strong>7+ years:</strong> equity-led. Each goal says when to start shifting to safety.</p>
           </div>
           <div class="edu-col">
             <h4>3. Fit the plan to your income</h4>
@@ -168,18 +128,14 @@
   <div class="drawer-overlay" id="goalModalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="drawer-panel drawer-panel--wide">
       <div class="drawer-head">
-        <h3 id="modalTitle">Add a goal</h3>
+        <h3 id="modalTitle">New goal</h3>
         <button class="modal-close" id="closeGoalModalBtn" aria-label="Close panel">&times;</button>
       </div>
       <form id="goalForm" class="drawer-form">
         <div class="drawer-body">
           <input type="hidden" id="goalId">
           <input type="hidden" id="goalTemplateId">
-
-          <div class="template-pick" id="templatePick">
-            <span class="filter-label">Start from:</span>
-            <span id="templateChips"></span>
-          </div>
+          <input type="hidden" id="goalKind" value="SAVE">
 
           <div class="form-grid">
             <div class="form-group full">
@@ -187,78 +143,161 @@
               <input type="text" id="goalTitleInput" class="form-control" placeholder="e.g. Daughter's college, first home, 2-year sabbatical" required>
             </div>
 
-            <div class="form-group">
-              <label for="goalCategoryInput">Type</label>
-              <select id="goalCategoryInput" class="form-control" required></select>
+            <div class="form-group" data-kind="save">
+              <label for="goalYearInput">When will you need it? (year)</label>
+              <input type="number" id="goalYearInput" class="form-control" min="2026" max="2100" placeholder="e.g. 2036" required>
             </div>
 
-            <div class="form-group">
-              <label for="goalPriorityInput">How important?</label>
-              <select id="goalPriorityInput" class="form-control"></select>
+            <div class="form-group" data-kind="save">
+              <label for="goalPvInput">Roughly how much, in today's money? (₹)</label>
+              <input type="number" id="goalPvInput" class="form-control" min="0" step="1" placeholder="Leave empty if not sure">
             </div>
 
-            <div class="form-group">
-              <label for="goalOwnerInput">Whose goal?</label>
-              <select id="goalOwnerInput" class="form-control"></select>
+            <div class="form-group" data-kind="cover" hidden>
+              <label for="coverNeededInput">Cover I need (₹)</label>
+              <input type="number" id="coverNeededInput" class="form-control" min="0" step="1" placeholder="Leave empty if not sure">
             </div>
-
-            <div class="form-group">
-              <label for="goalYearInput">Needed by (year)</label>
-              <input type="number" id="goalYearInput" class="form-control" min="2026" max="2100" required>
+            <div class="form-group" data-kind="cover" hidden>
+              <label for="coverInPlaceInput">Cover I already have (₹)</label>
+              <input type="number" id="coverInPlaceInput" class="form-control" min="0" step="1" value="0">
             </div>
-
-            <div class="form-group">
-              <label for="goalPvInput">Cost today (₹)</label>
-              <input type="number" id="goalPvInput" class="form-control" min="10000" step="10000" placeholder="e.g. 2500000" required>
-            </div>
-
-            <div class="form-group">
-              <label for="goalSavedInput">Already set aside outside Portfolio (₹)</label>
-              <input type="number" id="goalSavedInput" class="form-control" min="0" step="5000" value="0">
-              <p class="field-hint" id="goalPortfolioHint"></p>
-            </div>
-
-            <div class="form-group">
-              <label for="goalInflationInput">Price rises with</label>
-              <select id="goalInflationInput" class="form-control">
-                <option value="CPI">General inflation</option>
-                <option value="EDUCATION">Education inflation</option>
-                <option value="MEDICAL">Medical inflation</option>
-                <option value="CUSTOM">My own rate</option>
-              </select>
-            </div>
-
-            <div class="form-group" id="customInflationGroup" hidden>
-              <label for="goalCustomRateInput">Inflation (% a year)</label>
-              <input type="number" id="goalCustomRateInput" class="form-control" min="0" max="25" step="0.5" value="6">
-            </div>
-
-            <div class="form-group">
-              <label for="goalReturnInput">Expected return (% a year)</label>
-              <input type="number" id="goalReturnInput" class="form-control" min="3" max="20" step="0.5" placeholder="Auto">
-              <p class="field-hint" id="goalReturnHint">Leave blank to use the horizon default.</p>
-            </div>
-
-            <div class="form-group full">
-              <label for="goalDescInput">Notes (optional)</label>
-              <textarea id="goalDescInput" class="form-control" rows="2" placeholder="Which accounts or funds will hold this money?"></textarea>
+            <div class="form-group" data-kind="cover" hidden>
+              <label for="coverPremiumInput">Yearly premium I pay (₹, optional)</label>
+              <input type="number" id="coverPremiumInput" class="form-control" min="0" step="1" value="0">
             </div>
           </div>
 
-          <div class="modal-preview-box" id="modalPreviewBox">
+          <button type="button" class="help-toggle" id="helpToggleBtn" aria-expanded="false" aria-controls="helpPanel">Not sure of the number? Help me work it out</button>
+          <div class="help-panel" id="helpPanel" hidden>
+            <p class="help-intro" id="helpIntro"></p>
+            <ul class="help-list" id="helpList"></ul>
+            <p class="help-formula" id="helpFormula"></p>
+            <div class="retire-helper" id="retireHelper" hidden>
+              <div class="retire-grid">
+                <div class="form-group">
+                  <label for="retireAge">Your age now</label>
+                  <input type="number" id="retireAge" class="form-control" min="18" max="80" inputmode="numeric" placeholder="e.g. 38">
+                </div>
+                <div class="form-group">
+                  <label for="retireAt">Retire at</label>
+                  <input type="number" id="retireAt" class="form-control" min="30" max="85" inputmode="numeric" placeholder="e.g. 58">
+                </div>
+                <div class="form-group">
+                  <label for="retireTill">Plan to live till</label>
+                  <input type="number" id="retireTill" class="form-control" min="60" max="110" inputmode="numeric" value="90">
+                </div>
+                <div class="form-group">
+                  <label for="retireExpenses">Yearly expenses today (₹)</label>
+                  <input type="number" id="retireExpenses" class="form-control" min="0" step="1" inputmode="numeric" placeholder="e.g. 900000">
+                </div>
+                <div class="form-group">
+                  <label for="retirePct">Needed in retirement (%)</label>
+                  <input type="number" id="retirePct" class="form-control" min="30" max="150" step="5" value="80">
+                </div>
+                <div class="form-group">
+                  <label for="retireReturn">Return after retiring (% a year)</label>
+                  <input type="number" id="retireReturn" class="form-control" min="3" max="12" step="0.5" value="7">
+                </div>
+              </div>
+              <p class="residex-result" id="retireResult">Fill in the first four boxes to see the corpus.</p>
+              <div class="residex-actions">
+                <button type="button" class="btn-action" id="useRetirementBtn" disabled>Use this corpus and year</button>
+              </div>
+              <p class="residex-note">These are your assumptions, not predictions. Change any of them and see what moves.</p>
+            </div>
+            <div class="term-helper" id="termHelper" hidden>
+              <div class="retire-grid">
+                <div class="form-group"><label for="termIncome">Your yearly income (₹)</label><input type="number" id="termIncome" class="form-control" min="0" step="1" inputmode="numeric"></div>
+                <div class="form-group"><label for="termLoans">Loans outstanding (₹)</label><input type="number" id="termLoans" class="form-control" min="0" step="1" inputmode="numeric" value="0"></div>
+                <div class="form-group"><label for="termGoals">Family goals to fund (₹)</label><input type="number" id="termGoals" class="form-control" min="0" step="1" inputmode="numeric" value="0"></div>
+                <div class="form-group"><label for="termExpenses">Family's yearly living costs (₹)</label><input type="number" id="termExpenses" class="form-control" min="0" step="1" inputmode="numeric"></div>
+                <div class="form-group"><label for="termYears">Years they would need support</label><input type="number" id="termYears" class="form-control" min="0" max="60" step="1" inputmode="numeric"></div>
+                <div class="form-group"><label for="termOffset">Savings + existing cover (₹)</label><input type="number" id="termOffset" class="form-control" min="0" step="1" inputmode="numeric" value="0"></div>
+              </div>
+              <button type="button" class="btn-action btn-small" id="termFromGoalsBtn">Add up my open goals</button>
+              <p class="residex-result" id="termResult">Fill in your income or the family's needs to see two ways of sizing the cover.</p>
+              <div class="residex-actions">
+                <button type="button" class="btn-action" id="useTermNeedsBtn" disabled>Use the needs-based figure</button>
+                <button type="button" class="btn-action" id="useTermRuleBtn" disabled>Use 15× income</button>
+              </div>
+              <p class="residex-note">Today's money, no inflation or investment growth on the payout. A rough guide to discuss with a CFP, not a quote.</p>
+            </div>
+            <div class="residex-helper" id="residexHelper" hidden>
+              <div class="residex-row">
+                <label for="residexCity">City</label>
+                <select id="residexCity" class="form-control"></select>
+                <label for="residexSqft">Carpet area (sq ft)</label>
+                <input type="number" id="residexSqft" class="form-control" min="100" step="50" value="1000">
+                <label for="residexDown">Down payment (%)</label>
+                <input type="number" id="residexDown" class="form-control" min="5" max="100" step="5" value="20">
+              </div>
+              <p class="residex-result" id="residexResult"></p>
+              <div class="residex-actions">
+                <button type="button" class="btn-action" id="useDownPaymentBtn">Use the down payment</button>
+                <button type="button" class="btn-action" id="useFullCostBtn">Use the full cost</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-preview-box" id="modalPreviewBox" data-kind="save">
             <div class="prev-item">
               <div class="prev-lbl">Cost in future rupees</div>
-              <div class="prev-val" id="prevFv">₹0</div>
+              <div class="prev-val" id="prevFv">—</div>
             </div>
             <div class="prev-item">
               <div class="prev-lbl">Still to build</div>
-              <div class="prev-val" id="prevGap">₹0</div>
+              <div class="prev-val" id="prevGap">—</div>
             </div>
             <div class="prev-item">
               <div class="prev-lbl">Monthly SIP</div>
-              <div class="prev-val prev-val--teal" id="prevSip">₹0</div>
+              <div class="prev-val prev-val--teal" id="prevSip">—</div>
             </div>
           </div>
+
+          <details class="more-options" id="moreOptions">
+            <summary>More options</summary>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="goalCategoryInput">Type</label>
+                <select id="goalCategoryInput" class="form-control" required></select>
+              </div>
+              <div class="form-group">
+                <label for="goalPriorityInput">How important?</label>
+                <select id="goalPriorityInput" class="form-control"></select>
+              </div>
+              <div class="form-group">
+                <label for="goalOwnerInput" id="goalOwnerLabel">Whose goal?</label>
+                <select id="goalOwnerInput" class="form-control"></select>
+              </div>
+              <div class="form-group" data-kind="save">
+                <label for="goalSavedInput">Already set aside outside Portfolio (₹)</label>
+                <input type="number" id="goalSavedInput" class="form-control" min="0" step="1" value="0">
+                <p class="field-hint" id="goalPortfolioHint"></p>
+              </div>
+              <div class="form-group" data-kind="save">
+                <label for="goalInflationInput">Price rises with</label>
+                <select id="goalInflationInput" class="form-control">
+                  <option value="CPI">General inflation</option>
+                  <option value="EDUCATION">Education inflation</option>
+                  <option value="MEDICAL">Medical inflation</option>
+                  <option value="CUSTOM">My own rate</option>
+                </select>
+              </div>
+              <div class="form-group" id="customInflationGroup" hidden>
+                <label for="goalCustomRateInput">Inflation (% a year)</label>
+                <input type="number" id="goalCustomRateInput" class="form-control" min="0" max="25" step="0.5" value="6">
+              </div>
+              <div class="form-group" data-kind="save">
+                <label for="goalReturnInput">Expected return (% a year)</label>
+                <input type="number" id="goalReturnInput" class="form-control" min="3" max="20" step="0.5" placeholder="Auto">
+                <p class="field-hint" id="goalReturnHint">Leave blank to use the horizon default.</p>
+              </div>
+              <div class="form-group full">
+                <label for="goalDescInput">Notes (optional)</label>
+                <textarea id="goalDescInput" class="form-control" rows="2" placeholder="Which accounts or funds will hold this money?"></textarea>
+              </div>
+            </div>
+          </details>
         </div>
         <div class="drawer-actions">
           <button type="button" class="btn-action" id="cancelGoalModalBtn">Cancel</button>
@@ -286,13 +325,16 @@
 
 
   <!-- VAULT ENGINE -->
-  <script src="data/market-pulse.js?v=1.6.0"></script>
-  <script src="js/kyf-goals.js?v=1.6.0"></script>
-  <script src="js/kyf-vault.js?v=1.6.0"></script>
+  <script src="data/market-pulse.js?v=1.9.1"></script>
+  <script src="data/market-realestate.js?v=1.9.1"></script>
+  <script src="js/kyf-goals.js?v=1.9.1"></script>
+  <script src="js/kyf-vault.js?v=1.9.1"></script>
 
   <!-- SCRIPT -->
-  <script src="js/goals-app.js?v=1.6.0"></script>
-  <script src="js/kyf-footer.js?v=1.6.0"></script>
+  <script src="js/goals-app.js?v=1.9.1"></script>
+  <script src="js/kyf-footer.js?v=1.9.1"></script>
+  <script src="js/kyf-features.js?v=1.9.1"></script>
+  <script src="js/kyf-nav.js?v=1.9.1"></script>
 </body>
 </html>
 

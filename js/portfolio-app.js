@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.4.0
+ * Version: v1.9.1
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -11,6 +11,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   let rawHoldings = [];
   let rawGoals = [];
   let rawMembers = [];
+  // Home page "Try it with demo data" link: portfolio.html?demo=1
+  try {
+    if (new URLSearchParams(location.search).get("demo") === "1") localStorage.setItem("kyf_demo_mode", "true");
+  } catch (e) { /* storage blocked: fall through to normal mode */ }
   let isDemoMode = localStorage.getItem("kyf_demo_mode") === "true";
   let userHoldings = [];
   let userGoals = [];
@@ -1909,7 +1913,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         : (isDemoMode ? window.KYF_PORTFOLIO_DATA.getDemoGoals() : []);
 
       let goalOptions = `<option value="">None / General Wealth</option>`;
-      goalsList.forEach((g) => {
+      goalsList.filter((g) => g.kind !== "COVER").forEach((g) => {
         goalOptions += `<option value="${escapeHTML(g.id)}">${g.icon || "🎯"} ${escapeHTML(g.name)} (${g.targetYear || "Goal"})</option>`;
       });
       els.selectHoldingGoal.innerHTML = goalOptions;

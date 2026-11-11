@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Live Market Valuation & Aggregation Engine (`js/portfolio-engine.js`)
- * Version: v1.4.0
+ * Version: v1.9.1
  * Pure Vanilla ES6+ | O(1) Indexing, Live Valuation, Multi-Horizon Returns (1M, 3M, 6M, 1Y),
  * Goal Envelopes, Macro Inflation Compounding, Virtual Lot Splitting,
  * Dual-Unit Commodity & Real Estate Engine (Gold Grams + RESIDEX Sq.Ft + INR) & Divergence Detection
@@ -248,6 +248,8 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
       }
     }
 
+    // Protection (cover) goals are not funded from holdings
+    goals = (goals || []).filter((g) => g.kind !== "COVER");
     const goalMap = new Map();
     for (const g of goals) {
       const infl = calculateInflationAdjustedTarget(g, macroRates, baseYear);
@@ -287,9 +289,20 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         }))
         .filter((a) => a.percentage > 0);
 
-      const totalPct = allocList.reduce((sum, a) => sum + a.percentage, 0);
+      // Allocations to goals that no longer exist (or are protection goals) fall to Unallocated
+      const merged = new Map();
+      allocList.forEach((a) => {
+        const gid = goalMap.has(a.goalId) ? a.goalId : UNALLOCATED_ID;
+        merged.set(gid, (merged.get(gid) || 0) + a.percentage);
+      });
+      allocList = Array.from(merged, ([goalId, percentage]) => ({ goalId, percentage }));
 
-      if (totalPct < 100) {
+      const totalPct = allocList.reduce((sum, a) => sum + a.percentage, 0);
+      const unallocatedAt = allocList.findIndex((a) => a.goalId === UNALLOCATED_ID);
+
+      if (totalPct < 100 && unallocatedAt >= 0) {
+        allocList[unallocatedAt].percentage += 100 - totalPct;
+      } else if (totalPct < 100) {
         allocList.push({
           goalId: UNALLOCATED_ID,
           percentage: 100 - totalPct
