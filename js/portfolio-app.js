@@ -179,6 +179,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     return String(isoStr);
   }
 
+  function extractUsTicker(name) {
+    if (!name) return null;
+    const str = String(name).trim();
+    const parenMatch = str.match(/\(([A-Za-z0-9.]+)\)/);
+    if (parenMatch) return parenMatch[1].toUpperCase();
+    if (/^[A-Za-z0-9.]{1,6}$/.test(str)) return str.toUpperCase();
+    return null;
+  }
+
   // ==========================================================================
   // Toast Notifications
   // ==========================================================================
@@ -240,7 +249,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       els.pulseAsOf.setAttribute("title", "Click to inspect Market Data Health, As-Of Dates and sync sources");
     }
     if (els.portfolioTopAsOf) {
-      els.portfolioTopAsOf.setAttribute("title", "Click to inspect Market Data Health, As-Of Dates and sync sources");
+      els.portfolioTopAsOf.innerHTML = `<span class="status-indicator-dot ${dotClass}" id="top-status-dot"></span> Market As of: <strong id="portfolio-asof-date">${formattedAsOf}</strong> <span class="asof-feeds-badge">📊 Feeds Health</span>`;
+      els.portfolioTopAsOf.setAttribute("title", "Click to inspect all 6 market data sync feeds & as-of dates");
     }
     if (els.portfolioAsofDate) {
       els.portfolioAsofDate.textContent = formattedAsOf;
@@ -1751,9 +1761,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   function applyHoldingTypeMode() {
     const cls = els.selectHoldingAssetClass ? els.selectHoldingAssetClass.value : "";
     const debt = cls === "Liabilities";
+    const nameVal = els.inputHoldingName ? els.inputHoldingName.value : "";
+    const nameTicker = extractUsTicker(nameVal);
+    const existingHolding = editingHoldingId ? rawHoldings.find((h) => h.id === editingHoldingId) : null;
     const isUs = !!(
       (activeModalInstrument && (activeModalInstrument.type === "us_asset" || activeModalInstrument.pricingMode === "LIVE_US")) ||
-      (editingHoldingId && rawHoldings.find((h) => h.id === editingHoldingId)?.pricingMode === "LIVE_US")
+      (existingHolding && (existingHolding.pricingMode === "LIVE_US" || existingHolding.currency === "USD")) ||
+      (nameTicker && window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker && window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(nameTicker))
     );
 
     const setHidden = (id, hide) => {
@@ -1896,9 +1910,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   function recalcHoldingValues(changedSource) {
     if (changedSource === "units" || changedSource === "curval") holdingAnchor = changedSource;
 
+    const nameVal = els.inputHoldingName ? els.inputHoldingName.value : "";
+    const nameTicker = extractUsTicker(nameVal);
+    const existingHolding = editingHoldingId ? rawHoldings.find((h) => h.id === editingHoldingId) : null;
     const isUs = !!(
       (activeModalInstrument && (activeModalInstrument.type === "us_asset" || activeModalInstrument.pricingMode === "LIVE_US")) ||
-      (editingHoldingId && rawHoldings.find((h) => h.id === editingHoldingId)?.pricingMode === "LIVE_US")
+      (existingHolding && (existingHolding.pricingMode === "LIVE_US" || existingHolding.currency === "USD")) ||
+      (nameTicker && window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker && window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(nameTicker))
     );
 
     const price = parseFloat(els.inputHoldingPrice ? els.inputHoldingPrice.value : "0") || 0;
@@ -2036,7 +2054,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.inputHoldingUnits) els.inputHoldingUnits.value = unitsVal;
 
     let unitPrice = 0;
-    if (holding.pricingMode === "LIVE_MF" || holding.assetClass === "Mutual Funds") {
+    const candidateTicker = (meta.ticker || meta.symbol || extractUsTicker(holding.name || "") || "").toUpperCase();
+    const usItem = candidateTicker && window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker ? window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(candidateTicker) : null;
+    const isUsHolding = holding.pricingMode === "LIVE_US" || holding.currency === "USD" || (holding.currentValueUSD != null && holding.currentValueUSD > 0) || !!usItem;
+
+    if (isUsHolding) {
+      hideMfVariantBox();
+      const fxRate = Number(window.KYF_MARKET_US?.fxRateUsdInr) || 93.85;
+      const priceUSD = usItem ? usItem.closePrice : (holding.priceUSD || meta.priceUSD || 0);
+      activeModalInstrument = {
+        type: "us_asset",
+        symbol: candidateTicker,
+        tag: usItem?.type === "MUTUAL_FUND" ? "US Fund" : (usItem?.type === "ETF" ? "US ETF" : "US Stock"),
+        priceUSD: priceUSD,
+        rawPrice: Math.round(priceUSD * fxRate),
+        pricingMode: "LIVE_US",
+        fxRate: fxRate
+      };
+      unitPrice = priceUSD;
+    } else if (holding.pricingMode === "LIVE_MF" || holding.assetClass === "Mutual Funds") {
       const code = meta.amfiCode;
       let scheme = null;
       if (code && window.KYF_MARKET_MF && Array.isArray(window.KYF_MARKET_MF.schemes)) {
@@ -2064,22 +2100,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     } else {
       hideMfVariantBox();
-      if (holding.pricingMode === "LIVE_US") {
-        const ticker = (meta.ticker || meta.symbol || "").toUpperCase();
-        const usItem = window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker ? window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(ticker) : null;
-        const fxRate = Number(window.KYF_MARKET_US?.fxRateUsdInr) || 93.85;
-        const priceUSD = usItem ? usItem.closePrice : (holding.priceUSD || meta.priceUSD || 0);
-        activeModalInstrument = {
-          type: "us_asset",
-          symbol: ticker,
-          tag: usItem?.type === "MUTUAL_FUND" ? "US Fund" : (usItem?.type === "ETF" ? "US ETF" : "US Stock"),
-          priceUSD: priceUSD,
-          rawPrice: Math.round(priceUSD * fxRate),
-          pricingMode: "LIVE_US",
-          fxRate: fxRate
-        };
-        unitPrice = priceUSD;
-      } else if (holding.pricingMode === "LIVE_EQUITY" || holding.assetClass === "Equities") {
+      if (holding.pricingMode === "LIVE_EQUITY" || holding.assetClass === "Equities") {
         const sym = (meta.symbol || "").toUpperCase();
         if (sym && window.KYF_MARKET_EQUITIES && Array.isArray(window.KYF_MARKET_EQUITIES.stocks)) {
           const stock = window.KYF_MARKET_EQUITIES.stocks.find((s) => s[0] === sym);
@@ -2097,7 +2118,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       els.inputHoldingPrice.value = meta.price;
     }
 
-    if (holding.pricingMode === "LIVE_US") {
+    if (isUsHolding) {
       const fxRate = Number(window.KYF_MARKET_US?.fxRateUsdInr) || 93.85;
       const curValUSD = holding.currentValueUSD != null
         ? holding.currentValueUSD
@@ -2230,7 +2251,36 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    if (activeModalInstrument) {
+    const candidateTicker = (activeModalInstrument && (activeModalInstrument.symbol || activeModalInstrument.ticker)) ||
+      instrumentMeta.ticker || instrumentMeta.symbol || extractUsTicker(name);
+    const usLookup = candidateTicker && window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker
+      ? window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(candidateTicker)
+      : null;
+    const isUsInstrument = !!(
+      (activeModalInstrument && (activeModalInstrument.type === "us_asset" || activeModalInstrument.pricingMode === "LIVE_US")) ||
+      usLookup ||
+      (editingHoldingId && (rawHoldings.find((h) => h.id === editingHoldingId)?.pricingMode === "LIVE_US" || rawHoldings.find((h) => h.id === editingHoldingId)?.currency === "USD"))
+    );
+
+    if (isUsInstrument) {
+      pricingMode = "LIVE_US";
+      const finalTicker = (candidateTicker || (activeModalInstrument && activeModalInstrument.symbol) || "").toUpperCase();
+      instrumentMeta.ticker = finalTicker;
+      const fxRate = (activeModalInstrument && activeModalInstrument.fxRate) ||
+                     (window.KYF_MARKET_US && Number(window.KYF_MARKET_US.fxRateUsdInr)) ||
+                     93.85;
+      const priceUSD = (activeModalInstrument && activeModalInstrument.priceUSD) ||
+                       (usLookup ? usLookup.closePrice : 0) ||
+                       (price > 0 ? price : 0);
+      if (priceUSD > 0) instrumentMeta.priceUSD = priceUSD;
+      instrumentMeta.fxRate = fxRate;
+      if (units > 0) {
+        instrumentMeta.quantity = units;
+      } else if (currentVal > 0 && priceUSD > 0) {
+        units = parseFloat((currentVal / priceUSD).toFixed(3));
+        instrumentMeta.quantity = units;
+      }
+    } else if (activeModalInstrument) {
       if (activeModalInstrument.type === "fund" || assetClass === "Mutual Funds") {
         const isRegular = els.radioVariantRegular && els.radioVariantRegular.checked;
         instrumentMeta.amfiCode = activeModalInstrument.amfiCode || instrumentMeta.amfiCode;
@@ -2240,11 +2290,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else if (activeModalInstrument.type === "stock" || assetClass === "Equities") {
         pricingMode = "LIVE_EQUITY";
         instrumentMeta.symbol = activeModalInstrument.symbol || instrumentMeta.symbol;
-      } else if (activeModalInstrument.type === "us_asset" || activeModalInstrument.pricingMode === "LIVE_US") {
-        pricingMode = "LIVE_US";
-        instrumentMeta.ticker = activeModalInstrument.symbol || instrumentMeta.ticker;
-        if (activeModalInstrument.priceUSD) instrumentMeta.priceUSD = activeModalInstrument.priceUSD;
-        if (activeModalInstrument.fxRate) instrumentMeta.fxRate = activeModalInstrument.fxRate;
       } else if (activeModalInstrument.type === "city" || assetClass === "Real Estate") {
         pricingMode = "LIVE_RESIDEX";
         instrumentMeta.city = activeModalInstrument.symbol || instrumentMeta.city;
@@ -2255,7 +2300,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else if (assetClass === "Mutual Funds") {
       const isRegular = els.radioVariantRegular && els.radioVariantRegular.checked;
       instrumentMeta.planType = isRegular ? "REGULAR" : "DIRECT";
-      pricingMode = Number(instrumentMeta.amfiCode) > 0 ? "LIVE_MF" : "MANUAL";} else if (assetClass === "Commodities & Gold") {
+      pricingMode = Number(instrumentMeta.amfiCode) > 0 ? "LIVE_MF" : "MANUAL";
+    } else if (assetClass === "Commodities & Gold") {
       // Gold chosen by type (no search pick): live-priced by weight when grams are given (guard below)
       pricingMode = "LIVE_GOLD";
       instrumentMeta.purity = instrumentMeta.purity || "24K";

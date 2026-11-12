@@ -619,6 +619,24 @@ button {
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
+.asof-feeds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(11, 107, 109, 0.09);
+  color: var(--teal, #0b6b6d);
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  margin-left: 4px;
+  letter-spacing: 0.02em;
+}
+
+.kpi-asof-pill:hover .asof-feeds-badge {
+  background: rgba(11, 107, 109, 0.16);
+}
+
 .kpi-header-title {
   font-family: var(--mono);
   font-size: 11px;

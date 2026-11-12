@@ -86,9 +86,6 @@
         <!-- Injected dynamically by js/portfolio-app.js -->
         <span style="color:var(--muted);">Loading live market benchmarks...</span>
       </div>
-      <div class="as-of-badge clickable-status-pill" id="pulse-asof-pill" role="button" tabindex="0" title="Click to view market data sync health & as-of dates">
-        <span>🗓️ Market Synced EOD</span>
-      </div>
     </div>
   </div>
 
@@ -100,7 +97,7 @@
       <div class="kpi-header-left">
         <div class="kpi-header-title">Portfolio Overview</div>
         <div class="kpi-asof-pill mono-num clickable-status-pill" id="portfolio-top-asof" role="button" tabindex="0" title="Click to view market data sync health & as-of dates">
-          <span class="asof-dot"></span> Market As of: <strong id="portfolio-asof-date">08 Nov 2026</strong>
+          <span class="status-indicator-dot online" id="top-status-dot"></span> Market As of: <strong id="portfolio-asof-date">08 Nov 2026</strong> <span class="asof-feeds-badge">📊 Feeds Health</span>
         </div>
       </div>
 

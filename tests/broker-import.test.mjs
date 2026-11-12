@@ -636,13 +636,34 @@ test("Market status files exist and report all 6 feeds healthy", () => {
   assert.ok(feeds.realEstate && feeds.realEstate.status === "HEALTHY", "Real estate feed must be healthy");
 });
 
-test("portfolio.html embeds market-status.js and contains data-status-modal", () => {
+test("portfolio.html embeds market-status.js and contains data-status-modal with feeds health", () => {
   const html = fs.readFileSync(path.join(BASE_DIR, "portfolio.html"), "utf8");
   assert.ok(html.includes("data/market-status.js"), "portfolio.html must load data/market-status.js");
   assert.ok(html.includes('id="data-status-modal"'), "portfolio.html must have data-status-modal");
-  assert.ok(html.includes('id="pulse-asof-pill"'), "portfolio.html must have pulse-asof-pill");
   assert.ok(html.includes('id="portfolio-top-asof"'), "portfolio.html must have portfolio-top-asof");
+  assert.ok(html.includes("asof-feeds-badge"), "portfolio.html must have asof-feeds-badge beside portfolio overview");
   assert.ok(html.includes("clickable-status-pill"), "as-of pills must have clickable-status-pill class");
+});
+
+test("US Holding typed in USD ($807 VFIAX) auto-promotes to LIVE_US, converts to INR, and retains USD metadata", () => {
+  const holding = {
+    id: "hold_us_test_1",
+    name: "Vanguard 500 Index Fund Admiral (VFIAX)",
+    member: "Self",
+    assetClass: "Mutual Funds",
+    pricingMode: "MANUAL",
+    currentValue: 807,
+    investedValue: null
+  };
+
+  const enriched = engine.enrichHoldingsWithLiveMarket([holding], "1y")[0];
+  assert.strictEqual(enriched.pricingMode, "LIVE_US", "Must auto-promote to LIVE_US");
+  assert.strictEqual(enriched.currency, "USD", "Must set currency to USD");
+  assert.strictEqual(enriched.currentValueUSD, 807, "Must retain $807 USD current value");
+  const expectedInr = Math.round(807 * (enriched.fxRate || 93.85));
+  assert.strictEqual(enriched.currentValue, expectedInr, `Must convert USD to INR (@ ₹${enriched.fxRate}): ${expectedInr}`);
+  assert.ok(enriched.physicalUnitsLabel.includes("units"), "Must format physical units for US fund");
+  assert.ok(enriched.priceLabel.includes("$"), "Must format price in USD");
 });
 
 console.log(`\n========================================`);
