@@ -925,6 +925,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                       </div>
                       <div class="leaf-tags">
                         ${h.isLiability ? '<span class="tag-badge tag-badge--debt">Debt</span>' : ""}
+                        ${(h.currency === "USD" || h.pricingMode === "LIVE_US") ? '<span class="tag-badge tag-us">USD ($)</span>' : ""}
                         <span class="tag-badge">${escapeHTML(h.subCategory || h.assetClass)}</span>
                         ${sliceTag}
                         ${custTag}
@@ -948,11 +949,13 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <!-- Col 3: Invested Value (Hidden on Mobile via .cell-hide-mobile) -->
                     <div class="leaf-num-cell tree-col-right mono-num cell-hide-mobile">
                       ${h.investedValue != null ? formatINR(h.investedValue) : "—"}
+                      ${(h.investedValueUSD != null && h.investedValueUSD > 0) ? `<div class="leaf-usd-sub" style="font-size:11px;color:var(--muted);font-weight:normal;">$${h.investedValueUSD.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>` : ""}
                     </div>
 
                     <!-- Col 4: Live Current Value (Visible on both Desktop and Mobile) -->
                     <div class="leaf-num-cell leaf-value-cell tree-col-right mono-num${h.isLiability ? " is-debt" : ""}">
                       ${formatINR(h.currentValue)}
+                      ${(h.currentValueUSD != null && h.currentValueUSD > 0) ? `<div class="leaf-usd-sub" style="font-size:11px;color:var(--muted);font-weight:normal;">$${h.currentValueUSD.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>` : ""}
                     </div>
 
                     <!-- Col 5: Horizon Return % (Visible on both Desktop and Mobile) -->
@@ -1075,12 +1078,30 @@ document.addEventListener("DOMContentLoaded", async () => {
         const nameToDelete = btn.getAttribute("data-name");
         if (!nameToDelete) return;
 
-        if (blockDemoChange()) return;
+        if (isDemoMode) {
+          const switchOwn = window.confirm(`Demo data is read-only. Switch to your own portfolio to manage members?`);
+          if (!switchOwn) return;
+          await leaveDemo();
+          showToast("Demo closed — switched to your portfolio", "info");
+          renderModalMembersList();
+          return;
+        }
 
         const holdingCount = rawHoldings.filter((h) => h.member === nameToDelete).length;
         if (holdingCount > 0) {
-          const confirmMsg = `"${nameToDelete}" has ${holdingCount} holding(s) assigned. Removing this member will leave those holdings with member "${nameToDelete}". Remove anyway?`;
+          const fallbackMember = rawMembers.find((m) => m.name !== nameToDelete)?.name || "Self";
+          const confirmMsg = `"${nameToDelete}" has ${holdingCount} holding(s) assigned.\n\nClick OK to reassign their holdings to "${fallbackMember}".\nClick Cancel to abort.`;
           if (!window.confirm(confirmMsg)) return;
+
+          // Reassign holdings so the removed member name is no longer orphaned in holdings
+          rawHoldings.forEach((h) => {
+            if (h.member === nameToDelete) {
+              h.member = fallbackMember;
+            }
+          });
+          userHoldings = [...rawHoldings];
+          localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
+          await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
         }
 
         rawMembers = rawMembers.filter((m) => m.name !== nameToDelete);
@@ -1303,11 +1324,123 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
+    // 4. US Equities, ETFs & Mutual Funds from window.KYF_MARKET_US & Popular Catalog
+    const popularEtfCatalog = [
+      ["VOO", "Vanguard S&P 500 ETF", 698.35, "ETF"],
+      ["VOOG", "Vanguard S&P 500 Growth ETF", 80.67, "ETF"],
+      ["VOOV", "Vanguard S&P 500 Value ETF", 234.35, "ETF"],
+      ["VUG", "Vanguard Growth ETF", 85.22, "ETF"],
+      ["VTI", "Vanguard Total Stock Market ETF", 374.25, "ETF"],
+      ["QQQ", "Invesco QQQ Trust (Nasdaq-100)", 690.38, "ETF"],
+      ["QQQM", "Invesco NASDAQ 100 ETF", 284.23, "ETF"],
+      ["SPY", "SPDR S&P 500 ETF Trust", 759.81, "ETF"],
+      ["IVV", "iShares Core S&P 500 ETF", 763.08, "ETF"],
+      ["SCHD", "Schwab U.S. Dividend Equity ETF", 36.02, "ETF"],
+      ["VYM", "Vanguard High Dividend Yield ETF", 164.99, "ETF"],
+      ["VIG", "Vanguard Dividend Appreciation ETF", 228.40, "ETF"],
+      ["IWM", "iShares Russell 2000 ETF", 283.09, "ETF"],
+      ["DIA", "SPDR Dow Jones Industrial Average ETF", 524.44, "ETF"],
+      ["VT", "Vanguard Total World Stock ETF", 156.71, "ETF"],
+      ["VXUS", "Vanguard Total International Stock ETF", 83.44, "ETF"],
+      ["VEA", "Vanguard FTSE Developed Markets ETF", 57.80, "ETF"],
+      ["VWO", "Vanguard FTSE Emerging Markets ETF", 49.30, "ETF"],
+      ["INDA", "iShares MSCI India ETF", 51.59, "ETF"],
+      ["TAN", "Invesco Solar ETF", 43.95, "ETF"],
+      ["ICLN", "iShares Global Clean Energy ETF", 16.28, "ETF"],
+      ["QCLN", "First Trust NASDAQ Clean Edge Green Energy ETF", 45.82, "ETF"],
+      ["URA", "Global X Uranium ETF", 33.64, "ETF"],
+      ["SMH", "VanEck Semiconductor ETF", 506.96, "ETF"],
+      ["SOXX", "iShares Semiconductor ETF", 155.40, "ETF"],
+      ["XLK", "Technology Select Sector SPDR Fund", 174.36, "ETF"],
+      ["XLF", "Financial Select Sector SPDR Fund", 58.63, "ETF"],
+      ["XLE", "Energy Select Sector SPDR Fund", 63.37, "ETF"],
+      ["XLV", "Health Care Select Sector SPDR Fund", 188.95, "ETF"],
+      ["VNQ", "Vanguard Real Estate ETF", 97.02, "ETF"],
+      ["ARKK", "ARK Innovation ETF", 78.47, "ETF"],
+      ["CIBR", "First Trust NASDAQ Cybersecurity ETF", 96.25, "ETF"],
+      ["BOTZ", "Global X Robotics & Artificial Intelligence ETF", 32.23, "ETF"],
+      ["IGV", "iShares Expanded Tech-Software Sector ETF", 98.60, "ETF"],
+      ["IBIT", "iShares Bitcoin Trust ETF", 58.40, "ETF"],
+      ["JEPI", "JPMorgan Equity Premium Income ETF", 58.21, "ETF"],
+      ["JEPQ", "JPMorgan Nasdaq Equity Premium Income ETF", 56.93, "ETF"],
+      ["BND", "Vanguard Total Bond Market ETF", 71.10, "ETF"],
+      ["AGG", "iShares Core U.S. Aggregate Bond ETF", 95.84, "ETF"],
+      ["TLT", "iShares 20+ Year Treasury Bond ETF", 80.92, "ETF"],
+      ["HYG", "iShares iBoxx $ High Yield Corporate Bond ETF", 79.15, "ETF"],
+      ["GLD", "SPDR Gold Shares", 365.17, "ETF"],
+      ["IAU", "iShares Gold Trust", 52.40, "ETF"],
+      ["SLV", "iShares Silver Trust", 46.65, "ETF"],
+      ["GDX", "VanEck Gold Miners ETF", 41.20, "ETF"],
+    ];
+
+    const usCandidates = [];
+    const seenUsTickers = new Set();
+
+    if (window.KYF_MARKET_US && Array.isArray(window.KYF_MARKET_US.instruments)) {
+      for (const inst of window.KYF_MARKET_US.instruments) {
+        const t = String(inst[0] || "").toUpperCase();
+        seenUsTickers.add(t);
+        usCandidates.push(inst);
+      }
+    }
+    for (const [t, nm, p, typ] of popularEtfCatalog) {
+      if (!seenUsTickers.has(t)) {
+        seenUsTickers.add(t);
+        usCandidates.push([t, nm, p, typ, "USD", ""]);
+      }
+    }
+
+    if (usCandidates.length > 0) {
+      const fxRate = Number(window.KYF_MARKET_US?.fxRateUsdInr) || 93.85;
+      for (const inst of usCandidates) {
+        // columns: [ticker, name, closePrice, type, currency, lastUpdated]
+        const ticker = String(inst[0] || "");
+        const name = String(inst[1] || "");
+        const priceUSD = Number(inst[2]) || 0;
+        const instType = String(inst[3] || "EQUITY");
+        const tickLower = ticker.toLowerCase();
+        const nmLower = name.toLowerCase();
+
+        let score = 0;
+        if (tickLower === q) score = 100;
+        else {
+          score = Math.max(nameScore(nmLower), tickLower.startsWith(q) ? 75 : 0);
+          if (score > 0) score += 1 - nmLower.length / 1000;
+        }
+
+        if (score > 0) {
+          const isFund = instType === "MUTUAL_FUND" || instType === "ETF";
+          const inrPrice = Math.round(priceUSD * fxRate);
+          const tag = instType === "ETF" ? "US ETF" : (instType === "MUTUAL_FUND" ? "US Fund" : "US Stock");
+          const subText = instType === "ETF" ? `US Exchange-Traded Fund (${ticker})` : (instType === "MUTUAL_FUND" ? `US Mutual Fund (${ticker})` : `US Equity (${ticker})`);
+
+          results.push({
+            type: "us_asset",
+            tag,
+            tagClass: "tag-us",
+            symbol: ticker,
+            name: `${name} (${ticker})`,
+            rawName: name,
+            subText,
+            price: `$${priceUSD.toFixed(2)} (≈₹${inrPrice.toLocaleString("en-IN")})`,
+            rawPrice: inrPrice,
+            priceUSD: priceUSD,
+            fxRate: fxRate,
+            assetClass: isFund ? "Mutual Funds" : "Equities",
+            subCategory: instType === "ETF" ? "US Index ETF" : (instType === "MUTUAL_FUND" ? "US Index / Mutual Fund" : "US Equities"),
+            custodian: "Vested / DriveWealth",
+            pricingMode: "LIVE_US",
+            score
+          });
+        }
+      }
+    }
+
     results.sort((a, b) => b.score - a.score);
 
     // Keep the list mixed: a flood of stock matches must not hide the fund or city the user wants
-    const caps = { stock: 4, fund: 4, city: 2 };
-    const taken = { stock: 0, fund: 0, city: 0 };
+    const caps = { stock: 4, fund: 4, us_asset: 4, city: 2 };
+    const taken = { stock: 0, fund: 0, us_asset: 0, city: 0 };
     const picked = results.filter((r) => (taken[r.type] += 1) <= (caps[r.type] || 4));
     return picked.slice(0, limit);
   }
@@ -1402,8 +1535,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         updateHighlight(items);
       } else if (e.key === "Enter") {
         e.preventDefault();
-        if (highlightedIndex >= 0 && highlightedIndex < currentResults.length) {
-          const chosen = currentResults[highlightedIndex];
+        const pickIdx = highlightedIndex >= 0 ? highlightedIndex : 0;
+        if (pickIdx >= 0 && pickIdx < currentResults.length) {
+          const chosen = currentResults[pickIdx];
           resultsEl.style.display = "none";
           if (!keepValue) {
             inputEl.value = "";
@@ -1413,6 +1547,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       } else if (e.key === "Escape") {
         resultsEl.style.display = "none";
+      }
+    });
+
+    inputEl.addEventListener("change", () => {
+      if (!editingHoldingId && !activeModalInstrument && currentResults.length > 0) {
+        const qTrim = inputEl.value.trim().toUpperCase();
+        const exactMatch = currentResults.find((r) => r.symbol && r.symbol.toUpperCase() === qTrim);
+        if (exactMatch) {
+          resultsEl.style.display = "none";
+          initiateAddHoldingFromSelection(exactMatch);
+        }
       }
     });
 
@@ -1522,6 +1667,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.inputHoldingCustodian) {
       if (item.custodian) {
         els.inputHoldingCustodian.value = item.custodian;
+      } else if (item.type === "us_asset" || item.pricingMode === "LIVE_US") {
+        els.inputHoldingCustodian.value = "Vested / DriveWealth";
       } else if (item.assetClass === "Equities") {
         els.inputHoldingCustodian.value = "Zerodha / Demat";
       } else if (item.assetClass === "Mutual Funds") {
@@ -1535,8 +1682,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    // Mutual fund specific setup
-    if (item.type === "fund" || item.assetClass === "Mutual Funds") {
+    // Mutual fund specific setup vs US Asset setup
+    if (item.type === "us_asset" || item.pricingMode === "LIVE_US") {
+      hideMfVariantBox();
+      if (els.inputHoldingPrice) {
+        els.inputHoldingPrice.value = item.priceUSD != null ? item.priceUSD : (item.rawPrice || "");
+      }
+    } else if (item.type === "fund" && item.amfiCode) {
       setupMfVariantBox(item, "DIRECT");
     } else {
       hideMfVariantBox();
@@ -1563,6 +1715,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       modalTitle.textContent = `📈 Add ${item.tag || item.assetClass}`;
     }
     applyHoldingTypeMode();
+    recalcHoldingValues();
     if (els.btnSaveHolding) {
       els.btnSaveHolding.textContent = "＋ Save Holding";
     }
@@ -1580,6 +1733,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   function applyHoldingTypeMode() {
     const cls = els.selectHoldingAssetClass ? els.selectHoldingAssetClass.value : "";
     const debt = cls === "Liabilities";
+    const isUs = !!(
+      (activeModalInstrument && (activeModalInstrument.type === "us_asset" || activeModalInstrument.pricingMode === "LIVE_US")) ||
+      (editingHoldingId && rawHoldings.find((h) => h.id === editingHoldingId)?.pricingMode === "LIVE_US")
+    );
+
     const setHidden = (id, hide) => {
       const el = document.getElementById(id);
       if (el) el.hidden = hide;
@@ -1598,18 +1756,52 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const nameLabel = document.getElementById("label-holding-name");
     if (nameLabel) nameLabel.textContent = debt ? "What do you owe? *" : "What do you own? *";
+
     const worthLabel = document.getElementById("label-holding-curval");
-    if (worthLabel) worthLabel.textContent = debt ? "Outstanding balance (₹) *" : "Worth today (₹) *";
+    if (worthLabel) {
+      if (debt) {
+        worthLabel.innerHTML = 'Outstanding balance (₹) <span class="required">*</span>';
+      } else if (isUs) {
+        worthLabel.innerHTML = 'Worth today ($) <span class="required">*</span>';
+      } else {
+        worthLabel.innerHTML = 'Worth today (₹) <span class="required">*</span>';
+      }
+    }
+    if (els.inputHoldingCurVal) {
+      els.inputHoldingCurVal.placeholder = debt ? "e.g. 2500000" : (isUs ? "e.g. 5000" : "e.g. 150000");
+    }
+
+    const invValLabel = document.getElementById("label-holding-invval");
+    if (invValLabel) {
+      invValLabel.textContent = isUs ? "Amount invested ($)" : "Amount invested (₹)";
+    }
+    if (els.inputHoldingInvVal) {
+      els.inputHoldingInvVal.placeholder = isUs ? "e.g. 4200 (in USD)" : "Blank = no returns shown";
+    }
+
+    const priceLabel = document.getElementById("label-holding-price");
+    if (priceLabel) {
+      priceLabel.textContent = isUs ? "Price / NAV ($)" : "Price / NAV (₹)";
+    }
+    if (els.inputHoldingPrice) {
+      els.inputHoldingPrice.placeholder = isUs ? "Live price ($)" : "Live price / NAV";
+    }
+
     if (els.inputHoldingName) {
       els.inputHoldingName.placeholder = debt
         ? "e.g. Home loan, Car loan, Credit card dues"
-        : "Search a stock, fund or city — or type any name";
+        : "Search a stock, fund, ETF or city — or type any name";
     }
 
     const title = document.getElementById("holding-modal-title");
     if (title && !editingHoldingId) {
-      if (debt) title.textContent = "💳 Add Loan / Debt";
-      else if (title.textContent.includes("Loan / Debt")) title.textContent = "📈 Add Investment Holding";
+      if (debt) {
+        title.textContent = "💳 Add Loan / Debt";
+      } else if (activeModalInstrument && activeModalInstrument.tag) {
+        title.textContent = `📈 Add ${activeModalInstrument.tag}`;
+      } else if (title.textContent.includes("Loan / Debt")) {
+        title.textContent = "📈 Add Investment Holding";
+      }
     }
   }
 
@@ -1686,27 +1878,53 @@ document.addEventListener("DOMContentLoaded", async () => {
   function recalcHoldingValues(changedSource) {
     if (changedSource === "units" || changedSource === "curval") holdingAnchor = changedSource;
 
-    const price = parseFloat(els.inputHoldingPrice ? els.inputHoldingPrice.value : "0") || 0;
-    if (price <= 0) return;
+    const isUs = !!(
+      (activeModalInstrument && (activeModalInstrument.type === "us_asset" || activeModalInstrument.pricingMode === "LIVE_US")) ||
+      (editingHoldingId && rawHoldings.find((h) => h.id === editingHoldingId)?.pricingMode === "LIVE_US")
+    );
 
+    const price = parseFloat(els.inputHoldingPrice ? els.inputHoldingPrice.value : "0") || 0;
     const assetClass = els.selectHoldingAssetClass && els.selectHoldingAssetClass.value;
-    const decimals = assetClass === "Mutual Funds" ? 3 : 2;
+    const decimals = (assetClass === "Mutual Funds" || isUs) ? 3 : 2;
     const unitsVal = parseFloat(els.inputHoldingUnits ? els.inputHoldingUnits.value : "");
     const worthVal = parseFloat(els.inputHoldingCurVal ? els.inputHoldingCurVal.value : "");
 
-    const worthFromUnits = () => {
-      if (els.inputHoldingCurVal && unitsVal > 0) els.inputHoldingCurVal.value = Math.round(unitsVal * price);
-    };
-    const unitsFromWorth = () => {
-      if (els.inputHoldingUnits && worthVal > 0) els.inputHoldingUnits.value = parseFloat((worthVal / price).toFixed(decimals));
-    };
+    if (price > 0) {
+      const worthFromUnits = () => {
+        if (els.inputHoldingCurVal && unitsVal > 0) {
+          els.inputHoldingCurVal.value = isUs ? Number((unitsVal * price).toFixed(2)) : Math.round(unitsVal * price);
+        }
+      };
+      const unitsFromWorth = () => {
+        if (els.inputHoldingUnits && worthVal > 0) {
+          els.inputHoldingUnits.value = parseFloat((worthVal / price).toFixed(decimals));
+        }
+      };
 
-    if (changedSource === "curval") unitsFromWorth();
-    else if (changedSource === "units") worthFromUnits();
-    else if (holdingAnchor === "curval") unitsFromWorth();
-    else if (holdingAnchor === "units") worthFromUnits();
-    else if (unitsVal > 0) worthFromUnits();
-    else unitsFromWorth();
+      if (changedSource === "curval") unitsFromWorth();
+      else if (changedSource === "units") worthFromUnits();
+      else if (holdingAnchor === "curval") unitsFromWorth();
+      else if (holdingAnchor === "units") worthFromUnits();
+      else if (unitsVal > 0) worthFromUnits();
+      else unitsFromWorth();
+    }
+
+    // Live USD to INR conversion hint
+    const unitsHintEl = document.getElementById("holding-units-hint");
+    if (unitsHintEl) {
+      if (isUs) {
+        const curWorth = parseFloat(els.inputHoldingCurVal ? els.inputHoldingCurVal.value : "0") || 0;
+        const fxRate = Number(window.KYF_MARKET_US?.fxRateUsdInr) || 93.85;
+        if (curWorth > 0) {
+          const inrVal = Math.round(curWorth * fxRate);
+          unitsHintEl.innerHTML = `💡 <strong>$${curWorth.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> ≈ <strong>₹${inrVal.toLocaleString("en-IN")}</strong> (@ ₹${fxRate.toFixed(2)}/$)`;
+        } else {
+          unitsHintEl.textContent = `💡 Enter either units or USD value — converted to INR automatically (@ ₹${fxRate.toFixed(2)}/$).`;
+        }
+      } else {
+        unitsHintEl.textContent = "💡 Enter either units or today's value — the other is filled in from the live price.";
+      }
+    }
   }
 
   // ==========================================================================
@@ -1756,6 +1974,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (els.inputHoldingPrice) els.inputHoldingPrice.value = "";
       if (els.inputHoldingSubCategory) els.inputHoldingSubCategory.value = "";
       if (els.inputHoldingCustodian) els.inputHoldingCustodian.value = "";
+      applyHoldingTypeMode();
+      recalcHoldingValues();
     }
   }
 
@@ -1826,7 +2046,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     } else {
       hideMfVariantBox();
-      if (holding.pricingMode === "LIVE_EQUITY" || holding.assetClass === "Equities") {
+      if (holding.pricingMode === "LIVE_US") {
+        const ticker = (meta.ticker || meta.symbol || "").toUpperCase();
+        const usItem = window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker ? window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(ticker) : null;
+        const fxRate = Number(window.KYF_MARKET_US?.fxRateUsdInr) || 93.85;
+        const priceUSD = usItem ? usItem.closePrice : (holding.priceUSD || meta.priceUSD || 0);
+        activeModalInstrument = {
+          type: "us_asset",
+          symbol: ticker,
+          tag: usItem?.type === "MUTUAL_FUND" ? "US Fund" : (usItem?.type === "ETF" ? "US ETF" : "US Stock"),
+          priceUSD: priceUSD,
+          rawPrice: Math.round(priceUSD * fxRate),
+          pricingMode: "LIVE_US",
+          fxRate: fxRate
+        };
+        unitPrice = priceUSD;
+      } else if (holding.pricingMode === "LIVE_EQUITY" || holding.assetClass === "Equities") {
         const sym = (meta.symbol || "").toUpperCase();
         if (sym && window.KYF_MARKET_EQUITIES && Array.isArray(window.KYF_MARKET_EQUITIES.stocks)) {
           const stock = window.KYF_MARKET_EQUITIES.stocks.find((s) => s[0] === sym);
@@ -1844,8 +2079,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       els.inputHoldingPrice.value = meta.price;
     }
 
-    if (els.inputHoldingCurVal) els.inputHoldingCurVal.value = holding.currentValue != null ? holding.currentValue : "";
-    if (els.inputHoldingInvVal) els.inputHoldingInvVal.value = holding.investedValue != null ? holding.investedValue : "";
+    if (holding.pricingMode === "LIVE_US") {
+      const fxRate = Number(window.KYF_MARKET_US?.fxRateUsdInr) || 93.85;
+      const curValUSD = holding.currentValueUSD != null
+        ? holding.currentValueUSD
+        : (holding.currentValue ? Number((holding.currentValue / fxRate).toFixed(2)) : "");
+      const invValUSD = holding.investedValueUSD != null
+        ? holding.investedValueUSD
+        : (holding.investedValue ? Number((holding.investedValue / fxRate).toFixed(2)) : "");
+      if (els.inputHoldingCurVal) els.inputHoldingCurVal.value = curValUSD;
+      if (els.inputHoldingInvVal) els.inputHoldingInvVal.value = invValUSD;
+    } else {
+      if (els.inputHoldingCurVal) els.inputHoldingCurVal.value = holding.currentValue != null ? holding.currentValue : "";
+      if (els.inputHoldingInvVal) els.inputHoldingInvVal.value = holding.investedValue != null ? holding.investedValue : "";
+    }
 
     if (els.inputHoldingRate) els.inputHoldingRate.value = meta.interestRate != null ? meta.interestRate : "";
 
@@ -1858,6 +2105,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       splitHint.textContent = n > 1 ? `Split across ${n} goals. Leave this as is to keep the split; pick another goal to replace it.` : "";
     }
     applyHoldingTypeMode();
+    recalcHoldingValues();
 
     // Physical units are the fact for an existing holding: a price/plan change moves the value
     holdingAnchor = unitsVal !== "" && unitsVal != null ? "units" : "curval";
@@ -1974,6 +2222,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else if (activeModalInstrument.type === "stock" || assetClass === "Equities") {
         pricingMode = "LIVE_EQUITY";
         instrumentMeta.symbol = activeModalInstrument.symbol || instrumentMeta.symbol;
+      } else if (activeModalInstrument.type === "us_asset" || activeModalInstrument.pricingMode === "LIVE_US") {
+        pricingMode = "LIVE_US";
+        instrumentMeta.ticker = activeModalInstrument.symbol || instrumentMeta.ticker;
+        if (activeModalInstrument.priceUSD) instrumentMeta.priceUSD = activeModalInstrument.priceUSD;
+        if (activeModalInstrument.fxRate) instrumentMeta.fxRate = activeModalInstrument.fxRate;
       } else if (activeModalInstrument.type === "city" || assetClass === "Real Estate") {
         pricingMode = "LIVE_RESIDEX";
         instrumentMeta.city = activeModalInstrument.symbol || instrumentMeta.city;
@@ -2011,12 +2264,31 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (units != null) {
       if (pricingMode === "LIVE_MF") instrumentMeta.units = units;
-      else if (pricingMode === "LIVE_EQUITY") instrumentMeta.quantity = units;
+      else if (pricingMode === "LIVE_EQUITY" || pricingMode === "LIVE_US") instrumentMeta.quantity = units;
       else if (pricingMode === "LIVE_GOLD") instrumentMeta.grams = units;
       else if (pricingMode === "LIVE_RESIDEX") instrumentMeta.carpetSqft = units;
     }
     if (price != null && !isLiability) {
       instrumentMeta.price = price;
+    }
+
+    const isUs = (pricingMode === "LIVE_US");
+    const fxRate = (activeModalInstrument && activeModalInstrument.fxRate) || (window.KYF_MARKET_US && Number(window.KYF_MARKET_US.fxRateUsdInr)) || 93.85;
+
+    let baseCurrentValINR = currentVal;
+    let baseInvestedValINR = investedVal;
+    let currentValueUSD = null;
+    let investedValueUSD = null;
+
+    if (isUs) {
+      currentValueUSD = currentVal;
+      baseCurrentValINR = Math.round(currentVal * fxRate);
+      if (investedVal != null) {
+        investedValueUSD = investedVal;
+        baseInvestedValINR = Math.round(investedVal * fxRate);
+      }
+      instrumentMeta.priceUSD = price;
+      instrumentMeta.fxRate = fxRate;
     }
 
     if (editingHoldingId) {
@@ -2032,17 +2304,24 @@ document.addEventListener("DOMContentLoaded", async () => {
           assetClass,
           subCategory,
           pricingMode,
+          currency: isUs ? "USD" : (rawHoldings[idx].currency || "INR"),
           units: isLiability ? null : (units != null ? units : rawHoldings[idx].units),
-          investedValue: isLiability ? null : investedVal,
+          investedValue: isLiability ? null : baseInvestedValINR,
+          investedValueUSD: isLiability ? null : investedValueUSD,
           isLiability,
-          currentValue: currentVal,
-          manualCurrentValue: currentVal,
+          currentValue: baseCurrentValINR,
+          currentValueUSD: currentValueUSD,
+          manualCurrentValue: baseCurrentValINR,
           // A holding split across several goals keeps its split unless the goal was changed here
           allocations: keepGoalSplit ? rawHoldings[idx].allocations : (goalId ? [{ goalId, percentage: 100 }] : []),
           instrumentMeta
         };
       }
-      showToast(`✓ Updated ${name}`, "success");
+      if (isUs) {
+        showToast(`✓ Updated ${name} ($${currentVal.toLocaleString("en-US", { minimumFractionDigits: 2 })} ≈ ${formatINR(baseCurrentValINR)})`, "success");
+      } else {
+        showToast(`✓ Updated ${name}`, "success");
+      }
     } else {
       const newHolding = {
         id: `hold_usr_${Date.now()}`,
@@ -2052,17 +2331,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         assetClass,
         subCategory,
         pricingMode,
+        currency: isUs ? "USD" : "INR",
         units: units,
-        investedValue: isLiability ? null : investedVal,
+        investedValue: isLiability ? null : baseInvestedValINR,
+        investedValueUSD: isLiability ? null : investedValueUSD,
         isLiability,
-        currentValue: currentVal,
-        manualCurrentValue: currentVal,
+        currentValue: baseCurrentValINR,
+        currentValueUSD: currentValueUSD,
+        manualCurrentValue: baseCurrentValINR,
         allocations: goalId ? [{ goalId, percentage: 100 }] : [],
         instrumentMeta,
         notes: ""
       };
       rawHoldings.push(newHolding);
-      showToast(`✓ Added ${name} (${formatINR(currentVal)})`, "success");
+      if (isUs) {
+        showToast(`✓ Added ${name} ($${currentVal.toLocaleString("en-US", { minimumFractionDigits: 2 })} ≈ ${formatINR(baseCurrentValINR)})`, "success");
+      } else {
+        showToast(`✓ Added ${name} (${formatINR(currentVal)})`, "success");
+      }
     }
 
     userHoldings = [...rawHoldings];
@@ -2734,10 +3020,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.inputHoldingName) {
       els.inputHoldingName.addEventListener("input", () => {
         const inst = activeModalInstrument;
-        if (editingHoldingId || !inst || !["stock", "fund", "city"].includes(inst.type)) return;
+        if (editingHoldingId || !inst || !["stock", "fund", "city", "us_asset"].includes(inst.type)) return;
         if (els.inputHoldingName.value.trim() !== (inst.name || "").trim()) {
           activeModalInstrument = null;
           hideMfVariantBox();
+          applyHoldingTypeMode();
+          recalcHoldingValues();
         }
       });
     }

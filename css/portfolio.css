@@ -1647,6 +1647,11 @@ button {
   color: #e65100;
 }
 
+.tag-us {
+  background: rgba(30, 136, 229, 0.12);
+  color: #1e88e5;
+}
+
 .omni-result-text {
   min-width: 0;
 }

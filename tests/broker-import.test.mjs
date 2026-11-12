@@ -516,6 +516,25 @@ test("lookupUsByTicker resolves US stocks and US mutual funds", () => {
   assert.equal(fxaix.ticker, "FXAIX");
   assert.equal(fxaix.type, "MUTUAL_FUND");
   assert.ok(fxaix.closePrice > 0, "FXAIX must have positive close price");
+
+  const voog = engine.lookupUsByTicker("VOOG");
+  assert.ok(voog, "VOOG ETF must resolve in US market dataset");
+  assert.equal(voog.ticker, "VOOG");
+  assert.equal(voog.type, "ETF");
+  assert.ok(voog.closePrice > 0, "VOOG must have positive close price");
+
+  const qqqm = engine.lookupUsByTicker("QQQM");
+  assert.ok(qqqm, "QQQM ETF must resolve in US market dataset");
+  assert.equal(qqqm.ticker, "QQQM");
+  assert.equal(qqqm.type, "ETF");
+  assert.ok(qqqm.closePrice > 0, "QQQM must have positive close price");
+
+  const tan = engine.lookupUsByTicker("TAN");
+  assert.ok(tan, "TAN ETF must resolve in US market dataset");
+  assert.equal(tan.ticker, "TAN");
+  assert.equal(tan.type, "ETF");
+  assert.equal(tan.name, "Invesco Solar ETF");
+  assert.ok(tan.closePrice > 0, "TAN must have positive close price");
 });
 
 test("LIVE_US enriches US equity holding with USD price, INR converted value, and fractional shares", () => {
