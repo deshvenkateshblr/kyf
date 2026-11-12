@@ -45,6 +45,18 @@ await page.waitForTimeout(800);
 ok(await page.evaluate(() => localStorage.getItem("kyf_demo_mode")) === "true", "demo flag set");
 ok(errs.length === 0, "no page errors: " + errs.join("|"));
 
+// ---------- Markets page on phones ----------
+{
+  for (const w of [360, 390]) {
+    const p = await b.newPage({ viewport: { width: w, height: 800 } });
+    await p.goto(base + "/market-performance.html");
+    await p.waitForTimeout(1200);
+    const over = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    ok(over <= 0, `Markets page has no sideways scroll at ${w}px (over by ${over})`);
+    await p.close();
+  }
+}
+
 // ---------- Open / Save from the home page ----------
 {
   const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, acceptDownloads: true });

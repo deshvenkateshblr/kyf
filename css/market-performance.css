@@ -1200,3 +1200,8 @@
     .re-collapsible-body.is-collapsed {
       display: none !important;
     }
+
+/* Phones: long link labels wrap instead of pushing the page sideways */
+@media (max-width: 600px) {
+  .editorial-link { white-space: normal; text-align: left; }
+}

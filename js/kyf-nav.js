@@ -17,7 +17,7 @@
   ];
   var CATALOG = window.KYF_FEATURES;
   var MENU = (CATALOG ? CATALOG.menu() : FALLBACK).map(function (m) {
-    return { href: m.href, label: m.name, short: m.short || "", icon: m.icon, desc: m.tagline || "", topBar: !!m.topBar };
+    return { href: m.href, label: m.name, short: m.short || "", topOrder: m.topOrder || 99, icon: m.icon, desc: m.tagline || "", topBar: !!m.topBar };
   });
 
   function pageName() {
@@ -57,7 +57,7 @@
     });
 
     var fragment = document.createDocumentFragment();
-    MENU.filter(function (m) { return m.topBar; }).forEach(function (m) {
+    MENU.filter(function (m) { return m.topBar; }).sort(function (a, b) { return a.topOrder - b.topOrder; }).forEach(function (m) {
       var a = el("a", isCurrent(m) ? "active" : "", m.short || m.label);
       a.href = m.href;
       if (isCurrent(m)) a.setAttribute("aria-current", "page");
