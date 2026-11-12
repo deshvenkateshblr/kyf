@@ -3053,3 +3053,212 @@ button {
   color: var(--rose);
   font-weight: 600;
 }
+
+/* ==========================================================================
+   MARKET DATA STATUS & HEALTH MODAL
+   ========================================================================== */
+.clickable-status-pill {
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.clickable-status-pill:hover {
+  filter: brightness(0.96);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.status-indicator-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.status-indicator-dot.online {
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+.status-indicator-dot.warning {
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+
+.status-indicator-dot.error {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+
+.data-status-drawer-panel {
+  max-width: 660px;
+  width: 95%;
+}
+
+.data-status-drawer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  max-height: calc(85vh - 120px);
+  overflow-y: auto;
+}
+
+.status-summary-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: rgba(11, 107, 109, 0.08);
+  border: 1px solid rgba(11, 107, 109, 0.2);
+}
+
+.status-summary-banner.has-warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.status-summary-banner.has-error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.status-summary-icon {
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.status-summary-text h4 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.status-summary-text p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.feed-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.feed-status-card {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s ease;
+}
+
+.feed-status-card:hover {
+  border-color: var(--teal, #0b6b6d);
+}
+
+.feed-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.feed-status-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.feed-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.feed-status-tag.healthy {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.feed-status-tag.warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.feed-status-tag.error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.feed-asof-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.feed-asof-label {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.feed-asof-val {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.feed-status-details {
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.feed-status-source {
+  font-size: 10px;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.feed-status-error {
+  font-size: 11px;
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.08);
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.data-status-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  background: rgba(11, 107, 109, 0.04);
+  border-left: 3px solid var(--teal, #0b6b6d);
+  padding: 10px 12px;
+  border-radius: 4px;
+}
+
+.data-status-footnote {
+  font-size: 11px;
+  color: var(--muted);
+}

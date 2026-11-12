@@ -86,7 +86,7 @@
         <!-- Injected dynamically by js/portfolio-app.js -->
         <span style="color:var(--muted);">Loading live market benchmarks...</span>
       </div>
-      <div class="as-of-badge" id="pulse-asof-pill">
+      <div class="as-of-badge clickable-status-pill" id="pulse-asof-pill" role="button" tabindex="0" title="Click to view market data sync health & as-of dates">
         <span>🗓️ Market Synced EOD</span>
       </div>
     </div>
@@ -99,7 +99,7 @@
     <div class="kpi-header-bar">
       <div class="kpi-header-left">
         <div class="kpi-header-title">Portfolio Overview</div>
-        <div class="kpi-asof-pill mono-num" id="portfolio-top-asof" title="Market prices and NAV updated as of latest market data">
+        <div class="kpi-asof-pill mono-num clickable-status-pill" id="portfolio-top-asof" role="button" tabindex="0" title="Click to view market data sync health & as-of dates">
           <span class="asof-dot"></span> Market As of: <strong id="portfolio-asof-date">08 Nov 2026</strong>
         </div>
       </div>
@@ -512,8 +512,48 @@
   </div>
 
   <!-- ==========================================================================
+       DATA HEALTH & AS-OF STATUS MODAL
+       ========================================================================== -->
+  <div id="data-status-modal" class="drawer-overlay" role="dialog" aria-modal="true" aria-labelledby="data-status-modal-title" style="display:none;">
+    <div class="drawer-panel data-status-drawer-panel">
+      <div class="drawer-head">
+        <h3 id="data-status-modal-title">📊 Market Data Health &amp; As-Of Dates</h3>
+        <button type="button" class="modal-close" id="btn-close-data-status-modal" aria-label="Close dialog">✕</button>
+      </div>
+
+      <div class="drawer-body data-status-drawer-body">
+        <div class="status-summary-banner" id="status-summary-banner">
+          <div class="status-summary-icon" id="status-summary-icon">✅</div>
+          <div class="status-summary-text">
+            <h4 id="status-summary-title">All 6 Market Feeds Healthy &amp; Active</h4>
+            <p id="status-last-synced-time">Last synchronized at 6:00 AM IST</p>
+          </div>
+        </div>
+
+        <div class="feed-status-grid" id="feed-status-grid">
+          <!-- Dynamically populated by js/portfolio-app.js from window.KYF_MARKET_STATUS -->
+        </div>
+
+        <div class="data-status-note">
+          <strong>🔒 Privacy &amp; Offline Guarantee:</strong> All market indices, NAVs, and equity prices are synced daily into lightweight local static datasets. Your browser never makes direct third-party network requests or leaks your portfolio holdings.
+        </div>
+      </div>
+
+      <div class="modal-actions drawer-actions">
+        <div>
+          <span class="data-status-footnote" id="status-footnote-text">Scheduled daily sync runs at 6:00 AM IST via GitHub Actions</span>
+        </div>
+        <div class="modal-actions-right">
+          <button type="button" class="btn-pill btn-pill--primary" id="btn-done-data-status">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
        DATASETS (Auto-Generated Daily by admin/sync_market_data.py)
        ========================================================================== -->
+  <script src="data/market-status.js?v=1.10.0"></script>
   <script src="data/market-pulse.js?v=1.10.0"></script>
   <script src="data/market-corporate-actions.js?v=1.10.0"></script>
   <script src="data/market-equities.js?v=1.10.0"></script>

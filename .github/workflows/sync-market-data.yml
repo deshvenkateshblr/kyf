@@ -2,9 +2,7 @@ name: Daily EOD Market Data Sync
 
 on:
   schedule:
-    # 18:30 UTC = 12:00 AM IST (Monday-Friday: captures India EOD bhavcopy & final AMFI NAVs)
-    - cron: '30 18 * * 1-5'
-    # 00:30 UTC = 6:00 AM IST (Tuesday-Saturday: captures final US market closing quotes)
+    # 00:30 UTC = 6:00 AM IST (Tuesday through Saturday: captures full verified India EOD & US EOD)
     - cron: '30 0 * * 2-6'
   workflow_dispatch: # Allows 1-click manual trigger from the GitHub Actions tab
 
@@ -23,7 +21,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Execute KYF Market Data Sync
+      - name: Execute KYF Market Data Sync (with remote us_bhavcopy fetch)
         run: |
           python admin/sync_market_data.py --skip-nhb
 
@@ -47,4 +45,3 @@ jobs:
             git commit -m "Automated Daily EOD Market Data Sync: $(date -u +'%Y-%m-%d') [skip ci]"
             git push
           fi
-

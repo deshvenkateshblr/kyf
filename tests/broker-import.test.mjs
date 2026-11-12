@@ -603,6 +603,48 @@ test("computeHoldingPhysicalUnits correctly distinguishes US stocks (shares) and
   assert.equal(fundUnits.mfUnits, 28.25);
 });
 
+// ============================================================================
+// TEST GROUP 11: Market Data Health Status & Metadata Feeds
+// ============================================================================
+console.log("\n[TEST GROUP 11] Market Data Health Status & Metadata Feeds");
+
+test("Market status files exist and report all 6 feeds healthy", () => {
+  assert.ok(fs.existsSync(path.join(BASE_DIR, "data/market-status.json")), "market-status.json must exist");
+  assert.ok(fs.existsSync(path.join(BASE_DIR, "data/market-status.js")), "market-status.js must exist");
+
+  const statusJson = JSON.parse(fs.readFileSync(path.join(BASE_DIR, "data/market-status.json"), "utf8"));
+  assert.equal(statusJson.overallStatus, "HEALTHY");
+  assert.equal(statusJson.totalFeeds, 6);
+  assert.equal(statusJson.healthyFeeds, 6);
+
+  const feeds = statusJson.feeds;
+  assert.ok(feeds.equities && feeds.equities.status === "HEALTHY", "NSE Equities feed must be healthy");
+  assert.ok(feeds.equities.count > 2000, "NSE Equities count > 2000");
+  assert.ok(feeds.equities.asOf, "NSE Equities has valid asOf");
+
+  assert.ok(feeds.mutualFunds && feeds.mutualFunds.status === "HEALTHY", "AMFI MF feed must be healthy");
+  assert.ok(feeds.mutualFunds.count > 1500, "AMFI MF count > 1500");
+
+  assert.ok(feeds.usMarket && feeds.usMarket.status === "HEALTHY", "US Market feed must be healthy");
+  assert.ok(feeds.usMarket.count >= 80, "US Market count >= 80");
+  assert.ok(feeds.usMarket.fxRateUsdInr > 80, "USD/INR FX rate present");
+
+  assert.ok(feeds.bullion && feeds.bullion.status === "HEALTHY", "Bullion feed must be healthy");
+  assert.ok(feeds.bullion.gold24kPerGram > 5000, "Gold rate present");
+
+  assert.ok(feeds.macro && feeds.macro.status === "HEALTHY", "Macro feed must be healthy");
+  assert.ok(feeds.realEstate && feeds.realEstate.status === "HEALTHY", "Real estate feed must be healthy");
+});
+
+test("portfolio.html embeds market-status.js and contains data-status-modal", () => {
+  const html = fs.readFileSync(path.join(BASE_DIR, "portfolio.html"), "utf8");
+  assert.ok(html.includes("data/market-status.js"), "portfolio.html must load data/market-status.js");
+  assert.ok(html.includes('id="data-status-modal"'), "portfolio.html must have data-status-modal");
+  assert.ok(html.includes('id="pulse-asof-pill"'), "portfolio.html must have pulse-asof-pill");
+  assert.ok(html.includes('id="portfolio-top-asof"'), "portfolio.html must have portfolio-top-asof");
+  assert.ok(html.includes("clickable-status-pill"), "as-of pills must have clickable-status-pill class");
+});
+
 console.log(`\n========================================`);
 console.log(`TEST SUMMARY: ${totalPassed} passed, 0 failed`);
 console.log(`========================================\n`);

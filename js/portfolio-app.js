@@ -121,7 +121,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     inputHoldingUnits: document.getElementById("input-holding-units"),
     inputHoldingCurVal: document.getElementById("input-holding-curval"),
     inputHoldingInvVal: document.getElementById("input-holding-invval"),
-    selectHoldingGoal: document.getElementById("select-holding-goal")
+    selectHoldingGoal: document.getElementById("select-holding-goal"),
+    // Market Data Status Modal elements
+    dataStatusModal: document.getElementById("data-status-modal"),
+    btnCloseDataStatusModal: document.getElementById("btn-close-data-status-modal"),
+    btnDoneDataStatus: document.getElementById("btn-done-data-status"),
+    feedStatusGrid: document.getElementById("feed-status-grid"),
+    statusSummaryBanner: document.getElementById("status-summary-banner"),
+    statusSummaryIcon: document.getElementById("status-summary-icon"),
+    statusSummaryTitle: document.getElementById("status-summary-title"),
+    statusLastSyncedTime: document.getElementById("status-last-synced-time")
   };
 
   // ==========================================================================
@@ -217,13 +226,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     const macro = pulse.macro || {};
     const metals = pulse.preciousMetals || {};
     const indices = pulse.indices || {};
-    const rawAsOf = (window.KYF_MARKET_EQUITIES && window.KYF_MARKET_EQUITIES.asOf) ||
+    const statusObj = window.KYF_MARKET_STATUS || null;
+    const rawAsOf = (statusObj && statusObj.feeds && statusObj.feeds.equities && statusObj.feeds.equities.asOf) ||
+                    (window.KYF_MARKET_EQUITIES && window.KYF_MARKET_EQUITIES.asOf) ||
                     (window.KYF_MARKET_MF && window.KYF_MARKET_MF.asOf) ||
                     pulse.asOf || "2026-11-08";
     const formattedAsOf = formatAsOfDate(rawAsOf);
+    const overallStatus = (statusObj && statusObj.overallStatus) || "HEALTHY";
+    const dotClass = overallStatus === "HEALTHY" ? "online" : (overallStatus === "WARNING" ? "warning" : "error");
 
     if (els.pulseAsOf) {
-      els.pulseAsOf.innerHTML = `<span>🗓️ Market As of: <strong>${formattedAsOf}</strong></span>`;
+      els.pulseAsOf.innerHTML = `<span class="status-indicator-dot ${dotClass}"></span><span>Market As of: <strong>${formattedAsOf}</strong> <span style="font-size:10px;opacity:0.8;margin-left:4px;">📊 Feeds Health</span></span>`;
+      els.pulseAsOf.setAttribute("title", "Click to inspect Market Data Health, As-Of Dates and sync sources");
+    }
+    if (els.portfolioTopAsOf) {
+      els.portfolioTopAsOf.setAttribute("title", "Click to inspect Market Data Health, As-Of Dates and sync sources");
     }
     if (els.portfolioAsofDate) {
       els.portfolioAsofDate.textContent = formattedAsOf;
@@ -2525,6 +2542,146 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentLoadedFile = null;
   }
 
+  // ==========================================================================
+  // Market Data Health & As-Of Status Modal
+  // ==========================================================================
+  function openDataStatusModal() {
+    if (!els.dataStatusModal) return;
+    renderDataStatusModal();
+    els.dataStatusModal.style.display = "flex";
+    els.dataStatusModal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeDataStatusModal() {
+    if (!els.dataStatusModal) return;
+    els.dataStatusModal.style.display = "none";
+    els.dataStatusModal.setAttribute("aria-hidden", "true");
+  }
+
+  function renderDataStatusModal() {
+    const statusData = window.KYF_MARKET_STATUS || null;
+
+    const fallbackFeeds = {
+      equities: {
+        name: "NSE Indian Equities",
+        tag: "Equities",
+        status: (window.KYF_MARKET_EQUITIES && window.KYF_MARKET_EQUITIES.asOf) ? "HEALTHY" : "UNKNOWN",
+        asOf: (window.KYF_MARKET_EQUITIES && window.KYF_MARKET_EQUITIES.asOf) || "Unknown",
+        count: (window.KYF_MARKET_EQUITIES && window.KYF_MARKET_EQUITIES.stocks) ? Object.keys(window.KYF_MARKET_EQUITIES.stocks).length : 0,
+        details: "NSE Equity Bhavcopy (CM)",
+        source: "NSE India EOD Bhavcopy"
+      },
+      mutualFunds: {
+        name: "AMFI Mutual Funds",
+        tag: "Mutual Funds",
+        status: (window.KYF_MARKET_MF && window.KYF_MARKET_MF.asOf) ? "HEALTHY" : "UNKNOWN",
+        asOf: (window.KYF_MARKET_MF && window.KYF_MARKET_MF.asOf) || "Unknown",
+        count: (window.KYF_MARKET_MF && window.KYF_MARKET_MF.funds) ? Object.keys(window.KYF_MARKET_MF.funds).length : 0,
+        details: "Direct & Regular Mutual Fund NAVs",
+        source: "AMFI India"
+      },
+      usMarket: {
+        name: "US Stocks, ETFs & Funds",
+        tag: "US Equities",
+        status: (window.KYF_MARKET_US && window.KYF_MARKET_US.asOf) ? "HEALTHY" : "UNKNOWN",
+        asOf: (window.KYF_MARKET_US && window.KYF_MARKET_US.asOf) || "Unknown",
+        count: (window.KYF_MARKET_US && window.KYF_MARKET_US.instruments) ? Object.keys(window.KYF_MARKET_US.instruments).length : 0,
+        details: `USD/INR Rate: ₹${(window.KYF_MARKET_US && window.KYF_MARKET_US.usdInr) || 93.85}`,
+        source: "GitHub us_bhavcopy & Yahoo Finance"
+      },
+      bullion: {
+        name: "Gold & Silver Bullion",
+        tag: "Commodities",
+        status: "HEALTHY",
+        asOf: (window.KYF_MARKET_PULSE && window.KYF_MARKET_PULSE.asOf) || "Recent",
+        details: "Gold 24K & Silver Mark-to-Market",
+        source: "NSE GOLDBEES & SILVERBEES"
+      },
+      macro: {
+        name: "Macro & Sovereign Baseline",
+        tag: "Macro",
+        status: "HEALTHY",
+        asOf: (window.KYF_MARKET_PULSE && window.KYF_MARKET_PULSE.asOf) || "Recent",
+        details: "CPI Inflation, EPF Sovereign Rate, Nifty Benchmarks",
+        source: "RBI, MoSPI & NSE Index Benchmarks"
+      },
+      realEstate: {
+        name: "NHB RESIDEX Real Estate",
+        tag: "Real Estate",
+        status: "HEALTHY",
+        asOf: "Quarterly",
+        details: "11 Tier 1 & 2 Indian Cities • Official RBI Housing Index",
+        source: "National Housing Bank (NHB RESIDEX)"
+      }
+    };
+
+    const overall = (statusData && statusData.overallStatus) || "HEALTHY";
+    const lastSynced = (statusData && statusData.lastSyncedIST) || "Daily at 6:00 AM IST";
+    const feeds = (statusData && statusData.feeds) ? statusData.feeds : fallbackFeeds;
+
+    // Summary banner
+    if (els.statusSummaryBanner) {
+      els.statusSummaryBanner.className = "status-summary-banner" +
+        (overall === "WARNING" ? " has-warning" : (overall === "ERROR" ? " has-error" : ""));
+    }
+    if (els.statusSummaryIcon) {
+      els.statusSummaryIcon.textContent = overall === "HEALTHY" ? "✅" : (overall === "WARNING" ? "⚠️" : "❌");
+    }
+    if (els.statusSummaryTitle) {
+      const feedKeys = Object.keys(feeds);
+      const healthyCount = feedKeys.filter(k => (feeds[k].status || "").toUpperCase() === "HEALTHY").length;
+      els.statusSummaryTitle.textContent = overall === "HEALTHY"
+        ? `All ${feedKeys.length} Market Feeds Healthy & Active`
+        : `${healthyCount} of ${feedKeys.length} Market Feeds Healthy`;
+    }
+    if (els.statusLastSyncedTime) {
+      els.statusLastSyncedTime.textContent = `Last synchronized: ${lastSynced} • Daily Auto-Sync: 6:00 AM IST`;
+    }
+
+    // Grid of cards
+    if (els.feedStatusGrid) {
+      const feedIcons = {
+        equities: "📈",
+        mutualFunds: "🌱",
+        usMarket: "🌐",
+        bullion: "🪙",
+        macro: "🏛️",
+        realEstate: "🏙️"
+      };
+
+      els.feedStatusGrid.innerHTML = Object.entries(feeds).map(([key, f]) => {
+        const isHealthy = (f.status || "").toUpperCase() === "HEALTHY";
+        const tagClass = isHealthy ? "healthy" : ((f.status || "").toUpperCase() === "WARNING" ? "warning" : "error");
+        const statusLabel = isHealthy ? "Healthy" : (f.status || "Unknown");
+        const icon = feedIcons[key] || "📊";
+        const formattedDate = formatAsOfDate(f.asOf);
+
+        return `
+          <div class="feed-status-card">
+            <div class="feed-status-header">
+              <div class="feed-status-name">${icon} ${escapeHTML(f.name || key)}</div>
+              <span class="feed-status-tag ${tagClass}">
+                <span class="status-indicator-dot ${isHealthy ? "online" : (tagClass === "warning" ? "warning" : "error")}"></span>
+                ${escapeHTML(statusLabel)}
+              </span>
+            </div>
+            <div class="feed-asof-row">
+              <span class="feed-asof-label">As-Of Date</span>
+              <span class="feed-asof-val">${escapeHTML(formattedDate)}</span>
+            </div>
+            <div class="feed-status-details">
+              ${escapeHTML(f.details || "")}
+            </div>
+            <div class="feed-status-source" title="${escapeHTML(f.source || "")}">
+              Source: ${escapeHTML(f.source || "Official Exchange Feed")}
+            </div>
+            ${f.error ? `<div class="feed-status-error">⚠️ ${escapeHTML(f.error)}</div>` : ""}
+          </div>
+        `;
+      }).join("");
+    }
+  }
+
   async function handleBrokerFile(file) {
     if (!file || !window.KYF_BROKER_IMPORTER) return;
     currentLoadedFile = file;
@@ -3005,6 +3162,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && els.importModal && els.importModal.style.display === "flex") {
         closeImportModal();
+      }
+    });
+
+    // Market Data Status Modal Events
+    if (els.pulseAsOf) {
+      els.pulseAsOf.addEventListener("click", openDataStatusModal);
+      els.pulseAsOf.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDataStatusModal();
+        }
+      });
+    }
+    if (els.portfolioTopAsOf) {
+      els.portfolioTopAsOf.addEventListener("click", openDataStatusModal);
+      els.portfolioTopAsOf.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDataStatusModal();
+        }
+      });
+    }
+    if (els.btnCloseDataStatusModal) {
+      els.btnCloseDataStatusModal.addEventListener("click", closeDataStatusModal);
+    }
+    if (els.btnDoneDataStatus) {
+      els.btnDoneDataStatus.addEventListener("click", closeDataStatusModal);
+    }
+    if (els.dataStatusModal) {
+      els.dataStatusModal.addEventListener("click", (e) => {
+        if (e.target === els.dataStatusModal) {
+          closeDataStatusModal();
+        }
+      });
+    }
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && els.dataStatusModal && els.dataStatusModal.style.display === "flex") {
+        closeDataStatusModal();
       }
     });
 

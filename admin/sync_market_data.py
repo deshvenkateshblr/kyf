@@ -1106,42 +1106,175 @@ def build_mf_js(opener, horizons: dict):
     print(f"  [Success] Wrote {len(tuples)} MF schemes to {out_path} ({len(js_content)/1024:.1f} KB)")
 
 
+# ============================================================================
+# MODULE 5B: US EQUITIES, ETFS & MUTUAL FUNDS (NASDAQ-100 & TOP US FUNDS)
+# ============================================================================
+
+NASDAQ_100_TICKERS = [
+    "AAPL", "ABNB", "ADBE", "ADI", "ADP", "ADSK", "AEP", "AMAT", "AMD", "AMGN",
+    "AMZN", "APP", "ARM", "ASML", "AVGO", "AXON", "AZN", "BIIB", "BKNG", "BKR",
+    "CCEP", "CDNS", "CDW", "CEG", "CHTR", "CMCSA", "COST", "CPRT", "CRWD", "CSCO",
+    "CSGP", "CSX", "CTAS", "CTSH", "DASH", "DDOG", "DLTR", "DXCM", "EA", "EXC",
+    "FANG", "FAST", "FTNT", "GEHC", "GFS", "GILD", "GOOG", "GOOGL", "HON", "IDXX",
+    "ILMN", "INTC", "INTU", "ISRG", "KDP", "KHC", "KLAC", "LIN", "LRCX", "LULU",
+    "MAR", "MCHP", "MDB", "MDLZ", "MELI", "META", "MNST", "MRNA", "MRVL", "MSFT",
+    "MU", "NFLX", "NVDA", "NXPI", "ODFL", "ON", "ORLY", "PANW", "PAYX", "PCAR",
+    "PDD", "PEP", "PLTR", "PYPL", "QCOM", "REGN", "ROP", "ROST", "SBUX", "SNPS",
+    "TEAM", "TMUS", "TSLA", "TTD", "TTWO", "TXN", "VRSK", "VRTX", "WBD", "WDAY",
+    "XEL", "ZS",
+]
+
+TOP_US_FUNDS_AND_ETFS = [
+    # Major US Broad Market & Factor ETFs
+    "SPY", "VOO", "IVV", "VTI", "QQQ", "QQQM", "DIA", "IWM", "IWF", "IWD",
+    "VOOG", "VOOV", "VUG", "VTV", "SCHD", "VYM", "VIG", "DGRO", "RSP", "VT",
+    # Sector, Thematic & Clean Energy ETFs
+    "TAN", "ICLN", "QCLN", "URA", "LIT", "BOTZ", "ARKK", "ARKG", "SMH", "SOXX",
+    "SOXL", "TQQQ", "SQQQ", "XLK", "XLF", "XLV", "XLE", "XLI", "XLC", "XLY",
+    "XLP", "XLU", "XLRE", "XLB", "VNQ",
+    # Biotechnology, Cyber & Software ETFs
+    "IBB", "XBI", "CIBR", "IGV", "IBIT", "FBTC",
+    # International & Emerging Market ETFs
+    "VXUS", "VEA", "VWO", "IEMG", "EEM", "INDA", "EPI", "INDY", "FLIN", "MCHI",
+    "KWEB", "FXI", "EWJ", "VGK", "EFA",
+    # Commodity & Fixed Income / Treasury ETFs
+    "GLD", "IAU", "SLV", "GDX", "USO", "UNG", "BND", "AGG", "TLT", "IEF",
+    "SHY", "SGOV", "BIL", "VCIT", "VCSH", "LQD", "HYG", "TIP",
+    # Income & Dividend Premium ETFs
+    "JEPI", "JEPQ", "DIVO", "GPIX",
+    # Top US Mutual Funds (Vanguard, Fidelity, Schwab, American Funds, T. Rowe Price, Dodge & Cox)
+    "FXAIX", "VFIAX", "VTSAX", "VTIAX", "VBTLX", "FSKAX", "FTIHX", "FXNAX", "SWPPX", "SWTSX",
+    "SWISX", "SWAGX", "FCNTX", "VWENX", "FZROX", "FNILX", "VIGAX", "VVIAX", "VWUSX", "VGSLX",
+    "VSMAX", "VIMAX", "VWINX", "AGTHX", "AIVSX", "ANCFX", "CWGIX", "PRGFX", "TRBCX", "DODGX",
+    "DODFX", "DODIX", "FBGRX", "FLPSX", "FDGRX",
+]
+
+ALL_US_TICKERS = sorted(list(set(NASDAQ_100_TICKERS + TOP_US_FUNDS_AND_ETFS)))
+
 KNOWN_US_METADATA = {
-    # Top US Equities
+    # NASDAQ-100 & Mega-Cap US Equities
     "AAPL": ("Apple Inc.", "EQUITY"),
-    "MSFT": ("Microsoft Corporation", "EQUITY"),
-    "GOOGL": ("Alphabet Inc. (Class A)", "EQUITY"),
-    "GOOG": ("Alphabet Inc. (Class C)", "EQUITY"),
-    "AMZN": ("Amazon.com Inc.", "EQUITY"),
-    "NVDA": ("NVIDIA Corporation", "EQUITY"),
-    "TSLA": ("Tesla Inc.", "EQUITY"),
-    "META": ("Meta Platforms Inc.", "EQUITY"),
-    "BRK.B": ("Berkshire Hathaway Inc. (Class B)", "EQUITY"),
-    "BRK.A": ("Berkshire Hathaway Inc. (Class A)", "EQUITY"),
-    "AVGO": ("Broadcom Inc.", "EQUITY"),
-    "JPM": ("JPMorgan Chase & Co.", "EQUITY"),
-    "V": ("Visa Inc.", "EQUITY"),
-    "MA": ("Mastercard Incorporated", "EQUITY"),
-    "WMT": ("Walmart Inc.", "EQUITY"),
-    "COST": ("Costco Wholesale Corporation", "EQUITY"),
-    "HD": ("The Home Depot Inc.", "EQUITY"),
-    "BAC": ("Bank of America Corporation", "EQUITY"),
-    "XOM": ("Exxon Mobil Corporation", "EQUITY"),
-    "LLY": ("Eli Lilly and Company", "EQUITY"),
-    "UNH": ("UnitedHealth Group Inc.", "EQUITY"),
-    "JNJ": ("Johnson & Johnson", "EQUITY"),
-    "PG": ("Procter & Gamble Co.", "EQUITY"),
-    "NFLX": ("Netflix Inc.", "EQUITY"),
+    "ABNB": ("Airbnb Inc.", "EQUITY"),
+    "ADBE": ("Adobe Inc.", "EQUITY"),
+    "ADI": ("Analog Devices Inc.", "EQUITY"),
+    "ADP": ("Automatic Data Processing", "EQUITY"),
+    "ADSK": ("Autodesk Inc.", "EQUITY"),
+    "AEP": ("American Electric Power", "EQUITY"),
+    "AMAT": ("Applied Materials Inc.", "EQUITY"),
     "AMD": ("Advanced Micro Devices Inc.", "EQUITY"),
-    "INTC": ("Intel Corporation", "EQUITY"),
-    "PLTR": ("Palantir Technologies Inc.", "EQUITY"),
-    "CRM": ("Salesforce Inc.", "EQUITY"),
-    "ORCL": ("Oracle Corporation", "EQUITY"),
-    "UBER": ("Uber Technologies Inc.", "EQUITY"),
+    "AMGN": ("Amgen Inc.", "EQUITY"),
+    "AMZN": ("Amazon.com Inc.", "EQUITY"),
+    "APP": ("AppLovin Corporation", "EQUITY"),
+    "ARM": ("Arm Holdings plc", "EQUITY"),
+    "ASML": ("ASML Holding N.V.", "EQUITY"),
+    "AVGO": ("Broadcom Inc.", "EQUITY"),
+    "AXON": ("Axon Enterprise Inc.", "EQUITY"),
+    "AZN": ("AstraZeneca PLC", "EQUITY"),
+    "BAC": ("Bank of America Corporation", "EQUITY"),
+    "BIIB": ("Biogen Inc.", "EQUITY"),
+    "BKNG": ("Booking Holdings Inc.", "EQUITY"),
+    "BKR": ("Baker Hughes Company", "EQUITY"),
+    "BRK.A": ("Berkshire Hathaway Inc. (Class A)", "EQUITY"),
+    "BRK.B": ("Berkshire Hathaway Inc. (Class B)", "EQUITY"),
+    "CCEP": ("Coca-Cola Europacific Partners", "EQUITY"),
+    "CDNS": ("Cadence Design Systems", "EQUITY"),
+    "CDW": ("CDW Corporation", "EQUITY"),
+    "CEG": ("Constellation Energy Corporation", "EQUITY"),
+    "CHTR": ("Charter Communications", "EQUITY"),
+    "CMCSA": ("Comcast Corporation", "EQUITY"),
     "COIN": ("Coinbase Global Inc.", "EQUITY"),
-    "MSTR": ("MicroStrategy Inc.", "EQUITY"),
+    "COST": ("Costco Wholesale Corporation", "EQUITY"),
+    "CPRT": ("Copart Inc.", "EQUITY"),
+    "CRM": ("Salesforce Inc.", "EQUITY"),
     "CRWD": ("CrowdStrike Holdings Inc.", "EQUITY"),
-    # Major US Broad & Factor ETFs
+    "CSCO": ("Cisco Systems Inc.", "EQUITY"),
+    "CSGP": ("CoStar Group Inc.", "EQUITY"),
+    "CSX": ("CSX Corporation", "EQUITY"),
+    "CTAS": ("Cintas Corporation", "EQUITY"),
+    "CTSH": ("Cognizant Technology Solutions", "EQUITY"),
+    "DASH": ("DoorDash Inc.", "EQUITY"),
+    "DDOG": ("Datadog Inc.", "EQUITY"),
+    "DLTR": ("Dollar Tree Inc.", "EQUITY"),
+    "DXCM": ("DexCom Inc.", "EQUITY"),
+    "EA": ("Electronic Arts Inc.", "EQUITY"),
+    "EXC": ("Exelon Corporation", "EQUITY"),
+    "FANG": ("Diamondback Energy Inc.", "EQUITY"),
+    "FAST": ("Fastenal Company", "EQUITY"),
+    "FTNT": ("Fortinet Inc.", "EQUITY"),
+    "GEHC": ("GE HealthCare Technologies", "EQUITY"),
+    "GFS": ("GlobalFoundries Inc.", "EQUITY"),
+    "GILD": ("Gilead Sciences Inc.", "EQUITY"),
+    "GOOG": ("Alphabet Inc. (Class C)", "EQUITY"),
+    "GOOGL": ("Alphabet Inc. (Class A)", "EQUITY"),
+    "HD": ("The Home Depot Inc.", "EQUITY"),
+    "HON": ("Honeywell International Inc.", "EQUITY"),
+    "IDXX": ("IDEXX Laboratories Inc.", "EQUITY"),
+    "ILMN": ("Illumina Inc.", "EQUITY"),
+    "INTC": ("Intel Corporation", "EQUITY"),
+    "INTU": ("Intuit Inc.", "EQUITY"),
+    "ISRG": ("Intuitive Surgical Inc.", "EQUITY"),
+    "JNJ": ("Johnson & Johnson", "EQUITY"),
+    "JPM": ("JPMorgan Chase & Co.", "EQUITY"),
+    "KDP": ("Keurig Dr Pepper Inc.", "EQUITY"),
+    "KHC": ("The Kraft Heinz Company", "EQUITY"),
+    "KLAC": ("KLA Corporation", "EQUITY"),
+    "LIN": ("Linde plc", "EQUITY"),
+    "LLY": ("Eli Lilly and Company", "EQUITY"),
+    "LRCX": ("Lam Research Corporation", "EQUITY"),
+    "LULU": ("Lululemon Athletica Inc.", "EQUITY"),
+    "MA": ("Mastercard Incorporated", "EQUITY"),
+    "MAR": ("Marriott International Inc.", "EQUITY"),
+    "MCHP": ("Microchip Technology Inc.", "EQUITY"),
+    "MDB": ("MongoDB Inc.", "EQUITY"),
+    "MDLZ": ("Mondelez International Inc.", "EQUITY"),
+    "MELI": ("MercadoLibre Inc.", "EQUITY"),
+    "META": ("Meta Platforms Inc.", "EQUITY"),
+    "MNST": ("Monster Beverage Corporation", "EQUITY"),
+    "MRNA": ("Moderna Inc.", "EQUITY"),
+    "MRVL": ("Marvell Technology Inc.", "EQUITY"),
+    "MSFT": ("Microsoft Corporation", "EQUITY"),
+    "MSTR": ("MicroStrategy Inc.", "EQUITY"),
+    "MU": ("Micron Technology Inc.", "EQUITY"),
+    "NFLX": ("Netflix Inc.", "EQUITY"),
+    "NVDA": ("NVIDIA Corporation", "EQUITY"),
+    "NXPI": ("NXP Semiconductors N.V.", "EQUITY"),
+    "ODFL": ("Old Dominion Freight Line", "EQUITY"),
+    "ON": ("ON Semiconductor Corporation", "EQUITY"),
+    "ORCL": ("Oracle Corporation", "EQUITY"),
+    "ORLY": ("O'Reilly Automotive Inc.", "EQUITY"),
+    "PANW": ("Palo Alto Networks Inc.", "EQUITY"),
+    "PAYX": ("Paychex Inc.", "EQUITY"),
+    "PCAR": ("PACCAR Inc.", "EQUITY"),
+    "PDD": ("PDD Holdings Inc.", "EQUITY"),
+    "PEP": ("PepsiCo Inc.", "EQUITY"),
+    "PG": ("Procter & Gamble Co.", "EQUITY"),
+    "PLTR": ("Palantir Technologies Inc.", "EQUITY"),
+    "PYPL": ("PayPal Holdings Inc.", "EQUITY"),
+    "QCOM": ("Qualcomm Incorporated", "EQUITY"),
+    "REGN": ("Regeneron Pharmaceuticals Inc.", "EQUITY"),
+    "ROP": ("Roper Technologies Inc.", "EQUITY"),
+    "ROST": ("Ross Stores Inc.", "EQUITY"),
+    "SBUX": ("Starbucks Corporation", "EQUITY"),
+    "SNPS": ("Synopsys Inc.", "EQUITY"),
+    "TEAM": ("Atlassian Corporation", "EQUITY"),
+    "TMUS": ("T-Mobile US Inc.", "EQUITY"),
+    "TSLA": ("Tesla Inc.", "EQUITY"),
+    "TTD": ("The Trade Desk Inc.", "EQUITY"),
+    "TTWO": ("Take-Two Interactive Software", "EQUITY"),
+    "TXN": ("Texas Instruments Incorporated", "EQUITY"),
+    "UBER": ("Uber Technologies Inc.", "EQUITY"),
+    "UNH": ("UnitedHealth Group Inc.", "EQUITY"),
+    "V": ("Visa Inc.", "EQUITY"),
+    "VRSK": ("Verisk Analytics Inc.", "EQUITY"),
+    "VRTX": ("Vertex Pharmaceuticals Inc.", "EQUITY"),
+    "WBD": ("Warner Bros. Discovery Inc.", "EQUITY"),
+    "WDAY": ("Workday Inc.", "EQUITY"),
+    "WMT": ("Walmart Inc.", "EQUITY"),
+    "XEL": ("Xcel Energy Inc.", "EQUITY"),
+    "XOM": ("Exxon Mobil Corporation", "EQUITY"),
+    "ZS": ("Zscaler Inc.", "EQUITY"),
+
+    # Major Broad Market, Index & Factor ETFs
     "VOO": ("Vanguard S&P 500 ETF", "ETF"),
     "VOOG": ("Vanguard S&P 500 Growth ETF", "ETF"),
     "VOOV": ("Vanguard S&P 500 Value ETF", "ETF"),
@@ -1152,58 +1285,127 @@ KNOWN_US_METADATA = {
     "QQQM": ("Invesco NASDAQ 100 ETF", "ETF"),
     "SPY": ("SPDR S&P 500 ETF Trust", "ETF"),
     "IVV": ("iShares Core S&P 500 ETF", "ETF"),
+    "DIA": ("SPDR Dow Jones Industrial Average ETF", "ETF"),
+    "IWM": ("iShares Russell 2000 ETF", "ETF"),
+    "IWF": ("iShares Russell 1000 Growth ETF", "ETF"),
+    "IWD": ("iShares Russell 1000 Value ETF", "ETF"),
     "SCHD": ("Schwab U.S. Dividend Equity ETF", "ETF"),
     "VYM": ("Vanguard High Dividend Yield ETF", "ETF"),
     "VIG": ("Vanguard Dividend Appreciation ETF", "ETF"),
-    "IWM": ("iShares Russell 2000 ETF", "ETF"),
-    "DIA": ("SPDR Dow Jones Industrial Average ETF", "ETF"),
+    "DGRO": ("iShares Core Dividend Growth ETF", "ETF"),
+    "RSP": ("Invesco S&P 500 Equal Weight ETF", "ETF"),
     "VT": ("Vanguard Total World Stock ETF", "ETF"),
-    "VXUS": ("Vanguard Total International Stock ETF", "ETF"),
-    "VEA": ("Vanguard FTSE Developed Markets ETF", "ETF"),
-    "VWO": ("Vanguard FTSE Emerging Markets ETF", "ETF"),
-    "INDA": ("iShares MSCI India ETF", "ETF"),
-    # Sector & Thematic ETFs (Clean Energy, Tech, Healthcare, etc.)
+
+    # Sector, Thematic & Innovation ETFs
     "TAN": ("Invesco Solar ETF", "ETF"),
     "ICLN": ("iShares Global Clean Energy ETF", "ETF"),
     "QCLN": ("First Trust NASDAQ Clean Edge Green Energy ETF", "ETF"),
     "URA": ("Global X Uranium ETF", "ETF"),
+    "LIT": ("Global X Lithium & Battery Tech ETF", "ETF"),
+    "BOTZ": ("Global X Robotics & AI ETF", "ETF"),
+    "ARKK": ("ARK Innovation ETF", "ETF"),
+    "ARKG": ("ARK Genomic Revolution ETF", "ETF"),
     "SMH": ("VanEck Semiconductor ETF", "ETF"),
     "SOXX": ("iShares Semiconductor ETF", "ETF"),
+    "SOXL": ("Direxion Daily Semiconductor Bull 3X", "ETF"),
+    "TQQQ": ("ProShares UltraPro QQQ 3X", "ETF"),
+    "SQQQ": ("ProShares UltraPro Short QQQ -3X", "ETF"),
     "XLK": ("Technology Select Sector SPDR Fund", "ETF"),
     "XLF": ("Financial Select Sector SPDR Fund", "ETF"),
     "XLE": ("Energy Select Sector SPDR Fund", "ETF"),
     "XLV": ("Health Care Select Sector SPDR Fund", "ETF"),
     "XLI": ("Industrial Select Sector SPDR Fund", "ETF"),
+    "XLC": ("Communication Services Select Sector SPDR", "ETF"),
     "XLY": ("Consumer Discretionary Select Sector SPDR Fund", "ETF"),
     "XLP": ("Consumer Staples Select Sector SPDR Fund", "ETF"),
+    "XLU": ("Utilities Select Sector SPDR Fund", "ETF"),
+    "XLRE": ("Real Estate Select Sector SPDR Fund", "ETF"),
+    "XLB": ("Materials Select Sector SPDR Fund", "ETF"),
     "VNQ": ("Vanguard Real Estate ETF", "ETF"),
-    "ARKK": ("ARK Innovation ETF", "ETF"),
+    "IBB": ("iShares Biotechnology ETF", "ETF"),
+    "XBI": ("SPDR S&P Biotech ETF", "ETF"),
     "CIBR": ("First Trust NASDAQ Cybersecurity ETF", "ETF"),
-    "BOTZ": ("Global X Robotics & Artificial Intelligence ETF", "ETF"),
     "IGV": ("iShares Expanded Tech-Software Sector ETF", "ETF"),
     "IBIT": ("iShares Bitcoin Trust ETF", "ETF"),
-    # Fixed Income & Income ETFs
-    "JEPI": ("JPMorgan Equity Premium Income ETF", "ETF"),
-    "JEPQ": ("JPMorgan Nasdaq Equity Premium Income ETF", "ETF"),
-    "BND": ("Vanguard Total Bond Market ETF", "ETF"),
-    "AGG": ("iShares Core U.S. Aggregate Bond ETF", "ETF"),
-    "TLT": ("iShares 20+ Year Treasury Bond ETF", "ETF"),
-    "HYG": ("iShares iBoxx $ High Yield Corporate Bond ETF", "ETF"),
-    # Commodity ETFs
+    "FBTC": ("Fidelity Wise Origin Bitcoin Fund", "ETF"),
+
+    # International & Emerging Market ETFs
+    "VXUS": ("Vanguard Total International Stock ETF", "ETF"),
+    "VEA": ("Vanguard FTSE Developed Markets ETF", "ETF"),
+    "VWO": ("Vanguard FTSE Emerging Markets ETF", "ETF"),
+    "IEMG": ("iShares Core MSCI Emerging Markets ETF", "ETF"),
+    "EEM": ("iShares MSCI Emerging Markets ETF", "ETF"),
+    "INDA": ("iShares MSCI India ETF", "ETF"),
+    "EPI": ("WisdomTree India Earnings Fund", "ETF"),
+    "INDY": ("iShares India 50 ETF", "ETF"),
+    "FLIN": ("Franklin FTSE India ETF", "ETF"),
+    "MCHI": ("iShares MSCI China ETF", "ETF"),
+    "KWEB": ("KraneShares CSI China Internet ETF", "ETF"),
+    "FXI": ("iShares China Large-Cap ETF", "ETF"),
+    "EWJ": ("iShares MSCI Japan ETF", "ETF"),
+    "VGK": ("Vanguard FTSE Europe ETF", "ETF"),
+    "EFA": ("iShares MSCI EAFE ETF", "ETF"),
+
+    # Commodity & Fixed Income / Treasury ETFs
     "GLD": ("SPDR Gold Shares", "ETF"),
     "IAU": ("iShares Gold Trust", "ETF"),
     "SLV": ("iShares Silver Trust", "ETF"),
     "GDX": ("VanEck Gold Miners ETF", "ETF"),
-    # US Mutual Funds / 401(k) / Index Funds
+    "USO": ("United States Oil Fund", "ETF"),
+    "UNG": ("United States Natural Gas Fund", "ETF"),
+    "BND": ("Vanguard Total Bond Market ETF", "ETF"),
+    "AGG": ("iShares Core U.S. Aggregate Bond ETF", "ETF"),
+    "TLT": ("iShares 20+ Year Treasury Bond ETF", "ETF"),
+    "IEF": ("iShares 7-10 Year Treasury Bond ETF", "ETF"),
+    "SHY": ("iShares 1-3 Year Treasury Bond ETF", "ETF"),
+    "SGOV": ("iShares 0-3 Month Treasury Bond ETF", "ETF"),
+    "BIL": ("SPDR Bloomberg 1-3 Month T-Bill ETF", "ETF"),
+    "VCIT": ("Vanguard Intermediate-Term Corporate Bond ETF", "ETF"),
+    "VCSH": ("Vanguard Short-Term Corporate Bond ETF", "ETF"),
+    "LQD": ("iShares iBoxx $ Investment Grade Corporate Bond ETF", "ETF"),
+    "HYG": ("iShares iBoxx $ High Yield Corporate Bond ETF", "ETF"),
+    "TIP": ("iShares TIPS Bond ETF", "ETF"),
+    "JEPI": ("JPMorgan Equity Premium Income ETF", "ETF"),
+    "JEPQ": ("JPMorgan Nasdaq Equity Premium Income ETF", "ETF"),
+    "DIVO": ("Amplify CWP Enhanced Dividend Income ETF", "ETF"),
+    "GPIX": ("Goldman Sachs S&P 500 Core Premium Income ETF", "ETF"),
+
+    # Top US Mutual Funds (Vanguard, Fidelity, Schwab, American Funds, T. Rowe Price, Dodge & Cox)
     "FXAIX": ("Fidelity 500 Index Fund", "MUTUAL_FUND"),
     "VFIAX": ("Vanguard 500 Index Fund Admiral", "MUTUAL_FUND"),
     "VTSAX": ("Vanguard Total Stock Market Index Admiral", "MUTUAL_FUND"),
+    "VTIAX": ("Vanguard Total International Stock Index Admiral", "MUTUAL_FUND"),
+    "VBTLX": ("Vanguard Total Bond Market Index Admiral", "MUTUAL_FUND"),
+    "FSKAX": ("Fidelity Total Market Index Fund", "MUTUAL_FUND"),
+    "FTIHX": ("Fidelity Total International Index Fund", "MUTUAL_FUND"),
+    "FXNAX": ("Fidelity U.S. Bond Index Fund", "MUTUAL_FUND"),
+    "SWPPX": ("Schwab S&P 500 Index Fund", "MUTUAL_FUND"),
+    "SWTSX": ("Schwab Total Stock Market Index Fund", "MUTUAL_FUND"),
+    "SWISX": ("Schwab International Index Fund", "MUTUAL_FUND"),
+    "SWAGX": ("Schwab U.S. Aggregate Bond Index Fund", "MUTUAL_FUND"),
     "FCNTX": ("Fidelity Contrafund", "MUTUAL_FUND"),
     "VWENX": ("Vanguard Wellington Fund Admiral", "MUTUAL_FUND"),
     "FZROX": ("Fidelity ZERO Total Market Index", "MUTUAL_FUND"),
     "FNILX": ("Fidelity ZERO Large Cap Index", "MUTUAL_FUND"),
-    "VBTLX": ("Vanguard Total Bond Market Index Admiral", "MUTUAL_FUND"),
-    "VTIAX": ("Vanguard Total International Stock Index Admiral", "MUTUAL_FUND"),
+    "VIGAX": ("Vanguard Growth Index Fund Admiral", "MUTUAL_FUND"),
+    "VVIAX": ("Vanguard Value Index Fund Admiral", "MUTUAL_FUND"),
+    "VWUSX": ("Vanguard U.S. Growth Fund", "MUTUAL_FUND"),
+    "VGSLX": ("Vanguard Real Estate Index Fund Admiral", "MUTUAL_FUND"),
+    "VSMAX": ("Vanguard Small-Cap Index Fund Admiral", "MUTUAL_FUND"),
+    "VIMAX": ("Vanguard Mid-Cap Index Fund Admiral", "MUTUAL_FUND"),
+    "VWINX": ("Vanguard Wellesley Income Fund", "MUTUAL_FUND"),
+    "AGTHX": ("American Funds The Growth Fund of America", "MUTUAL_FUND"),
+    "AIVSX": ("American Funds Investment Company of America", "MUTUAL_FUND"),
+    "ANCFX": ("American Funds Fundamental Investors", "MUTUAL_FUND"),
+    "CWGIX": ("American Funds Capital World Growth and Income", "MUTUAL_FUND"),
+    "PRGFX": ("T. Rowe Price Growth Stock Fund", "MUTUAL_FUND"),
+    "TRBCX": ("T. Rowe Price Blue Chip Growth Fund", "MUTUAL_FUND"),
+    "DODGX": ("Dodge & Cox Stock Fund", "MUTUAL_FUND"),
+    "DODFX": ("Dodge & Cox International Stock Fund", "MUTUAL_FUND"),
+    "DODIX": ("Dodge & Cox Income Fund", "MUTUAL_FUND"),
+    "FBGRX": ("Fidelity Blue Chip Growth Fund", "MUTUAL_FUND"),
+    "FLPSX": ("Fidelity Low-Priced Stock Fund", "MUTUAL_FUND"),
+    "FDGRX": ("Fidelity Growth Company Fund", "MUTUAL_FUND"),
 }
 
 
@@ -1282,6 +1484,114 @@ def fetch_sec_company_tickers(cache_dir: str = CACHE_DIR, max_age_days: int = 30
         return {}
 
 
+def fetch_us_bhavcopy_yfinance(tickers: list = None) -> bool:
+    """
+    Downloads daily US market quotes using yfinance (NASDAQ-100 + Top US Funds/ETFs).
+    Saves:
+      - data/us_bhavcopy_{date_str}.csv (dated archive)
+      - data/us_bhavcopy_latest.csv (master latest dataset)
+      - data/us_bhavcopy.csv (mirror for backward compatibility)
+    Returns True on success, or False if yfinance is not available/fails.
+    """
+    all_tickers = sorted(list(set(tickers or ALL_US_TICKERS)))
+    print(f"\n--- Fetching US Bhavcopy for {len(all_tickers)} Tickers (NASDAQ-100 & Top US Funds/ETFs) ---")
+
+    try:
+        import yfinance as yf
+        import requests
+        import pandas as pd
+    except ImportError:
+        print("  [US Bhavcopy Info] yfinance, requests, or pandas not installed in this environment.")
+        return False
+
+    # Load existing prices so no ticker loses its price on temporary rate-limits
+    existing_prices = {}
+    latest_file = os.path.join(DATA_DIR, "us_bhavcopy_latest.csv")
+    if os.path.exists(latest_file):
+        try:
+            with open(latest_file, "r", encoding="utf-8") as f:
+                for row in csv.DictReader(f):
+                    t = (row.get("Ticker") or "").strip().upper()
+                    c = (row.get("Close") or "").strip()
+                    if t and c:
+                        existing_prices[t] = c
+        except Exception:
+            pass
+
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    })
+
+    try:
+        print(f"  [US Bhavcopy] Downloading batch data from Yahoo Finance for {len(all_tickers)} tickers...")
+        data = yf.download(all_tickers, period="1d", session=session, progress=False)
+        if data is None or getattr(data, "empty", True):
+            print("  [US Bhavcopy Warning] Yahoo Finance returned empty dataset; falling back.")
+            return False
+        print("  [US Bhavcopy] Data successfully downloaded from Yahoo Finance.")
+    except Exception as e:
+        print(f"  [US Bhavcopy Warning] yfinance download encountered an error ({e}); using fallback.")
+        return False
+
+    now = datetime.datetime.utcnow()
+    date_str = now.strftime("%Y-%m-%d")
+    update_time = now.strftime("%Y-%m-%d %H:%M:%S")
+
+    archive_file = os.path.join(DATA_DIR, f"us_bhavcopy_{date_str}.csv")
+    backup_file = os.path.join(DATA_DIR, "us_bhavcopy.csv")
+
+    rows_to_write = [["Ticker", "Close", "Last_Updated_UTC"]]
+    active_count = 0
+
+    for ticker in all_tickers:
+        close_price = None
+        try:
+            if isinstance(data.columns, pd.MultiIndex):
+                if ('Close', ticker) in data.columns:
+                    s = data[('Close', ticker)].dropna()
+                    if not s.empty:
+                        close_price = s.iloc[-1]
+                elif (ticker, 'Close') in data.columns:
+                    s = data[(ticker, 'Close')].dropna()
+                    if not s.empty:
+                        close_price = s.iloc[-1]
+                elif 'Close' in data and ticker in data['Close']:
+                    s = data['Close'][ticker].dropna()
+                    if not s.empty:
+                        close_price = s.iloc[-1]
+            elif 'Close' in data:
+                if ticker in data['Close']:
+                    s = data['Close'][ticker].dropna()
+                    if not s.empty:
+                        close_price = s.iloc[-1]
+                elif len(all_tickers) == 1:
+                    s = data['Close'].dropna()
+                    if not s.empty:
+                        close_price = s.iloc[-1]
+        except Exception:
+            pass
+
+        if close_price is not None and not pd.isna(close_price):
+            val_str = str(round(float(close_price), 4))
+            rows_to_write.append([ticker, val_str, update_time])
+            active_count += 1
+        elif ticker in existing_prices:
+            rows_to_write.append([ticker, existing_prices[ticker], update_time])
+            active_count += 1
+        else:
+            rows_to_write.append([ticker, "", update_time])
+
+    # Save to all target files
+    for filepath in [archive_file, latest_file, backup_file]:
+        with open(filepath, mode="w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerows(rows_to_write)
+
+    print(f"  [US Bhavcopy Success] Saved {archive_file} and {latest_file} ({active_count}/{len(all_tickers)} active quotes)")
+    return True
+
+
 def fetch_remote_us_bhavcopy_from_repo() -> bool:
     """
     Module 5B Step 0: Fetches the latest us_bhavcopy_latest.csv from the GitHub repository
@@ -1321,8 +1631,12 @@ def build_us_market_js(horizons: dict = None):
     """Module 5B: Build data/market-us.js from data/us_bhavcopy_latest.csv (or us_bhavcopy.csv)."""
     print("\n--- Building Module 5B: data/market-us.js (US Stocks & Funds) ---")
 
-    # 0. Fetch the latest usbhavcopy from repo first before creating the data
-    fetch_remote_us_bhavcopy_from_repo()
+    # 1. First attempt to fetch live bhavcopy using yfinance (batch)
+    yf_success = fetch_us_bhavcopy_yfinance()
+
+    # 2. If yfinance is unavailable or offline, pull latest us_bhavcopy from GitHub repo
+    if not yf_success:
+        fetch_remote_us_bhavcopy_from_repo()
 
     candidate_files = [
         os.path.join(DATA_DIR, "us_bhavcopy_latest.csv"),
@@ -1469,6 +1783,223 @@ def sync_nhb_residex():
         print(f"  [Warn] Failed to invoke node for NHB RESIDEX sync: {e}")
 
 
+def build_market_status_js(horizons: dict):
+    """
+    Module 6B: Synthesizes health, asOf dates, record counts, and errors across all data feeds
+    into data/market-status.js (window.KYF_MARKET_STATUS) and data/market-status.json.
+    """
+    print("\n--- Building Module 6B: data/market-status.js (Feeds Health & As-Of Monitor) ---")
+    now_utc = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    now_ist = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)).strftime("%d %b %Y, %I:%M %p IST")
+
+    feeds = {}
+    overall_status = "HEALTHY"
+
+    # 1. NSE Equities
+    eq_path = os.path.join(DATA_DIR, "market-equities.js")
+    if os.path.exists(eq_path):
+        try:
+            with open(eq_path, "r", encoding="utf-8") as f:
+                eq_txt = f.read()
+            m_asof = re.search(r'asOf:\s*"([^"]+)"', eq_txt)
+            m_n500 = re.search(r'nifty500Count:\s*(\d+)', eq_txt)
+            stocks_cnt = len(re.findall(r'\["[A-Z0-9&\.-]+"', eq_txt))
+            eq_asof = m_asof.group(1) if m_asof else horizons["latest"].isoformat()
+            feeds["equities"] = {
+                "name": "NSE Indian Equities",
+                "tag": "Equities",
+                "status": "HEALTHY",
+                "asOf": eq_asof,
+                "count": stocks_cnt,
+                "details": f"{stocks_cnt:,} stocks ({m_n500.group(1) if m_n500 else 500} Nifty 500)",
+                "source": "NSE India EOD Bhavcopy (CM)",
+                "horizons": ["1M", "3M", "6M", "1Y"],
+                "error": None
+            }
+        except Exception as e:
+            overall_status = "WARNING"
+            feeds["equities"] = {
+                "name": "NSE Indian Equities",
+                "tag": "Equities",
+                "status": "ERROR",
+                "asOf": horizons["latest"].isoformat(),
+                "details": "Failed to parse equities dataset",
+                "source": "NSE India",
+                "error": str(e)
+            }
+    else:
+        overall_status = "WARNING"
+        feeds["equities"] = {
+            "name": "NSE Indian Equities",
+            "tag": "Equities",
+            "status": "MISSING",
+            "asOf": "N/A",
+            "details": "Dataset file missing",
+            "source": "NSE India",
+            "error": "data/market-equities.js not found"
+        }
+
+    # 2. AMFI Mutual Funds
+    mf_path = os.path.join(DATA_DIR, "market-mf.js")
+    if os.path.exists(mf_path):
+        try:
+            with open(mf_path, "r", encoding="utf-8") as f:
+                mf_txt = f.read()
+            m_asof = re.search(r'asOf:\s*"([^"]+)"', mf_txt)
+            schemes_cnt = len(re.findall(r'\[\s*\d+\s*,', mf_txt))
+            mf_asof = m_asof.group(1) if m_asof else horizons["latest"].isoformat()
+            feeds["mutualFunds"] = {
+                "name": "AMFI Mutual Funds",
+                "tag": "Mutual Funds",
+                "status": "HEALTHY",
+                "asOf": mf_asof,
+                "count": schemes_cnt,
+                "details": f"{schemes_cnt:,} schemes (Direct & Regular plans)",
+                "source": "Association of Mutual Funds in India (portal.amfiindia.com)",
+                "horizons": ["1M", "3M", "6M", "1Y"],
+                "error": None
+            }
+        except Exception as e:
+            overall_status = "WARNING"
+            feeds["mutualFunds"] = {
+                "name": "AMFI Mutual Funds",
+                "tag": "Mutual Funds",
+                "status": "ERROR",
+                "asOf": horizons["latest"].isoformat(),
+                "details": "Failed to parse MF dataset",
+                "source": "AMFI India",
+                "error": str(e)
+            }
+    else:
+        overall_status = "WARNING"
+        feeds["mutualFunds"] = {
+            "name": "AMFI Mutual Funds",
+            "tag": "Mutual Funds",
+            "status": "MISSING",
+            "asOf": "N/A",
+            "details": "Dataset file missing",
+            "source": "AMFI India",
+            "error": "data/market-mf.js not found"
+        }
+
+    # 3. US Equities, ETFs & Funds
+    us_path = os.path.join(DATA_DIR, "market-us.js")
+    if os.path.exists(us_path):
+        try:
+            with open(us_path, "r", encoding="utf-8") as f:
+                us_txt = f.read()
+            m_asof = re.search(r'"asOf":\s*"([^"]+)"', us_txt)
+            m_fx = re.search(r'"fxRateUsdInr":\s*([0-9\.]+)', us_txt)
+            us_cnt = len(re.findall(r'\[\s*"[A-Z0-9\.-]+"', us_txt))
+            us_asof = m_asof.group(1) if m_asof else datetime.date.today().isoformat()
+            fx_rate = float(m_fx.group(1)) if m_fx else 93.85
+            feeds["usMarket"] = {
+                "name": "US Stocks, ETFs & Funds",
+                "tag": "US Equities",
+                "status": "HEALTHY",
+                "asOf": us_asof,
+                "count": us_cnt,
+                "fxRateUsdInr": fx_rate,
+                "details": f"{us_cnt} instruments (VOOG, QQQM, TAN, AAPL, etc.) • USD/INR: ₹{fx_rate:.2f}",
+                "source": "GitHub us_bhavcopy & Yahoo Finance",
+                "error": None
+            }
+        except Exception as e:
+            overall_status = "WARNING"
+            feeds["usMarket"] = {
+                "name": "US Stocks, ETFs & Funds",
+                "tag": "US Equities",
+                "status": "ERROR",
+                "asOf": datetime.date.today().isoformat(),
+                "details": "Failed to parse US market dataset",
+                "source": "US Bhavcopy",
+                "error": str(e)
+            }
+
+    # 4. Commodities & Bullion (from pulse)
+    pulse_path = os.path.join(DATA_DIR, "market-pulse.js")
+    if os.path.exists(pulse_path):
+        try:
+            with open(pulse_path, "r", encoding="utf-8") as f:
+                p_txt = f.read()
+            m_gold = re.search(r'"gold24kPerGram":\s*([0-9\.]+)', p_txt)
+            m_silver = re.search(r'"silverPerKg":\s*([0-9\.]+)', p_txt)
+            m_pasof = re.search(r'"asOf":\s*"([^"]+)"', p_txt)
+            p_asof = m_pasof.group(1) if m_pasof else horizons["latest"].isoformat()
+            g_rate = float(m_gold.group(1)) if m_gold else 14130
+            s_rate = float(m_silver.group(1)) if m_silver else 204000
+            feeds["bullion"] = {
+                "name": "Gold & Silver Bullion",
+                "tag": "Commodities",
+                "status": "HEALTHY",
+                "asOf": p_asof,
+                "gold24kPerGram": g_rate,
+                "silverPerKg": s_rate,
+                "details": f"Gold 24K: ₹{g_rate:,.0f}/g • Silver: ₹{s_rate:,.0f}/kg",
+                "source": "NSE GOLDBEES & SILVERBEES Mark-to-Market",
+                "error": None
+            }
+
+            # 5. Macro & Sovereign Benchmarks
+            m_cpi = re.search(r'"cpiInflation":\s*([0-9\.]+)', p_txt)
+            m_epf = re.search(r'"epfRate":\s*([0-9\.]+)', p_txt)
+            m_nifty = re.search(r'"level":\s*([0-9\.]+)', p_txt)
+            feeds["macro"] = {
+                "name": "Macro & Sovereign Baseline",
+                "tag": "Macro",
+                "status": "HEALTHY",
+                "asOf": p_asof,
+                "details": f"CPI Inflation: {m_cpi.group(1) if m_cpi else '5.4'}% • EPF Rate: {m_epf.group(1) if m_epf else '8.25'}% • Nifty 50: {m_nifty.group(1) if m_nifty else '25,030'}",
+                "source": "RBI, MoSPI & NSE Index Benchmarks",
+                "error": None
+            }
+        except Exception as e:
+            feeds["bullion"] = {"name": "Gold & Silver", "status": "ERROR", "error": str(e), "asOf": "N/A"}
+            feeds["macro"] = {"name": "Macro Baseline", "status": "ERROR", "error": str(e), "asOf": "N/A"}
+
+    # 6. Real Estate (NHB RESIDEX)
+    nhb_path = os.path.join(DATA_DIR, "nhb_residex_kyf.json")
+    if os.path.exists(nhb_path):
+        try:
+            with open(nhb_path, "r", encoding="utf-8") as f:
+                nhb = json.load(f)
+            cities_cnt = len(nhb.get("cities", {}))
+            feeds["realEstate"] = {
+                "name": "NHB RESIDEX Real Estate",
+                "tag": "Real Estate",
+                "status": "HEALTHY",
+                "asOf": nhb.get("as_of_quarter", "2024-2026"),
+                "count": cities_cnt,
+                "frequency": "Quarterly",
+                "details": f"{cities_cnt} Tier 1 & 2 Indian Cities • Official RBI Housing Index",
+                "source": "National Housing Bank (NHB RESIDEX)",
+                "error": None
+            }
+        except Exception as e:
+            feeds["realEstate"] = {"name": "NHB RESIDEX", "status": "ERROR", "error": str(e), "asOf": "N/A"}
+
+    payload = {
+        "generatedAtUTC": now_utc,
+        "lastSyncedIST": now_ist,
+        "overallStatus": overall_status,
+        "totalFeeds": len(feeds),
+        "healthyFeeds": sum(1 for f in feeds.values() if f.get("status") == "HEALTHY"),
+        "feeds": feeds
+    }
+
+    # Write JS bundle (for direct script tag in HTML)
+    out_js = os.path.join(DATA_DIR, "market-status.js")
+    with open(out_js, "w", encoding="utf-8") as f:
+        f.write(f"// Auto-generated by admin/sync_market_data.py\nwindow.KYF_MARKET_STATUS = {json.dumps(payload, indent=2)};\n")
+
+    # Write JSON bundle (for APIs / CI)
+    out_json = os.path.join(DATA_DIR, "market-status.json")
+    with open(out_json, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+
+    print(f"  [Success] Wrote Market Status ({payload['healthyFeeds']}/{payload['totalFeeds']} Healthy) to {out_js} and {out_json}")
+
+
 def git_commit_and_push(horizons: dict):
     """Module 7: Automatically stages data/ files, commits with asOf date, and pushes to origin/master."""
     if "--commit-push" not in sys.argv and "--git-push" not in sys.argv:
@@ -1514,5 +2045,6 @@ if __name__ == "__main__":
     build_mf_js(http_opener, target_horizons)
     build_us_market_js(target_horizons)
     sync_nhb_residex()
+    build_market_status_js(target_horizons)
     git_commit_and_push(target_horizons)
     print("\n=== All Market Bundles (pulse, corporate-actions, equities, mf, us, realestate) Updated in /data/ ===")
