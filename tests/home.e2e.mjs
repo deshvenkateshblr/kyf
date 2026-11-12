@@ -44,6 +44,48 @@ await page.goto(base + "/portfolio.html?demo=1");
 await page.waitForTimeout(800);
 ok(await page.evaluate(() => localStorage.getItem("kyf_demo_mode")) === "true", "demo flag set");
 ok(errs.length === 0, "no page errors: " + errs.join("|"));
+
+// ---------- Money Word ----------
+{
+  const ctx = await b.newContext({ viewport: { width: 390, height: 800 } });
+  const p = await ctx.newPage();
+  const perrs = []; p.on("pageerror", e => perrs.push(e.message));
+  await p.goto(base + "/index.html");
+  await p.waitForSelector("#kyf-money-word.mw-in", { timeout: 6000 });
+  const first = await p.locator(".mw-term").innerText();
+  ok(first === "SIP", "Money Word starts with the first curriculum word, got " + first);
+  ok((await p.locator(".mw-tip").innerText()).length > 20, "shows the plain meaning");
+  ok(await p.locator(".mw-btn", { hasText: "Tell me more" }).count() === 0, "no Tell me more until topic pages exist");
+  const box = await p.locator("#kyf-money-word").boundingBox();
+  ok(box.x >= 0 && box.x + box.width <= 390 && box.y + box.height <= 800, "card fits the phone screen");
+  const over = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  ok(over <= 0, "card adds no sideways scroll");
+  await p.click(".mw-btn:has-text('Next word')");
+  ok(await p.locator(".mw-term").innerText() === "Step-up", "Next word moves on");
+  await p.click(".mw-btn:has-text('I know this')");
+  ok(await p.locator(".mw-term").innerText() === "NAV", "I know this moves on");
+  await p.reload();
+  await p.waitForSelector("#kyf-money-word.mw-in", { timeout: 6000 });
+  ok(await p.locator(".mw-term").innerText() === "NAV" || (await p.locator(".mw-term").innerText()) === "CAGR", "resumes after the last word shown, never repeats a known one");
+  await p.click(".mw-close");
+  ok(await p.locator("#kyf-money-word").count() === 0, "x hides the card");
+  await p.reload();
+  await p.waitForTimeout(3200);
+  ok(await p.locator("#kyf-money-word").count() === 0, "stays hidden for the rest of the visit");
+  await p.click("#kyf-mw-switch");
+  ok(/off/.test(await p.locator("#kyf-mw-switch").innerText()), "footer switch turns it off");
+  await p.click("#kyf-mw-switch");
+  await p.waitForSelector("#kyf-money-word");
+  await p.click(".mw-off");
+  ok(await p.locator("#kyf-money-word").count() === 0, "Don't show again hides it");
+  ok(/off/.test(await p.locator("#kyf-mw-switch").innerText()), "footer shows it is off");
+  const ctx2p = await p.context().newPage();
+  await ctx2p.goto(base + "/index.html");
+  await ctx2p.waitForTimeout(3200);
+  ok(await ctx2p.locator("#kyf-money-word").count() === 0, "off persists in a new visit");
+  ok(perrs.length === 0, "Money Word: no page errors " + perrs.join("|"));
+  await ctx.close();
+}
 await b.close(); srv.close();
 console.log(`home e2e: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

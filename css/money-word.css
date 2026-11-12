@@ -1,0 +1,87 @@
+/* Money Word floating card (home page) */
+.mw-card {
+  position: fixed;
+  right: 20px;
+  bottom: 56px;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  background: var(--panel, #fff);
+  border: 1px solid var(--line, #d7ddd2);
+  border-left: 4px solid var(--amber, #c97a2b);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(24, 38, 32, 0.18);
+  padding: 12px 14px 10px;
+  z-index: 900;
+  color: var(--ink, #182620);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.mw-card.mw-in { opacity: 1; transform: none; }
+
+.mw-head { display: flex; align-items: center; justify-content: space-between; }
+.mw-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber, #c97a2b);
+}
+.mw-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted, #6d786f);
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.mw-term { font-size: 20px; font-weight: 700; margin: 4px 0 2px; }
+.mw-tip { margin: 0 0 10px; font-size: 14px; line-height: 1.45; color: var(--ink-soft, #3d4a44); }
+
+.mw-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.mw-btn {
+  border: 1px solid var(--line, #d7ddd2);
+  background: transparent;
+  color: var(--ink, #182620);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.mw-btn-primary { background: var(--teal, #1f7a6c); border-color: var(--teal, #1f7a6c); color: #fff; }
+.mw-btn:focus-visible, .mw-close:focus-visible, .mw-off:focus-visible { outline: 2px solid var(--teal, #1f7a6c); outline-offset: 2px; }
+
+.mw-off {
+  display: block;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted, #6d786f);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.kyf-footer-switch {
+  padding: 3px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #eef1ea;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .mw-card { right: 16px; left: 16px; width: auto; bottom: 52px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mw-card { transition: none; }
+}
