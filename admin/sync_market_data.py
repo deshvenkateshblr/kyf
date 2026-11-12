@@ -27,7 +27,28 @@ import zipfile
 # 1. PATHS & TRADING CALENDAR SETUP
 # ============================================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data"))
+
+# Configurable data output directory (CLI flag: --data-dir <path> or --out-dir <path>)
+data_dir_arg = None
+for i, arg in enumerate(sys.argv):
+    if arg in ("--data-dir", "--out-dir") and i + 1 < len(sys.argv):
+        data_dir_arg = sys.argv[i + 1]
+    elif arg.startswith("--data-dir="):
+        data_dir_arg = arg.split("=", 1)[1]
+    elif arg.startswith("--out-dir="):
+        data_dir_arg = arg.split("=", 1)[1]
+
+if data_dir_arg:
+    DATA_DIR = os.path.abspath(data_dir_arg)
+elif os.path.isdir(os.path.join(BASE_DIR, "public-kyf-repo", "data")):
+    DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "public-kyf-repo", "data"))
+elif os.path.isdir(os.path.join(BASE_DIR, "..", "public-kyf-repo", "data")):
+    DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "public-kyf-repo", "data"))
+elif os.path.isdir(os.path.join(BASE_DIR, "..", "data")):
+    DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data"))
+else:
+    DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "data"))
+
 CACHE_DIR = os.path.join(BASE_DIR, ".cache")
 PULSE_CONFIG_PATH = os.path.join(BASE_DIR, "pulse_config.json")
 
