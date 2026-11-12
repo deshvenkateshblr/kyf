@@ -52,3 +52,14 @@
 }
 .kyf-menu-file { margin-top: 6px; border-top: 2px solid var(--line, #d7ddd2) !important; }
 @media (min-width: 561px) { .kyf-menu-file { display: none; } }
+
+/* One look for the top bar on every page */
+@media (min-width: 821px) {
+  .nav .nav-links { display: flex; align-items: center; gap: 20px !important; font-family: var(--mono, ui-monospace, monospace); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .nav .nav-links > a { color: var(--ink-soft, #3d4a44); text-decoration: none; padding: 4px 0; border-bottom: 2px solid transparent; }
+  .nav .nav-links > a:hover { color: var(--teal, #1f7a6c); }
+  .nav .nav-links > a.active { color: var(--teal-deep, #145a4f); border-bottom-color: var(--teal, #1f7a6c); }
+  .nav .nav-links .nav-btn { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px; font: inherit; font-weight: 700; letter-spacing: .04em; text-transform: none; border-radius: 999px; cursor: pointer; border: 1px solid var(--teal, #1f7a6c); box-shadow: none; margin: 0; }
+  .nav .nav-links .nav-btn.secondary { background: transparent; color: var(--teal-deep, #145a4f); }
+  .nav .nav-links .nav-btn.primary { background: var(--teal, #1f7a6c); color: #fff; }
+}

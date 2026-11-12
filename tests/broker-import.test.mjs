@@ -5,7 +5,7 @@
  * 2. O(1) Engine lookups (lookupByIsin, lookupEquity, lookupMf)
  * 3. Enrichment fallback to ISIN
  * 4. CSV parsing with Indian comma numbers
- * 5. Broker header & profile detection across formats (Zerodha Kite, Console, Groww, ICICI, CAMS)
+ * 5. Header row detection (broker is chosen by the user) across formats (Zerodha Kite, Console, Groww, ICICI, CAMS)
  * 6. SGB and Gold ETF resolution
  * 7. Smart upsert deduplication and goal envelope allocation preservation
  */
@@ -165,9 +165,9 @@ test("Detects Zerodha Console statement", () => {
     ["Client ID: AB1234"],
     ["Symbol", "ISIN", "Sector", "Quantity Available", "Average Price", "Previous Closing Price"]
   ];
-  const detected = importer.detectHeaderAndBroker(matrix);
+  const detected = importer.detectHeader(matrix);
   assert.ok(detected);
-  assert.equal(detected.profile.id, "ZERODHA_CONSOLE");
+  assert.ok(detected.headerRowIndex >= 0);
 });
 
 test("Detects Zerodha Kite statement", () => {
@@ -175,27 +175,27 @@ test("Detects Zerodha Kite statement", () => {
     ["Holdings (12)"],
     ["Instrument", "Qty.", "Avg. cost", "LTP", "Cur. val", "P&L", "Net chg."]
   ];
-  const detected = importer.detectHeaderAndBroker(matrix);
+  const detected = importer.detectHeader(matrix);
   assert.ok(detected);
-  assert.equal(detected.profile.id, "ZERODHA_KITE");
+  assert.ok(detected.headerRowIndex >= 0);
 });
 
 test("Detects Groww Mutual Fund statement", () => {
   const matrix = [
     ["Scheme Name", "Folio No.", "Units", "Invested Value", "Current Value"]
   ];
-  const detected = importer.detectHeaderAndBroker(matrix);
+  const detected = importer.detectHeader(matrix);
   assert.ok(detected);
-  assert.equal(detected.profile.id, "GROWW_MF");
+  assert.ok(detected.headerRowIndex >= 0);
 });
 
 test("Detects ICICI Direct statement", () => {
   const matrix = [
     ["Stock Symbol", "Company Name", "ISIN Code", "Qty", "Book Value", "Average Cost Price"]
   ];
-  const detected = importer.detectHeaderAndBroker(matrix);
+  const detected = importer.detectHeader(matrix);
   assert.ok(detected);
-  assert.equal(detected.profile.id, "ICICI_DIRECT");
+  assert.ok(detected.headerRowIndex >= 0);
 });
 
 test("Detects CAMS / KFintech Consolidated Statement", () => {
@@ -203,9 +203,9 @@ test("Detects CAMS / KFintech Consolidated Statement", () => {
     ["Consolidated Account Statement"],
     ["Scheme Name", "Folio No", "Closing Unit Balance", "Cost Value", "Valuation (Market Value)"]
   ];
-  const detected = importer.detectHeaderAndBroker(matrix);
+  const detected = importer.detectHeader(matrix);
   assert.ok(detected);
-  assert.equal(detected.profile.id, "CAMS_KFINTECH");
+  assert.ok(detected.headerRowIndex >= 0);
 });
 
 console.log("\n[TEST GROUP 5] Instrument Resolution & SGB / Gold BEES");
@@ -281,7 +281,7 @@ test("Upsert adds new holding and updates existing holding matching ISIN", () =>
     }
   ];
 
-  const { holdings: updated, addedCount, updatedCount } = importer.upsertHoldings(existing, incoming);
+  const { holdings: updated, addedCount, updatedCount } = importer.replaceBucket(existing, incoming, "Self", "zerodha_stocks");
   assert.equal(addedCount, 1, "Added 1 new holding");
   assert.equal(updatedCount, 1, "Updated 1 existing holding");
   assert.equal(updated.length, 2, "Total holdings is 2");
@@ -330,7 +330,7 @@ test("Upsert matches hand-entered holding without ISIN by symbol and enriches it
     }
   ];
 
-  const { holdings: updated, addedCount, updatedCount } = importer.upsertHoldings(existing, incoming);
+  const { holdings: updated, addedCount, updatedCount } = importer.replaceBucket(existing, incoming, "Self", "zerodha_stocks");
   assert.equal(addedCount, 0);
   assert.equal(updatedCount, 1);
   assert.equal(updated.length, 1);
@@ -347,7 +347,7 @@ test("Explicit member decision strictly assigns all extracted holdings to chosen
     ["Quantum Value Fund", "12345/0", "100", "10000", "12500", "Rajesh Kumar (Auto Guess Trait)"]
   ];
   // User explicitly selected member "GVD"
-  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD", "zerodha_stocks");
   assert.equal(holdings.length, 1);
   assert.equal(holdings[0].member, "GVD", "Member is explicitly GVD, never Rajesh or auto-guessed");
 });
@@ -359,7 +359,7 @@ Parag Parikh Flexi Cap Fund - Direct Plan - Growth,123456/78,125.456,65.20,8179.
 HDFC Balanced Advantage Fund - Growth Option,987654/32,250.000,42.50,10625.00,12100.00`;
 
   const matrix = importer.parseCSVToMatrix(coinCsv);
-  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD", "zerodha_stocks");
   assert.equal(holdings.length, 2, "Both holdings extracted from Zerodha Coin");
   assert.equal(holdings[0].member, "GVD");
   assert.equal(holdings[0].assetClass, "Mutual Funds");
@@ -375,7 +375,7 @@ test("Imports CAMS CAS statement with blank column 0 (spacer column)", () => {
 ,SBI Small Cap Fund - Direct Plan - Growth,665544/22,200.000,12000,41378`;
 
   const matrix = importer.parseCSVToMatrix(camsCasCsv);
-  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD", "zerodha_stocks");
   assert.equal(holdings.length, 2, "Both holdings extracted despite empty Col 0");
   assert.equal(holdings[0].member, "GVD");
   assert.equal(holdings[0].assetClass, "Mutual Funds");
@@ -389,7 +389,7 @@ Mirae Asset Large & Midcap Fund - Direct Plan - Growth,112233/44,80.500,8000,143
 DSP Midcap Fund - Regular Plan - Growth,556677/88,100.000,10000,14983`;
 
   const matrix = importer.parseCSVToMatrix(kfinCsv);
-  const holdings = importer.extractHoldingsFromMatrix(matrix, "Priya");
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "Priya", "zerodha_stocks");
   assert.equal(holdings.length, 2, "Short headers matched");
   assert.equal(holdings[0].member, "Priya");
   assert.equal(holdings[0].assetClass, "Mutual Funds");
@@ -402,7 +402,7 @@ test("Auto-detects TSV delimiter in Mutual Fund statements", () => {
   const matrix = importer.parseCSVToMatrix(tsv);
   assert.equal(matrix.length, 2);
   assert.equal(matrix[0].length, 5);
-  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD", "zerodha_stocks");
   assert.equal(holdings.length, 1);
   assert.equal(holdings[0].assetClass, "Mutual Funds");
   assert.equal(holdings[0].units, 50);
@@ -413,7 +413,7 @@ test("Auto-detects Semicolon delimiter in Mutual Fund statements", () => {
   const matrix = importer.parseCSVToMatrix(semi);
   assert.equal(matrix.length, 2);
   assert.equal(matrix[0].length, 5);
-  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD", "zerodha_stocks");
   assert.equal(holdings.length, 1);
   assert.equal(holdings[0].units, 60);
 });
@@ -422,7 +422,7 @@ test("Mutual Fund not indexed in AMFI retains LIVE_MF pricingMode with statement
   const customMfCsv = `Fund Name,Folio,Units,NAV,Current Value
 Custom Offshore Global Equity Fund,12345/67,100.000,25.50,2550`;
   const matrix = importer.parseCSVToMatrix(customMfCsv);
-  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD", "zerodha_stocks");
   assert.equal(holdings.length, 1);
   assert.equal(holdings[0].assetClass, "Mutual Funds");
   assert.equal(holdings[0].pricingMode, "LIVE_MF");
@@ -476,7 +476,7 @@ Parag Parikh Flexi Cap Fund - Growth,1111/00,100,7000,8550
 Parag Parikh Flexi Cap Fund - Direct Plan - Growth,2222/00,100,7000,9395`;
 
   const matrix = importer.parseCSVToMatrix(mixedCsv);
-  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD");
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "GVD", "zerodha_stocks");
   assert.equal(holdings.length, 2);
 
   const regHolding = holdings.find(h => h.notes === "Folio: 1111/00");

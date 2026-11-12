@@ -33,8 +33,9 @@ async function freshPage() {
   return p;
 }
 
-async function importFile(p, file, member) {
+async function importFile(p, file, member, source = "zerodha_stocks") {
   await p.click("#btn-open-import-modal");
+  await p.selectOption("#import-source-select", source);
   if (member) await p.selectOption("#import-member-select", member).catch(() => {});
   await p.setInputFiles("#broker-file-input", file);
   await p.waitForSelector("#import-preview-tbody tr", { timeout: 8000 });
@@ -56,6 +57,27 @@ const holdingsCount = (p) => p.evaluate(() => (document.getElementById("kpi-net-
   ok(await holdingsCount(p) === 2, "csv: two holdings on the page");
   const again = await importFile(p, { name: "holdings.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
   ok(await holdingsCount(p) === 2, "csv: importing the same file again adds nothing");
+  // overwrite: a smaller file means the missing holding was sold
+  const smaller = "Instrument,Qty.,Avg. cost,LTP\r\nRELIANCE,10,1250.5,1300\r\n";
+  await p.click("#btn-open-import-modal");
+  await p.selectOption("#import-source-select", "zerodha_stocks");
+  await p.setInputFiles("#broker-file-input", { name: "h2.csv", mimeType: "text/csv", buffer: Buffer.from(smaller) });
+  await p.waitForSelector("#import-preview-tbody tr");
+  const summary = await p.textContent("#import-stats-summary");
+  ok(/1 updated/.test(summary) && /1 no longer held/.test(summary), "csv: preview says what will be removed: " + summary);
+  await p.click("#btn-confirm-import"); await p.waitForTimeout(600);
+  ok(await holdingsCount(p) === 1, "csv: the holding missing from the new file is gone");
+  // a second broker is a separate bucket
+  await importFile(p, { name: "u.csv", mimeType: "text/csv", buffer: Buffer.from("Instrument,Qty.,Avg. cost,LTP\r\nRELIANCE,3,1200,1300\r\n") }, null, "upstox");
+  ok(await holdingsCount(p) === 2, "csv: the same stock at another broker is kept separately");
+  // no source chosen: nothing is read
+  await p.click("#btn-open-import-modal");
+  await p.setInputFiles("#broker-file-input", { name: "h.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+  await p.waitForTimeout(400);
+  ok(await p.locator("#import-preview-tbody tr").count() === 0 && await p.isDisabled("#btn-confirm-import"), "csv: without a broker choice nothing is previewed");
+  await p.selectOption("#import-source-select", "groww_stocks");
+  await p.waitForSelector("#import-preview-tbody tr");
+  ok(await p.locator("#import-preview-tbody tr").count() === 2, "csv: choosing the broker afterwards reads the file");
   ok(p.errs.length === 0, "csv: no page errors " + p.errs.join("|"));
   await p.context().close();
 }

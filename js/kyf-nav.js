@@ -17,7 +17,7 @@
   ];
   var CATALOG = window.KYF_FEATURES;
   var MENU = (CATALOG ? CATALOG.menu() : FALLBACK).map(function (m) {
-    return { href: m.href, label: m.name, icon: m.icon, desc: m.tagline || "", topBar: !!m.topBar };
+    return { href: m.href, label: m.name, short: m.short || "", icon: m.icon, desc: m.tagline || "", topBar: !!m.topBar };
   });
 
   function pageName() {
@@ -45,21 +45,54 @@
     return n;
   }
 
+  // One top bar on every page: tool links from the catalog, then Open / Save for the .kyf data file.
+  // Existing file input and buttons are kept (page scripts may already be bound to them); missing ones are created.
   function normaliseDesktopLinks(nav) {
-    // Index keeps its own marketing nav (with the Framework dropdown); inner pages get the shared set.
-    if (pageName() === "index.html") return;
-    var anchors = nav.querySelectorAll(":scope > a");
-    var first = anchors[0];
+    var keep = {};
+    ["kyfFileInput", "navOpenFileBtn", "navSaveDataBtn"].forEach(function (id) {
+      keep[id] = document.getElementById(id);
+    });
+    Array.prototype.slice.call(nav.children).forEach(function (child) {
+      if (child !== keep.kyfFileInput && child !== keep.navOpenFileBtn && child !== keep.navSaveDataBtn) child.remove();
+    });
+
     var fragment = document.createDocumentFragment();
     MENU.filter(function (m) { return m.topBar; }).forEach(function (m) {
-      var a = el("a", isCurrent(m) ? "active" : "", m.label);
+      var a = el("a", isCurrent(m) ? "active" : "", m.short || m.label);
       a.href = m.href;
       if (isCurrent(m)) a.setAttribute("aria-current", "page");
       fragment.appendChild(a);
     });
-    anchors.forEach(function (a) { a.remove(); });
     nav.insertBefore(fragment, nav.firstChild);
-    void first;
+
+    if (!keep.kyfFileInput) {
+      var input = el("input");
+      input.type = "file";
+      input.id = "kyfFileInput";
+      input.accept = ".kyf,.json";
+      input.hidden = true;
+      nav.appendChild(input);
+    }
+    if (!keep.navOpenFileBtn) {
+      var open = el("button", "nav-btn secondary", "\uD83D\uDCC2 Open");
+      open.type = "button";
+      open.id = "navOpenFileBtn";
+      open.title = "Open saved .kyf data file";
+      nav.appendChild(open);
+    }
+    if (!keep.navSaveDataBtn) {
+      var save = el("button", "nav-btn primary", "\uD83D\uDCBE Save");
+      save.type = "button";
+      save.id = "navSaveDataBtn";
+      save.title = "Save data as .kyf file";
+      nav.appendChild(save);
+    } else {
+      keep.navSaveDataBtn.textContent = "\uD83D\uDCBE Save";
+    }
+    // Pages bind these on load, but the bar may be built after that: bind again (safe to repeat)
+    if (window.KYF_VAULT && typeof window.KYF_VAULT.bindPageUI === "function") {
+      window.KYF_VAULT.bindPageUI({ fileInputId: "kyfFileInput", openBtnId: "navOpenFileBtn", saveBtnId: "navSaveDataBtn" });
+    }
   }
 
   function build() {

@@ -3046,3 +3046,10 @@ button {
 .import-preview-table tr:hover td {
   background: rgba(0, 0, 0, 0.02);
 }
+
+.import-stats-summary { flex-wrap: wrap; gap: 6px 16px; }
+.import-stats-summary .import-warn {
+  flex-basis: 100%;
+  color: var(--rose);
+  font-weight: 600;
+}

@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Lean Broker & Mutual Fund CSV/XLSX Importer (`js/portfolio-importer.js`)
- * Version: v1.9.4
+ * Version: v1.10.0
  * Pure Vanilla ES6+ | Zero-Server, Client-Side Only | O(1) ISIN Lookup via KYF_PORTFOLIO_ENGINE
  * Supports: Zerodha (Kite, Console, Coin), Groww (Stocks, MF), HDFC Sec, SBI Sec, ICICI Direct,
  * Angel One, Upstox, Kotak Sec, Kuvera, and CAMS / KFintech / MFCentral Consolidated Statements.
@@ -42,6 +42,7 @@ window.KYF_BROKER_IMPORTER = (() => {
       "valuation (market value)", "current market value", "current value", "market value",
       "closing value", "present value", "cur. val", "cur val", "valuation", "value"
     ],
+    PLEDGED: ["quantity pledged (margin)", "quantity pledged (loan)", "qty pledged (margin)", "qty pledged (loan)", "pledged qty", "quantity pledged", "pledged quantity"],
     INVESTOR: ["investor name", "holder name", "client name", "investor", "folio holder"]
   };
 
@@ -52,92 +53,28 @@ window.KYF_BROKER_IMPORTER = (() => {
     CURVAL: ["invested", "cost", "buy", "book", "purchase"]
   };
 
-  const BROKER_PROFILES = [
-    {
-      id: "ZERODHA_COIN",
-      label: "Zerodha Coin (MF)",
-      custodian: "Zerodha Coin",
-      defaultAssetClass: "Mutual Funds",
-      matchTokens: ["fund name", "folio number", "quantity available"]
-    },
-    {
-      id: "ZERODHA_CONSOLE",
-      label: "Zerodha Console",
-      custodian: "Zerodha",
-      defaultAssetClass: "Equities",
-      matchTokens: ["symbol", "isin", "quantity available", "average price"]
-    },
-    {
-      id: "ZERODHA_KITE",
-      label: "Zerodha Kite",
-      custodian: "Zerodha",
-      defaultAssetClass: "Equities",
-      matchTokens: ["instrument", "qty.", "avg. cost", "ltp"]
-    },
-    {
-      id: "GROWW_MF",
-      label: "Groww (Mutual Funds)",
-      custodian: "Groww",
-      defaultAssetClass: "Mutual Funds",
-      matchTokens: ["scheme name", "folio", "units", "invested"]
-    },
-    {
-      id: "GROWW_STOCKS",
-      label: "Groww (Stocks)",
-      custodian: "Groww",
-      defaultAssetClass: "Equities",
-      matchTokens: ["stock name", "isin", "quantity", "average buy price"]
-    },
-    {
-      id: "ICICI_DIRECT",
-      label: "ICICI Direct",
-      custodian: "ICICI Direct",
-      defaultAssetClass: "Equities",
-      matchTokens: ["stock symbol", "isin", "qty", "book value"]
-    },
-    {
-      id: "HDFC_SEC",
-      label: "HDFC Securities",
-      custodian: "HDFC Securities",
-      defaultAssetClass: "Equities",
-      matchTokens: ["company name", "isin", "avg cost"]
-    },
-    {
-      id: "SBI_SEC",
-      label: "SBI Securities",
-      custodian: "SBI Securities",
-      defaultAssetClass: "Equities",
-      matchTokens: ["scrip name", "holdings qty", "invested value"]
-    },
-    {
-      id: "ANGEL_ONE",
-      label: "Angel One",
-      custodian: "Angel One",
-      defaultAssetClass: "Equities",
-      matchTokens: ["scrip", "isin", "total qty"]
-    },
-    {
-      id: "UPSTOX",
-      label: "Upstox",
-      custodian: "Upstox",
-      defaultAssetClass: "Equities",
-      matchTokens: ["instrument", "isin", "net qty"]
-    },
-    {
-      id: "CAMS_KFINTECH",
-      label: "CAMS / KFintech / MFCentral",
-      custodian: "MFCentral / CAMS",
-      defaultAssetClass: "Mutual Funds",
-      matchTokens: ["scheme", "folio", "closing"]
-    },
-    {
-      id: "KUVERA_MF",
-      label: "Kuvera (Mutual Funds)",
-      custodian: "Kuvera",
-      defaultAssetClass: "Mutual Funds",
-      matchTokens: ["folio", "fund", "units"]
-    }
+  // Import sources are chosen by the user (never guessed from the file).
+  // Each source is one "bucket" per family member: importing again overwrites that bucket.
+  const IMPORT_SOURCES = [
+    { id: "zerodha_stocks", label: "Zerodha (Stocks)", custodian: "Zerodha", defaultAssetClass: "Equities" },
+    { id: "zerodha_coin", label: "Zerodha Coin (Mutual Funds)", custodian: "Zerodha Coin", defaultAssetClass: "Mutual Funds" },
+    { id: "groww_stocks", label: "Groww (Stocks)", custodian: "Groww", defaultAssetClass: "Equities" },
+    { id: "groww_mf", label: "Groww (Mutual Funds)", custodian: "Groww", defaultAssetClass: "Mutual Funds" },
+    { id: "upstox", label: "Upstox", custodian: "Upstox", defaultAssetClass: "Equities" },
+    { id: "angel_one", label: "Angel One", custodian: "Angel One", defaultAssetClass: "Equities" },
+    { id: "icici_direct", label: "ICICI Direct", custodian: "ICICI Direct", defaultAssetClass: "Equities" },
+    { id: "hdfc_sec", label: "HDFC Securities", custodian: "HDFC Securities", defaultAssetClass: "Equities" },
+    { id: "sbi_sec", label: "SBI Securities", custodian: "SBI Securities", defaultAssetClass: "Equities" },
+    { id: "kuvera", label: "Kuvera (Mutual Funds)", custodian: "Kuvera", defaultAssetClass: "Mutual Funds" },
+    { id: "mfcentral", label: "CAMS / KFintech / MFCentral", custodian: "MFCentral / CAMS", defaultAssetClass: "Mutual Funds" },
+    { id: "other_stocks", label: "Other broker (Stocks)", custodian: "Other broker", defaultAssetClass: "Equities" },
+    { id: "other_mf", label: "Other (Mutual Funds)", custodian: "Other", defaultAssetClass: "Mutual Funds" }
   ];
+
+  function getSource(id) {
+    if (id && typeof id === "object" && id.id) return id;
+    return IMPORT_SOURCES.find((x) => x.id === id) || null;
+  }
 
   // ==========================================================================
   // 1. Clean Number & Delimiter-Sniffing RFC-4180 Matrix Parser
@@ -371,9 +308,9 @@ window.KYF_BROKER_IMPORTER = (() => {
   }
 
   // ==========================================================================
-  // 3. Signature-Driven Header Sniffer & Broker Fingerprinter
+  // 3. Header-row sniffer (columns only; the source is chosen by the user)
   // ==========================================================================
-  function detectHeaderAndBroker(matrix) {
+  function detectHeader(matrix) {
     if (!Array.isArray(matrix) || matrix.length === 0) return null;
     const maxScan = Math.min(matrix.length, 40);
 
@@ -393,34 +330,7 @@ window.KYF_BROKER_IMPORTER = (() => {
       const hasQty = iQty !== -1;
 
       if (hasInstrument && hasQty) {
-        // We found the header row! Now identify the broker profile
-        let matchedProfile = null;
-        for (const profile of BROKER_PROFILES) {
-          const hits = profile.matchTokens.filter((tok) =>
-            row.some((cell) => cell.includes(tok))
-          );
-          if (hits.length === profile.matchTokens.length) {
-            matchedProfile = profile;
-            break;
-          }
-        }
-
-        // If no specific profile matched, determine generic profile
-        if (!matchedProfile) {
-          const isMf = iFolio !== -1 || row.some((c) => c.includes("scheme") || c.includes("fund") || c.includes("amfi"));
-          matchedProfile = {
-            id: isMf ? "GENERIC_MF" : "GENERIC_EQUITY",
-            label: isMf ? "Mutual Fund Statement" : "Equity Demat Statement",
-            custodian: isMf ? "Mutual Fund" : "Demat / Broker",
-            defaultAssetClass: isMf ? "Mutual Funds" : "Equities"
-          };
-        }
-
-        return {
-          headerRowIndex: r,
-          headers: row,
-          profile: matchedProfile
-        };
+        return { headerRowIndex: r, headers: row };
       }
     }
 
@@ -694,11 +604,12 @@ window.KYF_BROKER_IMPORTER = (() => {
     return out;
   }
 
-  function extractHoldingsFromMatrix(matrix, defaultMember = "Self") {
-    const detection = detectHeaderAndBroker(matrix);
+  function extractHoldingsFromMatrix(matrix, defaultMember = "Self", sourceArg) {
+    const source = getSource(sourceArg) || IMPORT_SOURCES.find((x) => x.id === "other_stocks");
+    const detection = detectHeader(matrix);
     if (!detection) return [];
 
-    const { headerRowIndex, headers, profile } = detection;
+    const { headerRowIndex, headers } = detection;
 
     const iIsin = findColumnIndex(headers, COL_CANDIDATES.ISIN);
     const iSym = findColumnIndex(headers, COL_CANDIDATES.SYMBOL);
@@ -714,6 +625,12 @@ window.KYF_BROKER_IMPORTER = (() => {
     if (iCurVal !== -1 && (iCurVal === iLtp || iCurVal === iInvested || iCurVal === iQty)) iCurVal = -1;
     if (iLtp !== -1 && (iLtp === iAvgPrice || iLtp === iQty)) iLtp = -1;
 
+    // Pledged shares are still the user's until the next import, so they count as held
+    const iPledged = [];
+    headers.forEach((h, i) => {
+      if (i !== iQty && COL_CANDIDATES.PLEDGED.some((c) => h === c || h.includes(c))) iPledged.push(i);
+    });
+
     const parsedHoldings = [];
 
     for (let r = headerRowIndex + 1; r < matrix.length; r++) {
@@ -722,7 +639,7 @@ window.KYF_BROKER_IMPORTER = (() => {
 
       // A new table starts here (e.g. "Mutual Funds" below the equities): read it with its own columns
       if (looksLikeHeaderRow(row)) {
-        return mergeSameInstrument(parsedHoldings.concat(extractHoldingsFromMatrix(matrix.slice(r), defaultMember)));
+        return mergeSameInstrument(parsedHoldings.concat(extractHoldingsFromMatrix(matrix.slice(r), defaultMember, source)));
       }
 
       // Skip completely empty rows
@@ -735,7 +652,8 @@ window.KYF_BROKER_IMPORTER = (() => {
       const isSummaryRow = !hasIsin && row.some((c) => /^(total|grand total|disclaimer|sub-total|subtotal|note:)/i.test(String(c || "").trim()));
       if (isSummaryRow) continue;
 
-      const qty = iQty !== -1 ? cleanNumber(row[iQty]) : 0;
+      const qty = (iQty !== -1 ? cleanNumber(row[iQty]) : 0)
+        + iPledged.reduce((sum, i) => sum + Math.max(0, cleanNumber(row[i])), 0);
       if (qty <= 0) continue;
 
       const rawIsin = iIsin !== -1 ? String(row[iIsin] || "").trim().toUpperCase() : "";
@@ -768,7 +686,7 @@ window.KYF_BROKER_IMPORTER = (() => {
         isin,
         symbol: rawSym,
         rawName,
-        defaultAssetClass: profile.defaultAssetClass,
+        defaultAssetClass: source.defaultAssetClass,
         // The price the statement itself implies (never the purchase price, which is not a market price)
         fileLtp: fileLtp || (fileCurVal > 0 ? fileCurVal / qty : 0)
       });
@@ -804,8 +722,9 @@ window.KYF_BROKER_IMPORTER = (() => {
         id: `hold_imp_${Date.now()}_${++idSeq}`,
         name: resolved.name,
         member: memberName,
-        custodian: profile.custodian,
-        brokerLabel: profile.label,
+        custodian: source.custodian,
+        importSource: source.id,
+        brokerLabel: source.label,
         assetClass: resolved.assetClass,
         subCategory: resolved.subCategory,
         pricingMode: resolved.pricingMode,
@@ -840,87 +759,85 @@ window.KYF_BROKER_IMPORTER = (() => {
     return s;
   }
 
-  function upsertHoldings(existingHoldings, incomingHoldings) {
-    const updated = [...(existingHoldings || [])];
-    let addedCount = 0;
-    let updatedCount = 0;
-
-    const findExistingIndex = (inc) => {
-      const incMember = (inc.member || "Self").toLowerCase().trim();
-      const incCust = normalizeCustodian(inc.custodian);
-      const incMeta = inc.instrumentMeta || {};
-      const incIsin = (incMeta.isin || "").toUpperCase().trim();
-      const incSym = (incMeta.symbol || "").toUpperCase().trim();
-      const incCode = incMeta.amfiCode ? String(incMeta.amfiCode).trim() : "";
-      const incFolio = (incMeta.folio || "").toLowerCase().trim();
-      const incName = (inc.name || "").toLowerCase().trim();
-
-      for (let i = 0; i < updated.length; i++) {
-        const prev = updated[i];
-        const prevMember = (prev.member || "Self").toLowerCase().trim();
-        if (prevMember !== incMember) continue;
-
-        const prevCust = normalizeCustodian(prev.custodian);
-        const custMatches = !prevCust || !incCust || prevCust === incCust;
-        if (!custMatches) continue;
-
-        const prevMeta = prev.instrumentMeta || {};
-        const prevIsin = (prevMeta.isin || "").toUpperCase().trim();
-        const prevSym = (prevMeta.symbol || "").toUpperCase().trim();
-        const prevCode = prevMeta.amfiCode ? String(prevMeta.amfiCode).trim() : "";
-        const prevFolio = (prevMeta.folio || "").toLowerCase().trim();
-        const prevName = (prev.name || "").toLowerCase().trim();
-
-        // If folios exist on both and don't match, they are different folios
-        if (incFolio && prevFolio && incFolio !== prevFolio) continue;
-
-        // 1. ISIN match (highest fidelity)
-        if (incIsin && prevIsin && incIsin === prevIsin) return i;
-
-        // 2. AMFI code match
-        if (incCode && prevCode && incCode === prevCode) return i;
-
-        // 3. Stock Symbol match
-        if (incSym && prevSym && incSym === prevSym) return i;
-
-        // 4. Name match (if same folio or both lack folio)
-        if (incName && prevName && incName === prevName) return i;
-      }
-      return -1;
-    };
-
-    for (const inc of incomingHoldings) {
-      const idx = findExistingIndex(inc);
-      if (idx !== -1) {
-        const prev = updated[idx];
-        updated[idx] = {
-          ...prev,
-          name: inc.name || prev.name,
-          assetClass: inc.assetClass || prev.assetClass,
-          subCategory: inc.subCategory || prev.subCategory,
-          pricingMode: inc.pricingMode || prev.pricingMode,
-          units: inc.units,
-          investedValue: inc.investedValue != null ? inc.investedValue : prev.investedValue,
-          currentValue: inc.currentValue,
-          manualCurrentValue: inc.manualCurrentValue,
-          // Strictly preserve user's existing mental-accounting goal envelopes!
-          allocations: Array.isArray(prev.allocations) && prev.allocations.length > 0 ? prev.allocations : [],
-          instrumentMeta: {
-            ...(prev.instrumentMeta || {}),
-            ...(inc.instrumentMeta || {})
-          }
-        };
-        updatedCount++;
-      } else {
-        updated.push(inc);
-        addedCount++;
-      }
-    }
-
-    return { holdings: updated, addedCount, updatedCount };
+  function sameInstrument(a, b) {
+    const am = a.instrumentMeta || {}, bm = b.instrumentMeta || {};
+    const aFolio = (am.folio || "").toLowerCase().trim();
+    const bFolio = (bm.folio || "").toLowerCase().trim();
+    if (aFolio && bFolio && aFolio !== bFolio) return false;
+    const aIsin = (am.isin || "").toUpperCase().trim(), bIsin = (bm.isin || "").toUpperCase().trim();
+    if (aIsin && bIsin) return aIsin === bIsin;
+    const aCode = am.amfiCode ? String(am.amfiCode).trim() : "", bCode = bm.amfiCode ? String(bm.amfiCode).trim() : "";
+    if (aCode && bCode) return aCode === bCode;
+    const aSym = (am.symbol || "").toUpperCase().trim(), bSym = (bm.symbol || "").toUpperCase().trim();
+    if (aSym && bSym) return aSym === bSym;
+    const aName = (a.name || "").toLowerCase().trim(), bName = (b.name || "").toLowerCase().trim();
+    return !!aName && aName === bName;
   }
 
-  async function parseFiles(fileList, defaultMember = "Self") {
+  // A bucket = one family member + one import source. It is always overwritten by the latest import:
+  // what the file lists is what is held now; anything the bucket had that the file no longer lists was sold.
+  // Matched holdings keep their id and goal allocations. Manual holdings are never touched.
+  function replaceBucket(existingHoldings, incomingHoldings, memberArg, sourceArg) {
+    const source = getSource(sourceArg);
+    if (!source) throw new Error("Choose where this file came from.");
+    const member = (memberArg || "Self").trim();
+    const memberKey = member.toLowerCase();
+    const now = new Date().toISOString();
+    const existing = existingHoldings || [];
+    const inMember = (h) => (h.member || "Self").toLowerCase().trim() === memberKey;
+    const inBucket = (h) => inMember(h) && h.importSource === source.id;
+    // Older imports carry no source: adopt them rather than duplicate (never remove them)
+    const legacy = (h) => inMember(h) && !h.importSource && !!h.custodian
+      && normalizeCustodian(h.custodian) === normalizeCustodian(source.custodian);
+
+    const bucket = existing.filter(inBucket);
+    const legacyPool = existing.filter(legacy);
+    const claimed = new Set();
+    const added = [], updated = [], removed = [];
+    const incoming = incomingHoldings || [];
+
+    const next = new Map();
+    for (const inc of incoming) {
+      let prev = bucket.find((b) => !claimed.has(b) && sameInstrument(b, inc));
+      if (!prev) prev = legacyPool.find((b) => !claimed.has(b) && sameInstrument(b, inc));
+      const fresh = { ...inc, member, importSource: source.id, custodian: source.custodian, importedAt: now };
+      if (prev) {
+        claimed.add(prev);
+        next.set(prev, {
+          ...fresh,
+          id: prev.id,
+          notes: prev.notes || fresh.notes,
+          allocations: Array.isArray(prev.allocations) ? prev.allocations : [],
+          instrumentMeta: { ...(prev.instrumentMeta || {}), ...(inc.instrumentMeta || {}) }
+        });
+        updated.push(next.get(prev));
+      } else {
+        added.push(fresh);
+      }
+    }
+    bucket.forEach((b) => { if (!claimed.has(b)) removed.push(b); });
+
+    const kept = existing
+      .filter((h) => !removed.includes(h))
+      .map((h) => next.get(h) || h);
+    return { holdings: kept.concat(added), added, updated, removed, addedCount: added.length, updatedCount: updated.length, removedCount: removed.length };
+  }
+
+  // What would importing do? Used for the preview before anything is saved.
+  function previewBucket(existingHoldings, incomingHoldings, memberArg, sourceArg) {
+    const r = replaceBucket(existingHoldings, incomingHoldings, memberArg, sourceArg);
+    const bucketSize = (existingHoldings || []).filter((h) =>
+      (h.member || "Self").toLowerCase().trim() === (memberArg || "Self").toLowerCase().trim() &&
+      h.importSource === getSource(sourceArg).id).length;
+    return {
+      ...r,
+      bucketSize,
+      removedWithGoals: r.removed.filter((h) => Array.isArray(h.allocations) && h.allocations.length > 0),
+      muchSmaller: bucketSize >= 4 && (r.updatedCount + r.addedCount) < bucketSize / 2
+    };
+  }
+
+  async function parseFiles(fileList, defaultMember = "Self", source) {
     const allHoldings = [];
     const brokersDetected = new Set();
     const membersDetected = new Set();
@@ -928,7 +845,7 @@ window.KYF_BROKER_IMPORTER = (() => {
     for (const file of Array.from(fileList || [])) {
       const sheets = await fileToMatrices(file);
       for (const { matrix } of sheets) {
-        const extracted = extractHoldingsFromMatrix(matrix, defaultMember);
+        const extracted = extractHoldingsFromMatrix(matrix, defaultMember, source);
         extracted.forEach((h) => {
           if (h.brokerLabel) brokersDetected.add(h.brokerLabel);
           if (h.member) membersDetected.add(h.member);
@@ -946,18 +863,21 @@ window.KYF_BROKER_IMPORTER = (() => {
     };
   }
 
-  async function parseFile(file, defaultMember = "Self") {
-    return parseFiles([file], defaultMember);
+  async function parseFile(file, defaultMember = "Self", source) {
+    return parseFiles([file], defaultMember, source);
   }
 
   const api = {
     parseFile,
     parseFiles,
-    upsertHoldings,
+    replaceBucket,
+    previewBucket,
+    IMPORT_SOURCES,
+    getSource,
     parseCSVToMatrix,
     parseHTMLTableToMatrix,
     detectDelimiter,
-    detectHeaderAndBroker,
+    detectHeader,
     findColumnIndex,
     normalizeSchemeName,
     determineMfPlanType,

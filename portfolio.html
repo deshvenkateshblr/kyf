@@ -14,8 +14,8 @@
   <link rel="icon" href="css/kyf_logo.png">
 
   <!-- Application Stylesheet with v1.4.8 Cache-Busting -->
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.9.4">
-  <link rel="stylesheet" href="css/portfolio.css?v=1.9.4">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.10.0">
+  <link rel="stylesheet" href="css/portfolio.css?v=1.10.0">
 </head>
 <body>
 
@@ -440,8 +440,15 @@
 
       <div class="drawer-body import-drawer-body">
         <p class="import-help-text">
-          Import holdings from your broker exports. Supports Zerodha (Kite, Console, Coin), Groww, CAMS, KFintech CAS, ICICI Direct, HDFC Sec, SBI Sec, Angel One, Upstox, and Kuvera.
+          Pick whose holdings these are and where the file came from, then add the file. Each broker keeps its own list for each person; importing again replaces that list with what the file shows now.
         </p>
+
+        <div class="form-field full import-source-field">
+          <label class="form-label" for="import-source-select">Where is this file from? *</label>
+          <select id="import-source-select" class="form-control" required>
+            <option value="">Choose broker or statement…</option>
+          </select>
+        </div>
 
         <!-- Step 1: Explicit Family Member Assignment -->
         <div class="form-field full import-member-field">
@@ -449,7 +456,7 @@
           <select id="import-member-select" class="form-control" required>
             <!-- Populated dynamically with registered members -->
           </select>
-          <div class="form-hint">All holdings from this statement will be assigned to this member.</div>
+          <div class="form-hint">Every holding in this file is assigned to this person.</div>
         </div>
 
         <!-- Step 2: Dropzone with Rich Visual Feedback -->
@@ -507,28 +514,28 @@
   <!-- ==========================================================================
        DATASETS (Auto-Generated Daily by admin/sync_market_data.py)
        ========================================================================== -->
-  <script src="data/market-pulse.js?v=1.9.4"></script>
-  <script src="data/market-corporate-actions.js?v=1.9.4"></script>
-  <script src="data/market-equities.js?v=1.9.4"></script>
-  <script src="data/market-mf.js?v=1.9.4"></script>
-  <script src="data/market-us.js?v=1.9.4"></script>
-  <script src="data/market-realestate.js?v=1.9.4"></script>
-  <script src="data/market-holidays.js?v=1.9.4"></script>
+  <script src="data/market-pulse.js?v=1.10.0"></script>
+  <script src="data/market-corporate-actions.js?v=1.10.0"></script>
+  <script src="data/market-equities.js?v=1.10.0"></script>
+  <script src="data/market-mf.js?v=1.10.0"></script>
+  <script src="data/market-us.js?v=1.10.0"></script>
+  <script src="data/market-realestate.js?v=1.10.0"></script>
+  <script src="data/market-holidays.js?v=1.10.0"></script>
 
   <!-- ==========================================================================
-       PORTFOLIO MODULE SCRIPTS (with ?v=1.9.4 Cache-Busting)
+       PORTFOLIO MODULE SCRIPTS (with ?v=1.10.0 Cache-Busting)
        ========================================================================== -->
-  <script src="js/kyf-goals.js?v=1.9.4"></script>
-  <script src="js/kyf-vault.js?v=1.9.4"></script>
-  <script src="js/portfolio-data.js?v=1.9.4"></script>
-  <script src="js/portfolio-engine.js?v=1.9.4"></script>
-  <script src="js/portfolio-importer.js?v=1.9.4"></script>
-  <script src="js/portfolio-app.js?v=1.9.4"></script>
-  <script src="js/kyf-footer.js?v=1.9.4"></script>
-  <script src="js/kyf-features.js?v=1.9.4"></script>
-  <script src="data/kyf-terms.js?v=1.9.4"></script>
-  <script src="js/kyf-nav.js?v=1.9.4"></script>
-  <script src="js/kyf-terms.js?v=1.9.4"></script>
+  <script src="js/kyf-goals.js?v=1.10.0"></script>
+  <script src="js/kyf-vault.js?v=1.10.0"></script>
+  <script src="js/portfolio-data.js?v=1.10.0"></script>
+  <script src="js/portfolio-engine.js?v=1.10.0"></script>
+  <script src="js/portfolio-importer.js?v=1.10.0"></script>
+  <script src="js/portfolio-app.js?v=1.10.0"></script>
+  <script src="js/kyf-footer.js?v=1.10.0"></script>
+  <script src="js/kyf-features.js?v=1.10.0"></script>
+  <script src="data/kyf-terms.js?v=1.10.0"></script>
+  <script src="js/kyf-nav.js?v=1.10.0"></script>
+  <script src="js/kyf-terms.js?v=1.10.0"></script>
 </body>
 </html>
 

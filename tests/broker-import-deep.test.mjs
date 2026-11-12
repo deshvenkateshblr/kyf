@@ -16,7 +16,7 @@ const EQ = sandbox.window.KYF_MARKET_EQUITIES;
 
 let n = 0;
 const ok = (c, m) => { assert.ok(c, m); n++; };
-const parse = (text, member = "Self") => imp.extractHoldingsFromMatrix(imp.parseCSVToMatrix(text), member);
+const parse = (text, member = "Self", src = "zerodha_stocks") => imp.extractHoldingsFromMatrix(imp.parseCSVToMatrix(text), member, src);
 const by = (list, re) => list.find((h) => re.test(h.name));
 
 // ---------------------------------------------------------------- column roles
@@ -29,7 +29,7 @@ const by = (list, re) => list.find((h) => re.test(h.name));
   ok(h.length === 1, "preamble, blank row, total and disclaimer are skipped");
   ok(h[0].investedValue === 12505, "Average Price x quantity gives invested when there is no Invested column");
   ok(h[0].instrumentMeta.avgBuyPrice === 1250.5, "average buy price is kept");
-  ok(h[0].custodian === "Zerodha", "Console profile recognised");
+  ok(h[0].custodian === "Zerodha", "custodian comes from the chosen source");
 }
 {
   const h = parse([
@@ -157,19 +157,59 @@ const by = (list, re) => list.find((h) => re.test(h.name));
   ok(eqBad === 0, `every listed stock resolves by ISIN and by symbol (${eqBad} wrong)`);
 }
 
-// ---------------------------------------------------------------- re-import (periodic update)
+// ---------------------------------------------------------------- re-import = overwrite the bucket
 {
-  const kite = (q, avg) => parse(`Instrument,Qty.,Avg. cost,LTP,Invested,Cur. val\nITC,${q},${avg},420,${q * avg},${q * 420}\nINFY,10,1500,1600,15000,16000`);
-  const first = imp.upsertHoldings([], kite(100, 400));
+  const kite = (q, avg, extra = "") => parse(`Instrument,Qty.,Avg. cost,LTP,Invested,Cur. val\nITC,${q},${avg},420,${q * avg},${q * 420}\nINFY,10,1500,1600,15000,16000${extra}`);
+  const put = (ex, inc, member = "Self", src = "zerodha_stocks") => imp.replaceBucket(ex, inc, member, src);
+  const first = put([], kite(100, 400));
+  ok(first.addedCount === 2 && first.holdings.every((h) => h.importSource === "zerodha_stocks" && h.importedAt), "first import fills the bucket and tags the source");
   first.holdings.find((h) => /ITC/.test(h.name)).allocations = [{ goalId: "g1", percent: 60 }];
-  const again = imp.upsertHoldings(first.holdings, kite(100, 400));
-  ok(again.addedCount === 0 && again.holdings.length === 2, "importing the same file twice adds nothing");
-  const more = imp.upsertHoldings(again.holdings, kite(150, 410));
+  const again = put(first.holdings, kite(100, 400));
+  ok(again.addedCount === 0 && again.removedCount === 0 && again.holdings.length === 2, "importing the same file twice changes nothing");
+  const more = put(again.holdings, kite(150, 410));
   const itc = more.holdings.find((h) => /ITC/.test(h.name));
   ok(itc.units === 150 && itc.investedValue === 61500, "a later file updates quantity and cost");
   ok(JSON.stringify(itc.allocations) === JSON.stringify([{ goalId: "g1", percent: 60 }]), "goal allocations survive an update");
-  const priya = imp.upsertHoldings(more.holdings, parse("Instrument,Qty.,Avg. cost,LTP\nITC,10,400,420", "Priya"));
-  ok(priya.addedCount === 1, "the same stock for another family member is a separate holding");
+  ok(itc.id === first.holdings.find((h) => /ITC/.test(h.name)).id, "id survives an update");
+
+  // sold: INFY missing from the new file leaves the bucket
+  const sold = put(more.holdings, parse("Instrument,Qty.,Avg. cost,LTP\nITC,150,410,420"));
+  ok(sold.removedCount === 1 && sold.holdings.length === 1 && /ITC/.test(sold.holdings[0].name), "a holding missing from the new file is treated as sold");
+
+  // another person / another broker are separate buckets
+  const priya = put(more.holdings, parse("Instrument,Qty.,Avg. cost,LTP\nITC,10,400,420", "Priya"), "Priya");
+  ok(priya.addedCount === 1 && priya.removedCount === 0 && priya.holdings.length === 3, "same stock for another member is a separate holding and does not touch Self");
+  const upstox = put(more.holdings, parse("Instrument,Qty.,Avg. cost,LTP\nITC,5,400,420", "Self", "upstox"), "Self", "upstox");
+  ok(upstox.addedCount === 1 && upstox.removedCount === 0 && upstox.holdings.length === 3, "same stock at another broker sits in its own bucket");
+  const fromEmpty = put(more.holdings, []);
+  ok(fromEmpty.removedCount === 2, "replaceBucket itself removes; the UI never offers an empty import");
+
+  // manual and legacy holdings
+  const manual = { id: "m1", name: "Flat", member: "Self", custodian: "", assetClass: "Real Estate", allocations: [] };
+  const legacy = { id: "l1", name: "ITC LIMITED", member: "Self", custodian: "Zerodha", assetClass: "Equities", instrumentMeta: { symbol: "ITC" }, allocations: [{ goalId: "g2", percent: 100 }] };
+  const adopt = put([manual, legacy], kite(100, 400));
+  ok(adopt.holdings.some((h) => h.id === "m1"), "manual holdings are never touched");
+  const adoptedItc = adopt.holdings.find((h) => h.id === "l1");
+  ok(adoptedItc && adoptedItc.importSource === "zerodha_stocks" && adoptedItc.allocations[0].goalId === "g2", "an older unsourced import is adopted, keeping its goal allocation");
+  ok(adopt.holdings.length === 3, "adoption does not duplicate");
+  const legacyOther = put([manual, legacy], kite(100, 400), "Self", "upstox");
+  ok(legacyOther.holdings.some((h) => h.id === "l1" && !h.importSource), "legacy Zerodha holdings are not adopted by another broker");
+
+  // preview warnings
+  const big = put([], parse("Instrument,Qty.,Avg. cost,LTP\n" + ["ITC", "INFY", "TCS", "RELIANCE", "HDFCBANK"].map((s) => `${s},1,100,100`).join("\n")));
+  const pv = imp.previewBucket(big.holdings.map((h, i) => i === 0 ? { ...h, allocations: [{ goalId: "g" }] } : h), parse("Instrument,Qty.,Avg. cost,LTP\nITC,1,100,100"), "Self", "zerodha_stocks");
+  ok(pv.muchSmaller && pv.removedCount === 4 && pv.bucketSize === 5, "a file much smaller than the saved bucket is flagged");
+  ok(pv.removedWithGoals.length === 0 || pv.removedWithGoals.length === 1, "removed holdings with goal allocations are listed");
+  let threw = false; try { imp.replaceBucket([], [], "Self", ""); } catch (e) { threw = true; }
+  ok(threw, "no source chosen means no import");
+}
+
+// ---------------------------------------------------------------- pledged shares count as held
+{
+  const h = parse("Symbol,ISIN,Quantity Available,Quantity Pledged (Margin),Quantity Pledged (Loan),Average Price,Previous Closing Price\nRELIANCE,INE002A01018,6,3,1,1250,1324");
+  ok(h.length === 1 && h[0].units === 10, "pledged (margin) and pledged (loan) are added to available");
+  const only = parse("Symbol,ISIN,Quantity Available,Quantity Pledged (Margin),Average Price,Previous Closing Price\nRELIANCE,INE002A01018,0,5,1250,1324");
+  ok(only.length === 1 && only[0].units === 5, "a fully pledged holding is still listed");
 }
 
 console.log(`broker-import-deep: ${n} checks passed`);

@@ -4,6 +4,15 @@
 
 ---
 
+## Learning: Money Word and topic pages
+
+- [x] Money Word floating card on the home page (one word at a time, Prev / Next, hide, don't show again)
+- [ ] Topic page per term (`learn.html?term=<id>`), personalised with the user's goals and holdings, falling back to the Rastogi-family story; then set `KYF_TERMS.topicPage` so "Tell me more" appears
+- [ ] **YouTube explainer video for each term** (short, one per topic): embed in place on the topic page and in the Money Word card (no redirect to YouTube); add a `video` id field to `data/kyf-terms.js`
+- [ ] CFP review of the 24 tips before wide release
+
+---
+
 AD1:  Change Pyramid to Goals, Cadence and Freedom
 
 ## 🚀 Immediate Next Implementation: Review Market Performance

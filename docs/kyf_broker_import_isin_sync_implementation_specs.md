@@ -126,3 +126,17 @@ Create a lean vanilla ES6 module `window.KYF_BROKER_IMPORTER` (~250 lines) with 
    * Add ~35 lines of styling for `.import-dropzone` and `.import-preview-table` using existing KYF design tokens (`--teal`, `--paper`, `--line`, `--mono`).
 3. **`js/portfolio-app.js`:**
    * Wire `#btn-open-import-modal` to open `#import-modal`, call `KYF_BROKER_IMPORTER.parseFile(file)` on file selection, and on confirm, save merged holdings/members to IndexedDB, exit Demo Mode if active, call `markDataChanged()`, `renderApp()`, and `showToast()`.
+---
+
+## Addendum (v1.10.0): decisions that supersede the sections above
+
+1. **No auto-detection.** The user chooses the *person* and the *source* (broker or statement type) for every import. The importer only finds the header row and maps columns; it never guesses the broker or the family member. The old "Auto-detect" member and the broker fingerprint (`BROKER_PROFILES`) are removed.
+2. **Buckets.** A bucket is one family member plus one source (`importSource` on each holding, with `importedAt`). Importing into a bucket **overwrites** it: holdings in the file are added or updated, holdings the bucket had that the file no longer lists are removed (treated as sold). There is no separate "sold" state.
+   - Matched holdings keep `id`, `allocations` and `notes`.
+   - Manual holdings (no `importSource`) are never touched.
+   - Older imports with no `importSource` are adopted by the matching custodian rather than duplicated, and are never removed.
+   - An empty parse never reaches the bucket. The preview shows "new / updated / no longer held", flags removed holdings that were set aside for goals, and warns when the file is far smaller than the saved bucket.
+3. **Overlapping sources** (same stock at two brokers, or one folio in CAMS and in Groww) stay in their own buckets. Totals, asset-class, goal and member views add them up; rows are not merged per instrument.
+4. **Pledged shares** are counted as held: Quantity Pledged (Margin) and (Loan) are added to Quantity Available. This assumes the broker's available quantity excludes pledged shares; verify against a real file.
+5. **ISINs starting IN00/IN0020** are government securities (fixed income), not gold. Only SGB names or symbols are valued as gold.
+6. API: `replaceBucket`, `previewBucket`, `IMPORT_SOURCES`, `getSource`, `detectHeader` replace `upsertHoldings` and `detectHeaderAndBroker`.
