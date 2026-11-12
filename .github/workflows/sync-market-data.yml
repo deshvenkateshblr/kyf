@@ -1,0 +1,50 @@
+name: Daily EOD Market Data Sync
+
+on:
+  schedule:
+    # 18:30 UTC = 12:00 AM IST (Monday-Friday: captures India EOD bhavcopy & final AMFI NAVs)
+    - cron: '30 18 * * 1-5'
+    # 00:30 UTC = 6:00 AM IST (Tuesday-Saturday: captures final US market closing quotes)
+    - cron: '30 0 * * 2-6'
+  workflow_dispatch: # Allows 1-click manual trigger from the GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  sync-market:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Execute KYF Market Data Sync
+        run: |
+          python admin/sync_market_data.py --skip-nhb
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Automated Verification Tests
+        run: |
+          node tests/broker-import.test.mjs
+
+      - name: Commit and Push Updated Market Data
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "No market data changes to commit."
+          else
+            git commit -m "Automated Daily EOD Market Data Sync: $(date -u +'%Y-%m-%d') [skip ci]"
+            git push
+          fi
+

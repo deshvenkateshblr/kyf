@@ -1282,9 +1282,47 @@ def fetch_sec_company_tickers(cache_dir: str = CACHE_DIR, max_age_days: int = 30
         return {}
 
 
+def fetch_remote_us_bhavcopy_from_repo() -> bool:
+    """
+    Module 5B Step 0: Fetches the latest us_bhavcopy_latest.csv from the GitHub repository
+    prior to building data/market-us.js. Ensures cloud updates are synced down to local.
+    """
+    target_path = os.path.join(DATA_DIR, "us_bhavcopy_latest.csv")
+    backup_path = os.path.join(DATA_DIR, "us_bhavcopy.csv")
+
+    candidate_urls = [
+        "https://raw.githubusercontent.com/deshvenkateshblr/kyf/master/data/us_bhavcopy_latest.csv",
+        "https://raw.githubusercontent.com/deshvenkateshblr/kyf/master/data/us_bhavcopy.csv",
+    ]
+
+    headers = {"User-Agent": "KYF_Sync/1.9 (admin@kyf.local)"}
+
+    for url in candidate_urls:
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                content = resp.read().decode("utf-8")
+                lines = [l for l in content.splitlines() if l.strip()]
+                if len(lines) > 2 and "Ticker" in lines[0]:
+                    with open(target_path, "w", encoding="utf-8") as f:
+                        f.write(content)
+                    with open(backup_path, "w", encoding="utf-8") as f:
+                        f.write(content)
+                    print(f"  [Remote Repo Fetch] Successfully fetched latest us_bhavcopy from GitHub ({len(lines) - 1} tickers)")
+                    return True
+        except Exception:
+            continue
+
+    print("  [Remote Repo Fetch] GitHub repo unreachable or offline; using local us_bhavcopy files.")
+    return False
+
+
 def build_us_market_js(horizons: dict = None):
     """Module 5B: Build data/market-us.js from data/us_bhavcopy_latest.csv (or us_bhavcopy.csv)."""
     print("\n--- Building Module 5B: data/market-us.js (US Stocks & Funds) ---")
+
+    # 0. Fetch the latest usbhavcopy from repo first before creating the data
+    fetch_remote_us_bhavcopy_from_repo()
 
     candidate_files = [
         os.path.join(DATA_DIR, "us_bhavcopy_latest.csv"),
