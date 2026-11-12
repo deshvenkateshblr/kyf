@@ -18,7 +18,7 @@
 
   var FEATURES = [
     {
-      id: "goals", group: "plan", icon: "🎯", name: "Goals", href: "goals.html", topBar: true,
+      id: "goals", topOrder: 2, group: "plan", icon: "🎯", name: "Goals", href: "goals.html", topBar: true,
       tagline: "What are you saving for?",
       can: [
         "Start from an idea (home, college, retirement, insurance) or type your own",
@@ -29,7 +29,7 @@
       cta: "Add a goal"
     },
     {
-      id: "cadence", group: "plan", icon: "🗓️", name: "Cadence", href: "cadence.html", topBar: true,
+      id: "cadence", topOrder: 4, group: "plan", icon: "🗓️", name: "Cadence", href: "cadence.html", topBar: true,
       tagline: "Money habits and goal steps",
       can: [
         "A checklist for every goal you add",
@@ -39,7 +39,7 @@
       cta: "Open the checklist"
     },
     {
-      id: "portfolio", group: "track", icon: "💼", name: "Portfolio", href: "portfolio.html", topBar: true,
+      id: "portfolio", topOrder: 3, group: "track", icon: "💼", name: "Portfolio", href: "portfolio.html", topBar: true,
       tagline: "Everything you own and owe, in one place",
       can: [
         "Add stocks, mutual funds, gold, property, FDs and loans by searching their name",
@@ -51,7 +51,7 @@
       secondary: { label: "Try it with demo data", href: "portfolio.html?demo=1" }
     },
     {
-      id: "market", group: "research", icon: "📊", name: "Market Benchmarks", short: "Markets", href: "market-performance.html", topBar: true,
+      id: "market", topOrder: 1, group: "research", icon: "📊", name: "Market Benchmarks", short: "Markets", href: "market-performance.html", topBar: true,
       tagline: "Where markets, funds, gold and property stand",
       can: [
         "Inflation, interest rates and government bond yields",
@@ -75,7 +75,7 @@
   // Not tools, but places people look for
   var EXTRAS = [
     { id: "home", name: "Home", href: "index.html", icon: "🏠", tagline: "" },
-    { id: "framework", name: "Framework", href: "index.html#framework", icon: "🧭", tagline: "How KYF thinks about money", topBar: true }
+    { id: "framework", name: "Framework", href: "index.html#framework", icon: "🧭", tagline: "How KYF thinks about money", topBar: false }
   ];
 
   global.KYF_FEATURES = {

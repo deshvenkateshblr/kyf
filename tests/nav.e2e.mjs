@@ -81,8 +81,9 @@ for (const name of ["index", "goals", "cadence", "portfolio", "market-performanc
   seenBars.add((await dpage.locator(".nav-links > a, .nav-links > button").allTextContents()).join("|"));
   check(!(await dpage.locator("#kyfMenuBtn").isVisible()), `${name}: no ☰ button on desktop`);
   const links = await dpage.locator(".nav-links > a").allTextContents();
-  check(["Goals", "Cadence", "Portfolio", "Markets", "Framework"].every((l) => links.includes(l)), `${name}: same primary links on every page`);
+  check(["Goals", "Cadence", "Portfolio", "Markets"].every((l) => links.includes(l)), `${name}: same primary links on every page`);
 }
+check([...seenBars][0].startsWith("Markets|Goals|Portfolio|Cadence|"), "top bar order is Markets, Goals, Portfolio, Cadence, then Open and Save: " + [...seenBars][0]);
 check(seenBars.size === 1, "the top bar is identical on every page, home included: " + [...seenBars].join(" // "));
 await dpage.goto(`${base}goals.html`);
 check((await dpage.locator(".nav-links > a.active").textContent()) === "Goals", "the current page's link is highlighted");
