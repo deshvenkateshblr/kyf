@@ -45,6 +45,26 @@ await page.waitForTimeout(800);
 ok(await page.evaluate(() => localStorage.getItem("kyf_demo_mode")) === "true", "demo flag set");
 ok(errs.length === 0, "no page errors: " + errs.join("|"));
 
+// ---------- Open / Save from the home page ----------
+{
+  const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, acceptDownloads: true });
+  const p = await ctx.newPage();
+  const perrs = []; p.on("pageerror", e => perrs.push(e.message));
+  await p.goto(base + "/index.html");
+  await p.evaluate(() => localStorage.setItem("kyf_user_goals", JSON.stringify([{ id: "g1", name: "Car", targetAmount: 500000, years: 3 }, { id: "g2", name: "Trip", targetAmount: 100000, years: 1 }])));
+  const [dl] = await Promise.all([p.waitForEvent("download", { timeout: 8000 }), p.click("#navSaveDataBtn")]);
+  const file = await dl.path();
+  ok(/\.kyf$/.test(dl.suggestedFilename()), "Save on home downloads a .kyf file: " + dl.suggestedFilename());
+  await p.evaluate(() => { localStorage.clear(); });
+  await p.reload();
+  ok(await p.locator("#welcomeBack").isHidden(), "nothing saved, no welcome back");
+  await p.setInputFiles("#kyfFileInput", file);
+  await p.waitForFunction(() => !document.getElementById("welcomeBack").hidden, null, { timeout: 8000 });
+  ok(/2 goals/.test(await p.locator("#welcomeBack").innerText()), "Open on home restores the data and refreshes Welcome back: " + await p.locator("#welcomeBack").innerText());
+  ok(perrs.length === 0, "home open/save: no page errors " + perrs.join("|"));
+  await ctx.close();
+}
+
 // ---------- Money Word ----------
 {
   const ctx = await b.newContext({ viewport: { width: 390, height: 800 } });
@@ -63,9 +83,9 @@ ok(errs.length === 0, "no page errors: " + errs.join("|"));
   // top menu comes from the catalog on home too
   await p.setViewportSize({ width: 1280, height: 800 });
   const topLinks = await p.locator(".nav-links > a:not(.btn)").allInnerTexts();
-  ok(["Goals","Cadence","Portfolio","Market Benchmarks"].every(t => topLinks.some(x => x.trim().toLowerCase() === t.toLowerCase())), "home top bar lists the catalog tools: " + topLinks.join(","));
-  ok(await p.locator(".nav-links a.btn-nav").isVisible(), "home top bar keeps the Start button");
-  ok(await p.locator(".nav-dropdown-toggle").isVisible(), "home top bar keeps the Framework dropdown");
+  ok(["Goals","Cadence","Portfolio","Markets","Framework"].every(t => topLinks.some(x => x.trim().toLowerCase() === t.toLowerCase())), "home top bar lists the catalog tools: " + topLinks.join(","));
+  ok(await p.locator("#navOpenFileBtn").isVisible() && await p.locator("#navSaveDataBtn").isVisible(), "home top bar has Open and Save like every page");
+  ok(await p.locator(".nav-dropdown, .btn-nav").count() === 0, "home has no extra marketing nav items");
   await p.setViewportSize({ width: 390, height: 800 });
   ok(await p.locator('.mw-btn[aria-label="Previous word"]').isDisabled(), "Prev is disabled on the first word");
   ok(/1 of 24/.test(await p.locator(".mw-count").innerText()), "position is shown");

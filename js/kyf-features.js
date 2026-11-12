@@ -51,7 +51,7 @@
       secondary: { label: "Try it with demo data", href: "portfolio.html?demo=1" }
     },
     {
-      id: "market", group: "research", icon: "📊", name: "Market Benchmarks", href: "market-performance.html", topBar: true,
+      id: "market", group: "research", icon: "📊", name: "Market Benchmarks", short: "Markets", href: "market-performance.html", topBar: true,
       tagline: "Where markets, funds, gold and property stand",
       can: [
         "Inflation, interest rates and government bond yields",

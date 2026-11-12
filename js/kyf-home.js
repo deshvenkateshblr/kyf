@@ -91,6 +91,19 @@
   renderTools();
   renderWelcomeBack();
 
+  // Opening a .kyf file from the top bar refreshes the "Welcome back" counts
+  if (window.KYF_VAULT && typeof window.KYF_VAULT.registerPageHook === "function") {
+    window.KYF_VAULT.registerPageHook({
+      pageName: "home",
+      getLocalData: function () { return {}; },
+      onAfterOpen: function () {
+        var host = document.getElementById("welcomeBack");
+        if (host) { host.textContent = ""; host.hidden = true; }
+        renderWelcomeBack();
+      }
+    });
+  }
+
 // Walkthrough video: load only on click so no third-party request is made until the visitor asks.
 (function () {
   var btn = document.getElementById('playBtn');

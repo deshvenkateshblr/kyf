@@ -337,7 +337,6 @@ footer { background: var(--ink); color: #aebbb4; padding: 32px 0; font-size: 13p
   .journey::before { left: 27px; right: auto; top: 0; bottom: 0; width: 2px; height: auto; background: repeating-linear-gradient(180deg, var(--ink) 0 8px, transparent 8px 16px); }
   .step { display: grid; grid-template-columns: 54px 1fr; gap: 0 18px; text-align: left; align-items: start; }
   .step .pin { margin: 0; grid-row: span 3; }
-  .nav-links a:not(.btn), .nav-links .nav-dropdown { display: none; }
 }
 @media (max-width: 520px) {
   .cta-row .btn { width: 100%; }

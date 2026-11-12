@@ -73,13 +73,17 @@ for (const name of pages) {
 console.log("[desktop]");
 const dctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
 const dpage = await dctx.newPage();
-for (const name of ["goals", "cadence", "portfolio", "market-performance", "real-estate-calculator"]) {
+const seenBars = new Set();
+for (const name of ["index", "goals", "cadence", "portfolio", "market-performance", "real-estate-calculator"]) {
   await dpage.goto(`${base}${name}.html`);
   await dpage.waitForSelector(".nav-links");
+  await dpage.waitForSelector("#navSaveDataBtn");
+  seenBars.add((await dpage.locator(".nav-links > a, .nav-links > button").allTextContents()).join("|"));
   check(!(await dpage.locator("#kyfMenuBtn").isVisible()), `${name}: no ☰ button on desktop`);
   const links = await dpage.locator(".nav-links > a").allTextContents();
-  check(["Goals", "Cadence", "Portfolio", "Market Benchmarks", "Framework"].every((l) => links.includes(l)), `${name}: same primary links on every page`);
+  check(["Goals", "Cadence", "Portfolio", "Markets", "Framework"].every((l) => links.includes(l)), `${name}: same primary links on every page`);
 }
+check(seenBars.size === 1, "the top bar is identical on every page, home included: " + [...seenBars].join(" // "));
 await dpage.goto(`${base}goals.html`);
 check((await dpage.locator(".nav-links > a.active").textContent()) === "Goals", "the current page's link is highlighted");
 
