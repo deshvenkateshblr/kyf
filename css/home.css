@@ -315,7 +315,7 @@ footer { background: var(--ink); color: #aebbb4; padding: 32px 0; font-size: 13p
 .foot { display: flex; flex-wrap: wrap; gap: 14px 40px; justify-content: space-between; align-items: center; }
 .foot a { color: #fff; text-decoration: none; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
 .foot a:hover { color: var(--amber); }
-.foot .links { display: flex; gap: 24px; }
+.foot .links { display: flex; flex-wrap: wrap; gap: 10px 24px; }
 
 /* Reveal */
 .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
@@ -361,3 +361,34 @@ em.accent { color: var(--teal); }
 .final-actions { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
 .btn.btn-ghost-light { background: transparent; border-color: #fff; color: #fff; }
 .tool-fallback { display: flex; flex-wrap: wrap; gap: 12px; list-style: none; padding: 0; }
+
+/* ---------- What you can do here ---------- */
+.tools { padding: clamp(40px, 5vw, 64px) 0; background: var(--paper); }
+.welcome-back { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; padding: 14px 18px; margin-bottom: 24px; border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: 10px; background: #fff; }
+.welcome-back[hidden] { display: none; }
+.welcome-back p { margin: 0; font-weight: 600; }
+.wb-links { display: flex; gap: 16px; }
+.wb-links a { color: var(--teal); font-weight: 700; text-decoration: none; }
+.start-path { list-style: none; padding: 0; margin: 28px 0 36px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.start-path li { margin: 0; }
+.start-path a { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; text-decoration: none; color: inherit; height: 100%; }
+.start-path a:hover { border-color: var(--teal); }
+.sp-num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--teal); color: #fff; font-weight: 700; display: grid; place-items: center; }
+.sp-text strong { display: block; }
+.sp-text small { display: block; margin-top: 2px; color: var(--ink-soft); line-height: 1.4; }
+.tool-groups { display: block; }
+.tool-group { padding: 0; margin-bottom: 30px; }
+.tool-group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 12px; }
+.tool-group-head h3 { margin: 0; font-size: 22px; font-family: var(--serif, Georgia, serif); }
+.tool-group-head span { color: var(--ink-soft); font-size: 14px; }
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.tool-card { display: flex; flex-direction: column; padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+.tool-top { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.tool-icon { font-size: 28px; line-height: 1; }
+.tool-card h4 { margin: 0; font-size: 17px; }
+.tool-tag { margin: 2px 0 0; color: var(--ink-soft); font-size: 14px; }
+.tool-can { margin: 0 0 16px; padding-left: 18px; line-height: 1.5; font-size: 14px; flex: 1; }
+.tool-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.tool-secondary { color: var(--teal); font-size: 13px; font-weight: 600; }
+.vault-note { margin-top: 8px; padding: 14px 18px; border-radius: 10px; background: #fff; border: 1px dashed var(--line); font-size: 14px; color: var(--ink-soft); }
+@media (max-width: 720px) { .start-path { grid-template-columns: 1fr; } }

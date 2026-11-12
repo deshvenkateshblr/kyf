@@ -1,0 +1,75 @@
+/* Term tips: the "?" next to a finance word and its popover (js/kyf-terms.js) */
+button.kyf-term {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin: 0 0 0 4px;
+  padding: 0;
+  vertical-align: 1px;
+  border: 1px solid #1f7a6c;
+  border-radius: 50%;
+  background: #e3f0ec;
+  color: #145a4f;
+  font: 700 10px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+  position: relative;
+}
+/* Larger touch target without a larger icon */
+button.kyf-term::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+}
+button.kyf-term:hover,
+button.kyf-term[aria-expanded="true"] { background: #1f7a6c; color: #fff; }
+button.kyf-term:focus-visible { outline: 2px solid #145a4f; outline-offset: 2px; }
+
+.kyf-tip {
+  position: fixed;
+  z-index: 2000;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid #d7ddd2;
+  border-top: 3px solid #1f7a6c;
+  border-radius: 10px;
+  background: #fff;
+  color: #1c2a24;
+  box-shadow: 0 8px 28px rgba(24, 38, 32, 0.22);
+  font: 400 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  text-align: left;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.kyf-tip[hidden] { display: none; }
+.kyf-tip-title { display: block; margin-bottom: 4px; font-size: 15px; }
+.kyf-tip-body { margin: 0 0 10px; }
+.kyf-tip-more { display: inline-block; margin-right: 14px; color: #145a4f; font-weight: 700; text-decoration: none; }
+.kyf-tip-more[hidden] { display: none; }
+.kyf-tip-off {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #5b6b63;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media print { button.kyf-term, .kyf-tip { display: none; } }
+
+/* Footer switch, styled like the footer's Refresh pill */
+.kyf-footer-switch {
+  padding: 3px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #eef1ea;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
