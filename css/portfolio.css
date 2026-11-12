@@ -785,8 +785,22 @@ button {
   gap: 10px;
 }
 
+.kpi-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.currency-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .view-tabs-segmented,
-.horizon-segmented {
+.horizon-segmented,
+.currency-segmented {
   display: inline-flex;
   background: var(--paper);
   border: 1px solid var(--line);
@@ -796,7 +810,8 @@ button {
 }
 
 .view-tab-btn,
-.horizon-btn {
+.horizon-btn,
+.currency-btn {
   padding: 5px 12px;
   font-family: var(--mono);
   font-size: 11px;
@@ -809,19 +824,45 @@ button {
   border-radius: 999px;
   transition: all 0.15s ease;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .view-tab-btn.active,
-.horizon-btn.active {
+.horizon-btn.active,
+.currency-btn.active {
   background: var(--teal);
   color: #FFFFFF;
   box-shadow: 0 2px 6px rgba(31, 122, 108, 0.3);
 }
 
 .view-tab-btn:hover:not(.active),
-.horizon-btn:hover:not(.active) {
+.horizon-btn:hover:not(.active),
+.currency-btn:hover:not(.active) {
   background: rgba(31, 122, 108, 0.1);
   color: var(--teal-deep);
+}
+
+.btn-reset-member-scope {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(31, 122, 108, 0.12);
+  color: var(--teal-deep, #0b6b6d);
+  border: 1px solid var(--teal, #1f7a6c);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 6px;
+  vertical-align: middle;
+  transition: all 0.15s ease;
+  line-height: 1.4;
+}
+
+.btn-reset-member-scope:hover {
+  background: var(--teal, #1f7a6c);
+  color: #FFFFFF;
 }
 
 /* Toolbar Action Buttons */

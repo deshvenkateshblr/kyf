@@ -14,8 +14,8 @@
   <link rel="icon" href="css/kyf_logo.png">
 
   <!-- Application Stylesheet with v1.4.8 Cache-Busting -->
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.10.0">
-  <link rel="stylesheet" href="css/portfolio.css?v=1.10.0">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.11.0">
+  <link rel="stylesheet" href="css/portfolio.css?v=1.11.0">
 </head>
 <body>
 
@@ -101,15 +101,26 @@
         </div>
       </div>
 
-      <!-- Return Horizon Toggle (1M | 3M | 6M | 1Y | All-Time) -->
-      <div class="horizon-control">
-        <span class="toolbar-label">Horizon:</span>
-        <div class="horizon-segmented" role="radiogroup" aria-label="Return Horizon">
-          <button type="button" class="horizon-btn" data-horizon="1m">1M</button>
-          <button type="button" class="horizon-btn" data-horizon="3m">3M</button>
-          <button type="button" class="horizon-btn" data-horizon="6m">6M</button>
-          <button type="button" class="horizon-btn active" data-horizon="1y">1Y</button>
-          <button type="button" class="horizon-btn" data-horizon="all">All</button>
+      <div class="kpi-header-right">
+        <!-- Currency View Toggle (₹ INR | $ USD) -->
+        <div class="currency-control" id="portfolio-currency-control">
+          <span class="toolbar-label">Currency:</span>
+          <div class="currency-segmented" role="radiogroup" aria-label="Portfolio Currency">
+            <button type="button" class="currency-btn active" data-curr="INR" title="View portfolio in Indian Rupees (₹)">₹ INR</button>
+            <button type="button" class="currency-btn" data-curr="USD" title="View portfolio in US Dollars ($)">$ USD</button>
+          </div>
+        </div>
+
+        <!-- Return Horizon Toggle (1M | 3M | 6M | 1Y | All-Time) -->
+        <div class="horizon-control">
+          <span class="toolbar-label">Horizon:</span>
+          <div class="horizon-segmented" role="radiogroup" aria-label="Return Horizon">
+            <button type="button" class="horizon-btn" data-horizon="1m">1M</button>
+            <button type="button" class="horizon-btn" data-horizon="3m">3M</button>
+            <button type="button" class="horizon-btn" data-horizon="6m">6M</button>
+            <button type="button" class="horizon-btn active" data-horizon="1y">1Y</button>
+            <button type="button" class="horizon-btn" data-horizon="all">All</button>
+          </div>
         </div>
       </div>
     </div>
@@ -210,13 +221,13 @@
           <span class="sort-arrow">⇅</span>
         </div>
 
-        <div class="th-sortable tree-col-right th-hide-mobile" data-sort="investedValue" role="columnheader" title="Click to sort by Invested Value">
-          <span>Invested (₹)</span>
+        <div class="th-sortable tree-col-right th-hide-mobile" id="th-invested-header" data-sort="investedValue" role="columnheader" title="Click to sort by Invested Value">
+          <span id="th-invested-title">Invested (₹)</span>
           <span class="sort-arrow">⇅</span>
         </div>
 
-        <div class="th-sortable tree-col-right sorted" data-sort="currentValue" role="columnheader" title="Click to sort by Current Live Value">
-          <span>Current Value (₹)</span>
+        <div class="th-sortable tree-col-right sorted" id="th-curval-header" data-sort="currentValue" role="columnheader" title="Click to sort by Current Live Value">
+          <span id="th-curval-title">Current Value (₹)</span>
           <span class="sort-arrow">▼</span>
         </div>
 
@@ -550,29 +561,29 @@
   <!-- ==========================================================================
        DATASETS (Auto-Generated Daily by admin/sync_market_data.py)
        ========================================================================== -->
-  <script src="data/market-status.js?v=1.10.0"></script>
-  <script src="data/market-pulse.js?v=1.10.0"></script>
-  <script src="data/market-corporate-actions.js?v=1.10.0"></script>
-  <script src="data/market-equities.js?v=1.10.0"></script>
-  <script src="data/market-mf.js?v=1.10.0"></script>
-  <script src="data/market-us.js?v=1.10.0"></script>
-  <script src="data/market-realestate.js?v=1.10.0"></script>
-  <script src="data/market-holidays.js?v=1.10.0"></script>
+  <script src="data/market-status.js?v=1.11.0"></script>
+  <script src="data/market-pulse.js?v=1.11.0"></script>
+  <script src="data/market-corporate-actions.js?v=1.11.0"></script>
+  <script src="data/market-equities.js?v=1.11.0"></script>
+  <script src="data/market-mf.js?v=1.11.0"></script>
+  <script src="data/market-us.js?v=1.11.0"></script>
+  <script src="data/market-realestate.js?v=1.11.0"></script>
+  <script src="data/market-holidays.js?v=1.11.0"></script>
 
   <!-- ==========================================================================
-       PORTFOLIO MODULE SCRIPTS (with ?v=1.10.0 Cache-Busting)
+       PORTFOLIO MODULE SCRIPTS (with ?v=1.11.0 Cache-Busting)
        ========================================================================== -->
-  <script src="js/kyf-goals.js?v=1.10.0"></script>
-  <script src="js/kyf-vault.js?v=1.10.0"></script>
-  <script src="js/portfolio-data.js?v=1.10.0"></script>
-  <script src="js/portfolio-engine.js?v=1.10.0"></script>
-  <script src="js/portfolio-importer.js?v=1.10.0"></script>
-  <script src="js/portfolio-app.js?v=1.10.0"></script>
-  <script src="js/kyf-footer.js?v=1.10.0"></script>
-  <script src="js/kyf-features.js?v=1.10.0"></script>
-  <script src="data/kyf-terms.js?v=1.10.0"></script>
-  <script src="js/kyf-nav.js?v=1.10.0"></script>
-  <script src="js/kyf-terms.js?v=1.10.0"></script>
+  <script src="js/kyf-goals.js?v=1.11.0"></script>
+  <script src="js/kyf-vault.js?v=1.11.0"></script>
+  <script src="js/portfolio-data.js?v=1.11.0"></script>
+  <script src="js/portfolio-engine.js?v=1.11.0"></script>
+  <script src="js/portfolio-importer.js?v=1.11.0"></script>
+  <script src="js/portfolio-app.js?v=1.11.0"></script>
+  <script src="js/kyf-footer.js?v=1.11.0"></script>
+  <script src="js/kyf-features.js?v=1.11.0"></script>
+  <script src="data/kyf-terms.js?v=1.11.0"></script>
+  <script src="js/kyf-nav.js?v=1.11.0"></script>
+  <script src="js/kyf-terms.js?v=1.11.0"></script>
 </body>
 </html>
 

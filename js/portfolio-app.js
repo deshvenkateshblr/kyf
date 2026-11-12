@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.10.0
+ * Version: v1.11.0
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let activeDimension = "assetClass"; // "assetClass" | "goal" | "custodian" | "member"
   let selectedPills = "ALL";          // "ALL" or Set of string keys within active view
   let activeHorizon = "1y";           // "1m" | "3m" | "6m" | "1y" | "all"
+  let activeCurrency = localStorage.getItem("kyf_portfolio_currency") || "INR"; // "INR" | "USD"
   let sortKey = "currentValue";       // "name" | "member" | "assetClass" | "units" | "investedValue" | "currentValue" | "returnPct"
   let sortDirection = "desc";         // "asc" | "desc"
   let expandAllState = true;
@@ -60,6 +61,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     toggleExpandBtn: document.getElementById("btn-toggle-expand"),
     thSecondaryHeader: document.getElementById("th-secondary-header"),
     thSecondaryTitle: document.getElementById("th-secondary-title"),
+    thInvestedTitle: document.getElementById("th-invested-title"),
+    thCurValTitle: document.getElementById("th-curval-title"),
     thReturnHeader: document.getElementById("th-return-header"),
     // App-level Navigation Bar elements
     navOpenFileBtn: document.getElementById("navOpenFileBtn"),
@@ -155,6 +158,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     return `${sign}₹${abs.toLocaleString("en-IN")}`;
+  }
+
+  function formatUSD(val, compact = false) {
+    if (val == null || val === "" || isNaN(val)) return "—";
+    const num = Number(val);
+    const abs = Math.abs(num);
+    const sign = num < 0 ? "-" : "";
+
+    if (compact) {
+      if (abs >= 1000000) {
+        return `${sign}$${(abs / 1000000).toFixed(2)}M`;
+      }
+      if (abs >= 10000) {
+        return `${sign}$${(abs / 1000).toFixed(1)}K`;
+      }
+    }
+
+    return `${sign}$${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   function formatPct(val) {
@@ -623,40 +644,112 @@ document.addEventListener("DOMContentLoaded", async () => {
       activeHorizon
     );
 
-    // 8. Update KPI Hero Cards (Reflects Active Family Scope & Active Slicers)
+    // 8. Update KPI Hero Cards (Reflects Active Family Scope, Active Currency & Slicers)
     const kpis = pivotResult.kpis;
-    if (els.kpiNetWorth) els.kpiNetWorth.textContent = formatINR(kpis.totalPortfolioValue, true);
-    if (els.kpiInvested) els.kpiInvested.textContent = formatINR(kpis.totalPortfolioInvested, true);
+    const fxDefault = (window.KYF_MARKET_US && Number(window.KYF_MARKET_US.fxRateUsdInr)) ||
+                      (window.KYF_MARKET_PULSE && window.KYF_MARKET_PULSE.macro && Number(window.KYF_MARKET_PULSE.macro.usdInrRate)) ||
+                      87.50;
 
-    if (els.kpiNetWorthSub) {
-      let scopeLabel = "All Family";
-      if (activeMemberScope instanceof Set) {
-        scopeLabel = Array.from(activeMemberScope).join(", ");
-      }
-      const unitWord = activeDimension === "goal" ? "slices" : "holdings";
-      const totalUsdWorth = enriched.reduce((sum, h) => sum + (h.currency === "USD" ? (h.currentValueUSD || 0) : 0), 0);
-      const usdNote = totalUsdWorth > 0 ? ` • Includes $${totalUsdWorth.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})} in US assets` : "";
-      els.kpiNetWorthSub.textContent = kpis.totalLiabilities > 0
-        ? `Assets ${formatINR(kpis.totalAssets, true)} − Debt ${formatINR(kpis.totalLiabilities, true)} • ${scopeLabel} (${kpis.holdingsCount} ${unitWord})${usdNote}`
-        : `Scope: ${scopeLabel} (${kpis.holdingsCount} ${unitWord})${usdNote}`;
+    // Scoped USD totals (strictly for holdings currently visible in scope)
+    const scopedUsdWorth = scopedHoldings.reduce((sum, h) => sum + (h.currency === "USD" ? (h.currentValueUSD || 0) : 0), 0);
+    const scopedUsdInvested = scopedHoldings.reduce((sum, h) => sum + (h.currency === "USD" ? (h.investedValueUSD || 0) : 0), 0);
+    const allScopedAreUsd = scopedHoldings.length > 0 && scopedHoldings.every(h => h.currency === "USD" || h.pricingMode === "LIVE_US");
+
+    // Sync currency toggle buttons in header
+    document.querySelectorAll(".currency-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-curr") === activeCurrency);
+    });
+
+    // Update column headers for Invested and Current Value
+    if (els.thInvestedTitle) {
+      els.thInvestedTitle.textContent = activeCurrency === "USD" ? "Invested ($)" : "Invested (₹)";
+    }
+    if (els.thCurValTitle) {
+      els.thCurValTitle.textContent = activeCurrency === "USD" ? "Current Value ($)" : "Current Value (₹)";
     }
 
-    if (els.kpiReturnPct && els.kpiGainLoss) {
-      if (kpis.activeHorizonReturnPct != null) {
-        const isPositive = kpis.activeHorizonReturnPct >= 0;
-        const gainSign = isPositive ? "+" : "";
-        els.kpiReturnPct.textContent = formatPct(kpis.activeHorizonReturnPct);
-        els.kpiGainLoss.textContent = `${gainSign}${formatINR(kpis.totalPortfolioGainLoss, true)}`;
-        els.kpiReturnPct.className = `return-badge ${isPositive ? "positive" : "negative"}`;
-      } else {
-        els.kpiReturnPct.textContent = "—";
-        els.kpiGainLoss.textContent = "—";
-        els.kpiReturnPct.className = "return-badge neutral";
+    let scopeLabel = "All Family";
+    if (activeMemberScope instanceof Set) {
+      scopeLabel = Array.from(activeMemberScope).join(", ");
+    }
+    const unitWord = activeDimension === "goal" ? "slices" : "holdings";
+    const resetScopeBtnHTML = (activeMemberScope instanceof Set)
+      ? ` <button type="button" class="btn-reset-member-scope" id="btn-reset-member-scope" title="Reset filter to show all family members">✕ Show All Family</button>`
+      : "";
+
+    if (activeCurrency === "USD") {
+      const totalPortfolioUSD = (scopedUsdWorth > 0 && allScopedAreUsd)
+        ? scopedUsdWorth
+        : (kpis.totalPortfolioValue / fxDefault);
+      const totalInvestedUSD = (scopedUsdInvested > 0 && allScopedAreUsd)
+        ? scopedUsdInvested
+        : (kpis.totalPortfolioInvested / fxDefault);
+      const totalGainUSD = totalPortfolioUSD - totalInvestedUSD;
+
+      if (els.kpiNetWorth) els.kpiNetWorth.textContent = formatUSD(totalPortfolioUSD, totalPortfolioUSD >= 10000);
+      if (els.kpiInvested) els.kpiInvested.textContent = formatUSD(totalInvestedUSD, totalInvestedUSD >= 10000);
+
+      if (els.kpiNetWorthSub) {
+        const inrEquivalent = formatINR(kpis.totalPortfolioValue, true);
+        els.kpiNetWorthSub.innerHTML = `Scope: ${escapeHTML(scopeLabel)} (${kpis.holdingsCount} ${unitWord}) &bull; &asymp; ${inrEquivalent} (@ ₹${fxDefault.toFixed(2)}/\$)${resetScopeBtnHTML}`;
       }
-      if (els.kpiGainSub) {
-        const hLabel = activeHorizon === "all" ? "All-Time" : activeHorizon.toUpperCase();
-        els.kpiGainSub.textContent = `${hLabel} return`;
+
+      if (els.kpiReturnPct && els.kpiGainLoss) {
+        if (kpis.activeHorizonReturnPct != null) {
+          const isPositive = kpis.activeHorizonReturnPct >= 0;
+          const gainSign = isPositive ? "+" : "";
+          els.kpiReturnPct.textContent = formatPct(kpis.activeHorizonReturnPct);
+          els.kpiGainLoss.textContent = `${gainSign}${formatUSD(totalGainUSD, Math.abs(totalGainUSD) >= 10000)}`;
+          els.kpiReturnPct.className = `return-badge ${isPositive ? "positive" : "negative"}`;
+        } else {
+          els.kpiReturnPct.textContent = "—";
+          els.kpiGainLoss.textContent = "—";
+          els.kpiReturnPct.className = "return-badge neutral";
+        }
+        if (els.kpiGainSub) {
+          const hLabel = activeHorizon === "all" ? "All-Time" : activeHorizon.toUpperCase();
+          els.kpiGainSub.textContent = `${hLabel} return`;
+        }
       }
+    } else {
+      // INR Mode
+      if (els.kpiNetWorth) els.kpiNetWorth.textContent = formatINR(kpis.totalPortfolioValue, true);
+      if (els.kpiInvested) els.kpiInvested.textContent = formatINR(kpis.totalPortfolioInvested, true);
+
+      if (els.kpiNetWorthSub) {
+        const usdNote = scopedUsdWorth > 0
+          ? ` &bull; Includes $${scopedUsdWorth.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} in US assets`
+          : "";
+        els.kpiNetWorthSub.innerHTML = kpis.totalLiabilities > 0
+          ? `Assets ${formatINR(kpis.totalAssets, true)} &minus; Debt ${formatINR(kpis.totalLiabilities, true)} &bull; ${escapeHTML(scopeLabel)} (${kpis.holdingsCount} ${unitWord})${usdNote}${resetScopeBtnHTML}`
+          : `Scope: ${escapeHTML(scopeLabel)} (${kpis.holdingsCount} ${unitWord})${usdNote}${resetScopeBtnHTML}`;
+      }
+
+      if (els.kpiReturnPct && els.kpiGainLoss) {
+        if (kpis.activeHorizonReturnPct != null) {
+          const isPositive = kpis.activeHorizonReturnPct >= 0;
+          const gainSign = isPositive ? "+" : "";
+          els.kpiReturnPct.textContent = formatPct(kpis.activeHorizonReturnPct);
+          els.kpiGainLoss.textContent = `${gainSign}${formatINR(kpis.totalPortfolioGainLoss, true)}`;
+          els.kpiReturnPct.className = `return-badge ${isPositive ? "positive" : "negative"}`;
+        } else {
+          els.kpiReturnPct.textContent = "—";
+          els.kpiGainLoss.textContent = "—";
+          els.kpiReturnPct.className = "return-badge neutral";
+        }
+        if (els.kpiGainSub) {
+          const hLabel = activeHorizon === "all" ? "All-Time" : activeHorizon.toUpperCase();
+          els.kpiGainSub.textContent = `${hLabel} return`;
+        }
+      }
+    }
+
+    const resetScopeBtn = document.getElementById("btn-reset-member-scope");
+    if (resetScopeBtn) {
+      resetScopeBtn.addEventListener("click", () => {
+        activeMemberScope = "ALL";
+        renderApp();
+      });
     }
 
     // 9. Update Sort Indicators in Header
@@ -882,14 +975,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             <!-- Col 3: Total Invested (Hidden on Mobile via .cell-hide-mobile) -->
             <div class="tree-group-num-cell tree-col-right mono-num cell-hide-mobile">
-              ${formatINR(group.totalInvested)}
-              ${groupUsdInvested > 0 ? `<div style="font-size:11px;color:var(--muted);font-weight:normal;margin-top:2px;">(inc. $${groupUsdInvested.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})})</div>` : ""}
+              ${activeCurrency === "USD"
+                ? (groupUsdInvested > 0 || group.totalInvested > 0
+                    ? `<div><span style="font-weight:600;">${formatUSD(groupUsdInvested > 0 ? groupUsdInvested : (group.totalInvested / fxDefault))}</span><div style="font-size:11px;color:var(--muted);font-weight:normal;margin-top:2px;">≈ ${formatINR(group.totalInvested, true)}</div></div>`
+                    : "—")
+                : formatINR(group.totalInvested)
+              }
+              ${activeCurrency === "INR" && groupUsdInvested > 0 ? `<div style="font-size:11px;color:var(--muted);font-weight:normal;margin-top:2px;">(inc. $${groupUsdInvested.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})})</div>` : ""}
             </div>
 
             <!-- Col 4: Total Current Value (Visible on both Desktop and Mobile) -->
             <div class="tree-group-num-cell tree-col-right mono-num group-value-cell${group.totalCurrentValue < 0 ? " is-debt" : ""}">
-              ${formatINR(group.totalCurrentValue)}
-              ${groupUsdTotal > 0 ? `<div style="font-size:11px;color:var(--teal, #0b6b6d);font-weight:normal;margin-top:2px;">(inc. $${groupUsdTotal.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})})</div>` : ""}
+              ${activeCurrency === "USD"
+                ? (groupUsdTotal > 0 || group.totalCurrentValue > 0
+                    ? `<div><span style="font-weight:700;color:var(--teal, #0b6b6d);">${formatUSD(groupUsdTotal > 0 ? groupUsdTotal : (group.totalCurrentValue / fxDefault))}</span><div style="font-size:11.5px;color:var(--muted);font-weight:normal;margin-top:2px;">≈ ${formatINR(group.totalCurrentValue, true)}</div></div>`
+                    : "—")
+                : formatINR(group.totalCurrentValue)
+              }
+              ${activeCurrency === "INR" && groupUsdTotal > 0 ? `<div style="font-size:11px;color:var(--teal, #0b6b6d);font-weight:normal;margin-top:2px;">(inc. $${groupUsdTotal.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})})</div>` : ""}
             </div>
 
             <!-- Col 5: Group Horizon Return % (Visible on both Desktop and Mobile) -->
@@ -966,7 +1069,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         ${regularDragTag}
                       </div>
                       <div class="leaf-mobile-sub mono-num">
-                        ${escapeHTML(h.priceLabel || "")} &bull; 👤 ${escapeHTML(h.member || "")} &bull; Inv: ${(h.currency === "USD" || h.pricingMode === "LIVE_US") ? (h.investedValueUSD != null && h.investedValueUSD > 0 ? `$${h.investedValueUSD.toLocaleString("en-US", {minimumFractionDigits: 2})} (≈${formatINR(h.investedValue, true)})` : "—") : (h.investedValue != null ? formatINR(h.investedValue, true) : "—")}
+                        ${escapeHTML(h.priceLabel || "")} &bull; 👤 ${escapeHTML(h.member || "")} &bull; Inv: ${(h.currency === "USD" || h.pricingMode === "LIVE_US") ? (h.investedValueUSD != null && h.investedValueUSD > 0 ? `$${h.investedValueUSD.toLocaleString("en-US", {minimumFractionDigits: 2})} (≈${formatINR(h.investedValue, true)})` : "—") : (activeCurrency === "USD" && h.investedValue != null ? `${formatUSD(h.investedValue / (h.fxRate || fxDefault))} (≈${formatINR(h.investedValue, true)})` : (h.investedValue != null ? formatINR(h.investedValue, true) : "—"))}
                       </div>
                     </div>
 
@@ -986,7 +1089,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                         ? (h.investedValueUSD != null && h.investedValueUSD > 0
                             ? `<div><span class="leaf-primary-usd" style="font-size:14px;font-weight:600;color:var(--text);">$${h.investedValueUSD.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span><div class="leaf-inr-sub" style="font-size:11px;color:var(--muted);font-weight:normal;margin-top:2px;">≈ ${formatINR(h.investedValue)}</div></div>`
                             : "—")
-                        : (h.investedValue != null ? formatINR(h.investedValue) : "—")
+                        : (activeCurrency === "USD"
+                            ? (h.investedValue != null ? `<div><span class="leaf-primary-usd" style="font-size:14px;font-weight:600;color:var(--text);">${formatUSD(h.investedValue / (h.fxRate || fxDefault))}</span><div class="leaf-inr-sub" style="font-size:11px;color:var(--muted);font-weight:normal;margin-top:2px;">≈ ${formatINR(h.investedValue)}</div></div>` : "—")
+                            : (h.investedValue != null ? formatINR(h.investedValue) : "—"))
                       }
                     </div>
 
@@ -996,7 +1101,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                         ? (h.currentValueUSD != null && h.currentValueUSD > 0
                             ? `<div><span class="leaf-primary-usd" style="font-size:15px;font-weight:700;color:var(--teal, #0b6b6d);">$${h.currentValueUSD.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span><div class="leaf-inr-sub" style="font-size:11.5px;color:var(--muted);font-weight:normal;margin-top:2px;">≈ ${formatINR(h.currentValue)}</div></div>`
                             : formatINR(h.currentValue))
-                        : formatINR(h.currentValue)
+                        : (activeCurrency === "USD"
+                            ? `<div><span class="leaf-primary-usd" style="font-size:15px;font-weight:700;color:var(--teal, #0b6b6d);">${formatUSD(h.currentValue / (h.fxRate || fxDefault))}</span><div class="leaf-inr-sub" style="font-size:11.5px;color:var(--muted);font-weight:normal;margin-top:2px;">≈ ${formatINR(h.currentValue)}</div></div>`
+                            : formatINR(h.currentValue))
                       }
                     </div>
 
@@ -2472,14 +2579,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    // Ensure the new / updated holding is visible in the view
-    if (activeMemberScope !== "ALL" && activeMemberScope instanceof Set && !activeMemberScope.has(member)) {
-      activeMemberScope = "ALL";
-    }
+    // Ensure the new / updated holding is always visible by resetting scope and search filters
+    activeMemberScope = "ALL";
     selectedPills = "ALL";
     searchQuery = "";
     if (els.searchInput) els.searchInput.value = "";
     if (els.searchClearBtn) els.searchClearBtn.style.display = "none";
+
+    // If all user holdings are USD and user hasn't explicitly set INR, default currency to USD
+    const allAreUs = rawHoldings.length > 0 && rawHoldings.every((h) => h.currency === "USD" || h.pricingMode === "LIVE_US");
+    if (allAreUs && !localStorage.getItem("kyf_portfolio_currency")) {
+      activeCurrency = "USD";
+    }
 
     // Immediate UI update
     userHoldings = [...rawHoldings];
@@ -3079,6 +3190,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (horiz && horiz !== activeHorizon) {
           activeHorizon = horiz;
           horizonBtns.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          renderApp();
+        }
+      });
+    });
+
+    // 2b. Currency Segmented Controls (₹ INR | $ USD)
+    const currencyBtns = document.querySelectorAll(".currency-btn");
+    currencyBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const curr = btn.getAttribute("data-curr");
+        if (curr && curr !== activeCurrency) {
+          activeCurrency = curr;
+          try {
+            localStorage.setItem("kyf_portfolio_currency", curr);
+          } catch (_) {}
+          currencyBtns.forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
           renderApp();
         }
