@@ -9,7 +9,7 @@
 (function () {
   "use strict";
 
-  var KYF_APP_VERSION = "1.9.3";
+  var KYF_APP_VERSION = "1.9.4";
   var FEEDBACK_EMAIL = "info@vividnova.com";
 
   window.KYF_APP_VERSION = KYF_APP_VERSION;
@@ -60,7 +60,10 @@
 
     var msg = document.createElement("span");
     msg.className = "kyf-footer-msg";
-    msg.appendChild(document.createTextNode("Questions, comments, feedback write to "));
+    var label = document.createElement("span");
+    label.className = "kyf-footer-label";
+    label.textContent = "Questions, comments, feedback write to ";
+    msg.appendChild(label);
     var mail = document.createElement("a");
     mail.href = "mailto:" + FEEDBACK_EMAIL;
     mail.textContent = FEEDBACK_EMAIL;

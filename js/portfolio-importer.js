@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Lean Broker & Mutual Fund CSV/XLSX Importer (`js/portfolio-importer.js`)
- * Version: v1.9.3
+ * Version: v1.9.4
  * Pure Vanilla ES6+ | Zero-Server, Client-Side Only | O(1) ISIN Lookup via KYF_PORTFOLIO_ENGINE
  * Supports: Zerodha (Kite, Console, Coin), Groww (Stocks, MF), HDFC Sec, SBI Sec, ICICI Direct,
  * Angel One, Upstox, Kotak Sec, Kuvera, and CAMS / KFintech / MFCentral Consolidated Statements.
@@ -46,7 +46,8 @@ window.KYF_BROKER_IMPORTER = (() => {
   };
 
   const EXCLUSIONS = {
-    INVESTED: ["current", "market", "present", "closing", "nav", "valuation", "ltp"],
+    INVESTED: ["current", "market", "present", "closing", "nav", "valuation", "ltp", "average", "avg", "price", "p&l", "pnl", "profit", "gain", "unrealized", "unrealised", "return", "xirr"],
+    AVG_PRICE: ["closing", "current", "market", "ltp", "value", "p&l", "pnl", "profit", "unrealized", "unrealised", "change", "chg", "day", "return"],
     LTP: ["average", "avg", "cost", "buy", "purchase", "invested"],
     CURVAL: ["invested", "cost", "buy", "book", "purchase"]
   };
@@ -144,7 +145,7 @@ window.KYF_BROKER_IMPORTER = (() => {
   function cleanNumber(val) {
     if (typeof val === "number") return Number.isFinite(val) ? val : 0;
     if (val == null || val === "") return 0;
-    const str = String(val).replace(/[₹$,%\s]/g, "").trim();
+    const str = String(val).replace(/^\s*(rs\.?|inr)\s*/i, "").replace(/[₹$,%\s]/g, "").trim();
     if (!str || str === "-" || str.toLowerCase() === "na" || str.toLowerCase() === "n/a") return 0;
     // Handle (123.45) accounting negative numbers
     if (str.startsWith("(") && str.endsWith(")")) {
@@ -335,9 +336,14 @@ window.KYF_BROKER_IMPORTER = (() => {
   // ==========================================================================
   // 2. Column Finder with Synonym Sets & Exclusions
   // ==========================================================================
+  /** Lower-case, with any run of spaces (including non-breaking ones from Excel) collapsed to one. */
+  function normalizeHeader(h) {
+    return String(h == null ? "" : h).replace(/[\s\u00a0]+/g, " ").trim().toLowerCase();
+  }
+
   function findColumnIndex(headers, candidateTokens, excludeTokens = []) {
     if (!Array.isArray(headers) || !candidateTokens) return -1;
-    const cleanHeaders = headers.map((h) => String(h || "").trim().toLowerCase());
+    const cleanHeaders = headers.map(normalizeHeader);
 
     // 1. Exact match pass
     for (const cand of candidateTokens) {
@@ -373,7 +379,7 @@ window.KYF_BROKER_IMPORTER = (() => {
 
     for (let r = 0; r < maxScan; r++) {
       const rawRow = matrix[r] || [];
-      const row = rawRow.map((c) => String(c || "").trim().toLowerCase());
+      const row = rawRow.map(normalizeHeader);
       if (row.filter(Boolean).length < 2) continue;
 
       // Check if this row contains key column identifiers
@@ -487,8 +493,10 @@ window.KYF_BROKER_IMPORTER = (() => {
                  defaultAssetClass === "Mutual Funds" ||
                  /\b(fund|scheme|growth|direct|regular|elss|index|arbitrage|hybrid|bluechip|cap)\b/i.test(rawName || "");
 
-    // 1. Sovereign Gold Bond Detection via ISIN prefix (IN0020...) or Symbol prefix (SGB...)
-    if (cleanIsin.startsWith("IN00") || /^SGB/i.test(cleanSym) || /sovereign gold bond/i.test(rawName || "")) {
+    // 1. Sovereign Gold Bond: by symbol (SGB...) or name. The IN00... ISIN prefix is shared by ALL
+    //    government securities (G-Secs, T-Bills, state loans), so it is not proof of gold on its own.
+    const nameSaysSgb = /sovereign gold|gold ?bond|\bsgb/i.test(rawName || "");
+    if (/^SGB/i.test(cleanSym) || nameSaysSgb) {
       return {
         assetClass: "Commodities & Gold",
         subCategory: "Sovereign Gold Bond (SGB)",
@@ -496,6 +504,18 @@ window.KYF_BROKER_IMPORTER = (() => {
         name: rawName || cleanSym || "Sovereign Gold Bond",
         livePrice: null,
         instrumentMeta: { purity: "24K", isin: cleanIsin || null, symbol: cleanSym || null }
+      };
+    }
+
+    // 1b. Other government securities held in demat: valued from the statement, never from the gold price
+    if (cleanIsin.startsWith("IN00") && !nameSaysSgb) {
+      return {
+        assetClass: "Fixed Income",
+        subCategory: "Government Securities",
+        pricingMode: "MANUAL",
+        name: rawName || cleanSym || "Government Security",
+        livePrice: null,
+        instrumentMeta: { isin: cleanIsin, symbol: cleanSym || null }
       };
     }
 
@@ -548,6 +568,7 @@ window.KYF_BROKER_IMPORTER = (() => {
     // 4. Mutual Fund Scheme Name Match (against KYF_MARKET_MF)
     if (isMf && rawName && typeof window !== "undefined" && window.KYF_MARKET_MF && Array.isArray(window.KYF_MARKET_MF.schemes)) {
       const targetNorm = normalizeSchemeName(rawName);
+      const distinctInstrument = /segregated|side ?pocket|\bseries\b|\bfmp\b|fixed (maturity|term)|interval/i.test(rawName);
       if (targetNorm) {
         let bestScheme = null;
         let bestLen = 0;
@@ -561,10 +582,13 @@ window.KYF_BROKER_IMPORTER = (() => {
             bestScheme = row;
             break;
           }
-          if (targetNorm.includes(scNorm) && scNorm.length > bestLen) {
+          // Partial matches only when the names are close in length, and never for side-pocketed
+          // or numbered series, which are different instruments from the main fund.
+          if (distinctInstrument) continue;
+          if (targetNorm.includes(scNorm) && scNorm.length >= 0.6 * targetNorm.length && scNorm.length > bestLen) {
             bestScheme = row;
             bestLen = scNorm.length;
-          } else if (scNorm.includes(targetNorm) && targetNorm.length > bestLen) {
+          } else if (scNorm.includes(targetNorm) && targetNorm.length >= 0.6 * scNorm.length && targetNorm.length > bestLen) {
             bestScheme = row;
             bestLen = targetNorm.length;
           }
@@ -631,6 +655,45 @@ window.KYF_BROKER_IMPORTER = (() => {
   // ==========================================================================
   // 5. Row Extractor & Normalizer
   // ==========================================================================
+  let idSeq = 0;
+
+  /** A row that repeats column titles (a second table in the same sheet), not a holding. */
+  function looksLikeHeaderRow(row) {
+    const cells = (row || []).map((c) => (c == null ? "" : c));
+    if (cells.filter((c) => String(c).trim()).length < 2) return false;
+    if (cells.some((c) => cleanNumber(c) !== 0 || /^\s*0+(\.0+)?\s*$/.test(String(c)))) return false;
+    const h = cells.map(normalizeHeader);
+    const hasInstrument = [COL_CANDIDATES.NAME, COL_CANDIDATES.SYMBOL, COL_CANDIDATES.ISIN, COL_CANDIDATES.FOLIO]
+      .some((list) => findColumnIndex(h, list) !== -1);
+    return hasInstrument && findColumnIndex(h, COL_CANDIDATES.QTY) !== -1;
+  }
+
+  /** Several lots / accounts of the same instrument in one file become one holding. */
+  function mergeSameInstrument(list) {
+    const out = [];
+    const seen = new Map();
+    for (const h of list) {
+      const m = h.instrumentMeta || {};
+      const key = [
+        (h.member || "").toLowerCase(), normalizeCustodian(h.custodian),
+        (m.isin || m.symbol || h.name || "").toUpperCase(), (m.folio || "").toLowerCase()
+      ].join("|");
+      const first = seen.get(key);
+      if (!first) { seen.set(key, h); out.push(h); continue; }
+      first.units = Number((first.units + h.units).toFixed(4));
+      first.investedValue = (first.investedValue == null && h.investedValue == null)
+        ? null : (first.investedValue || 0) + (h.investedValue || 0);
+      first.currentValue += h.currentValue;
+      first.manualCurrentValue = first.currentValue;
+      const fm = first.instrumentMeta;
+      if (fm.units != null) fm.units = Number(first.units.toFixed(4));
+      if (fm.grams != null) fm.grams = first.units;
+      if (fm.quantity != null) fm.quantity = first.units;
+      fm.avgBuyPrice = first.investedValue > 0 ? Number((first.investedValue / first.units).toFixed(2)) : null;
+    }
+    return out;
+  }
+
   function extractHoldingsFromMatrix(matrix, defaultMember = "Self") {
     const detection = detectHeaderAndBroker(matrix);
     if (!detection) return [];
@@ -642,10 +705,14 @@ window.KYF_BROKER_IMPORTER = (() => {
     const iName = findColumnIndex(headers, COL_CANDIDATES.NAME);
     const iFolio = findColumnIndex(headers, COL_CANDIDATES.FOLIO);
     const iQty = findColumnIndex(headers, COL_CANDIDATES.QTY);
-    const iAvgPrice = findColumnIndex(headers, COL_CANDIDATES.AVG_PRICE, EXCLUSIONS.LTP);
-    const iInvested = findColumnIndex(headers, COL_CANDIDATES.INVESTED, EXCLUSIONS.INVESTED);
-    const iLtp = findColumnIndex(headers, COL_CANDIDATES.LTP, EXCLUSIONS.LTP);
-    const iCurVal = findColumnIndex(headers, COL_CANDIDATES.CURVAL, EXCLUSIONS.CURVAL);
+    let iAvgPrice = findColumnIndex(headers, COL_CANDIDATES.AVG_PRICE, EXCLUSIONS.AVG_PRICE);
+    let iInvested = findColumnIndex(headers, COL_CANDIDATES.INVESTED, EXCLUSIONS.INVESTED);
+    let iLtp = findColumnIndex(headers, COL_CANDIDATES.LTP, EXCLUSIONS.LTP);
+    let iCurVal = findColumnIndex(headers, COL_CANDIDATES.CURVAL, EXCLUSIONS.CURVAL);
+    // One column can only play one part: the more specific reading wins
+    if (iInvested !== -1 && (iInvested === iAvgPrice || iInvested === iQty)) iInvested = -1;
+    if (iCurVal !== -1 && (iCurVal === iLtp || iCurVal === iInvested || iCurVal === iQty)) iCurVal = -1;
+    if (iLtp !== -1 && (iLtp === iAvgPrice || iLtp === iQty)) iLtp = -1;
 
     const parsedHoldings = [];
 
@@ -653,12 +720,19 @@ window.KYF_BROKER_IMPORTER = (() => {
       const row = matrix[r];
       if (!row || row.length === 0) continue;
 
+      // A new table starts here (e.g. "Mutual Funds" below the equities): read it with its own columns
+      if (looksLikeHeaderRow(row)) {
+        return mergeSameInstrument(parsedHoldings.concat(extractHoldingsFromMatrix(matrix.slice(r), defaultMember)));
+      }
+
       // Skip completely empty rows
       const hasAnyContent = row.some((c) => String(c || "").trim().length > 0);
       if (!hasAnyContent) continue;
 
       // Skip rows matching summary keywords in any cell
-      const isSummaryRow = row.some((c) => /^(total|grand total|disclaimer|sub-total|subtotal|note:)/i.test(String(c || "").trim()));
+      // (a row holding a real ISIN is a holding even if a name starts with "Total")
+      const hasIsin = row.some((c) => ISIN_REGEX.test(String(c || "").trim().toUpperCase()));
+      const isSummaryRow = !hasIsin && row.some((c) => /^(total|grand total|disclaimer|sub-total|subtotal|note:)/i.test(String(c || "").trim()));
       if (isSummaryRow) continue;
 
       const qty = iQty !== -1 ? cleanNumber(row[iQty]) : 0;
@@ -695,18 +769,24 @@ window.KYF_BROKER_IMPORTER = (() => {
         symbol: rawSym,
         rawName,
         defaultAssetClass: profile.defaultAssetClass,
-        fileLtp: fileLtp || avgPrice || 0
+        // The price the statement itself implies (never the purchase price, which is not a market price)
+        fileLtp: fileLtp || (fileCurVal > 0 ? fileCurVal / qty : 0)
       });
 
-      const effectivePrice = resolved.livePrice || fileLtp || avgPrice || 0;
-      const currentValue = effectivePrice > 0 ? Math.round(qty * effectivePrice) : Math.round(fileCurVal || investedValue);
+      // Live market price first; otherwise what the statement itself says it is worth; cost as the last resort
+      let currentValue;
+      if (resolved.livePrice > 0) currentValue = Math.round(qty * resolved.livePrice);
+      else if (fileCurVal > 0) currentValue = Math.round(fileCurVal);
+      else if (fileLtp > 0) currentValue = Math.round(qty * fileLtp);
+      else currentValue = Math.round(investedValue > 0 ? investedValue : qty * avgPrice);
+      const effectivePrice = qty > 0 && currentValue > 0 ? currentValue / qty : 0;
 
       const meta = {
         ...resolved.instrumentMeta,
         isin: resolved.instrumentMeta.isin || isin || null,
         folio: folio || null,
         avgBuyPrice: avgPrice > 0 ? avgPrice : null,
-        price: effectivePrice > 0 ? effectivePrice : null
+        price: effectivePrice > 0 ? Number(effectivePrice.toFixed(4)) : null
       };
 
       if (resolved.pricingMode === "LIVE_MF") {
@@ -721,7 +801,7 @@ window.KYF_BROKER_IMPORTER = (() => {
       const memberName = (defaultMember || "Self").trim();
 
       parsedHoldings.push({
-        id: `hold_imp_${Date.now()}_${r}`,
+        id: `hold_imp_${Date.now()}_${++idSeq}`,
         name: resolved.name,
         member: memberName,
         custodian: profile.custodian,
@@ -739,7 +819,7 @@ window.KYF_BROKER_IMPORTER = (() => {
       });
     }
 
-    return parsedHoldings;
+    return mergeSameInstrument(parsedHoldings);
   }
 
   // ==========================================================================

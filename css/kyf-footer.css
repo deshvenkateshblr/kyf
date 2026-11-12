@@ -77,3 +77,9 @@ body.has-kyf-footer {
     padding-bottom: 72px;
   }
 }
+
+/* Phones: keep the bar to two short rows so it does not cover the page */
+@media (max-width: 480px) {
+  .kyf-footer { justify-content: center; padding: 6px 12px; gap: 6px 12px; }
+  .kyf-footer-label { display: none; }
+}
