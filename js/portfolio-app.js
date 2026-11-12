@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.9.4
+ * Version: v1.10.0
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -89,6 +89,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     importDropzoneContent: document.getElementById("import-dropzone-content"),
     brokerFileInput: document.getElementById("broker-file-input"),
     importMemberSelect: document.getElementById("import-member-select"),
+    importSourceSelect: document.getElementById("import-source-select"),
     importStatsSummary: document.getElementById("import-stats-summary"),
     importPreviewWrap: document.getElementById("import-preview-wrap"),
     importPreviewTitle: document.getElementById("import-preview-title"),
@@ -2123,9 +2124,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (els.importPreviewWrap) els.importPreviewWrap.style.display = "block";
+
+    // What this import does to the bucket (this person + this source)
+    const sourceId = els.importSourceSelect ? els.importSourceSelect.value : "";
+    let impactHTML = "";
+    if (sourceId) {
+      const pv = window.KYF_BROKER_IMPORTER.previewBucket(rawHoldings, pendingImportHoldings, selectedMember, sourceId);
+      impactHTML = `<span>${pv.addedCount} new · ${pv.updatedCount} updated · <strong>${pv.removedCount} no longer held</strong></span>`;
+      if (pv.removedWithGoals.length) {
+        impactHTML += `<span class="import-warn">${pv.removedWithGoals.length} of the removed ${pv.removedWithGoals.length === 1 ? "holding was" : "holdings were"} set aside for goals: ${escapeHTML(pv.removedWithGoals.map(h => h.name).slice(0, 3).join(", "))}${pv.removedWithGoals.length > 3 ? "…" : ""}</span>`;
+      }
+      if (pv.muchSmaller) {
+        impactHTML += `<span class="import-warn">This file has far fewer holdings than the ${pv.bucketSize} saved for this broker. Check it is the full statement.</span>`;
+      }
+    }
+    if (els.importStatsSummary) {
+      const total = pendingImportHoldings.reduce((sum, h) => sum + (Number(h.currentValue) || 0), 0);
+      els.importStatsSummary.style.display = "flex";
+      els.importStatsSummary.innerHTML = `<span>Live value: <strong>₹${Math.round(total).toLocaleString("en-IN")}</strong></span>` + impactHTML;
+    }
     if (els.btnConfirmImport) {
       els.btnConfirmImport.disabled = false;
-      els.btnConfirmImport.textContent = `＋ Import ${count} Holdings for ${selectedMember}`;
+      els.btnConfirmImport.textContent = `Replace ${selectedMember}'s list with these ${count}`;
     }
   }
 
@@ -2185,6 +2205,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
+    if (els.importSourceSelect) {
+      els.importSourceSelect.innerHTML = '<option value="">Choose broker or statement…</option>' +
+        window.KYF_BROKER_IMPORTER.IMPORT_SOURCES.map(x => `<option value="${x.id}">${escapeHTML(x.label)}</option>`).join("");
+      els.importSourceSelect.value = "";
+    }
+
     // Reset dropzone & preview
     if (els.brokerFileInput) els.brokerFileInput.value = "";
     resetImportDropzone();
@@ -2217,6 +2243,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!file || !window.KYF_BROKER_IMPORTER) return;
     currentLoadedFile = file;
 
+    const sourceId = els.importSourceSelect ? els.importSourceSelect.value : "";
+    if (!sourceId) {
+      showToast("Choose where this file is from first.", "warning");
+      if (els.importSourceSelect) els.importSourceSelect.focus();
+      return;
+    }
+    const source = window.KYF_BROKER_IMPORTER.getSource(sourceId);
+
     const selectedMember = (els.importMemberSelect && els.importMemberSelect.value) ? els.importMemberSelect.value.trim() : "Self";
 
     // 1. VISUAL CLUE: Immediate Reading / Analyzing State on the dropzone!
@@ -2231,7 +2265,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="import-dropzone-text">
             <strong>Reading &amp; analyzing ${escapeHTML(file.name)}...</strong>
           </div>
-          <div class="import-dropzone-hint">${formatBytes(file.size)} • Detecting broker statement format</div>
+          <div class="import-dropzone-hint">${formatBytes(file.size)} • Reading as ${escapeHTML(source.label)}</div>
         </div>
       `;
     }
@@ -2242,7 +2276,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Yield to DOM so the spinner renders
       await new Promise(resolve => setTimeout(resolve, 40));
 
-      const parsed = await window.KYF_BROKER_IMPORTER.parseFiles([file], selectedMember);
+      const parsed = await window.KYF_BROKER_IMPORTER.parseFiles([file], selectedMember, source);
 
       if (!parsed.holdings || parsed.holdings.length === 0) {
         if (els.importDropzone) {
@@ -2255,7 +2289,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               <div class="import-dropzone-text" style="color: var(--rose);">
                 <strong>No valid holdings recognized in "${escapeHTML(file.name)}"</strong>
               </div>
-              <div class="import-dropzone-hint">Supported formats: Zerodha (Coin, Kite, Console), Groww, CAMS, KFintech CAS, MFCentral, ICICI Direct, HDFC Sec, SBI Sec, Angel One, Upstox, Kuvera. Click to choose another file.</div>
+              <div class="import-dropzone-hint">Check that you chose the right broker, and that the file lists holdings with a name or ISIN and a quantity. Click to choose another file.</div>
             </div>
           `;
         }
@@ -2267,12 +2301,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // Explicitly assign EVERY holding to the user's chosen member
       pendingImportHoldings = parsed.holdings.map(h => ({ ...h, member: selectedMember }));
-      pendingImportBrokers = parsed.brokers;
+      pendingImportBrokers = [source.label];
 
-      const brokerLabel = parsed.broker || "Broker Statement";
+      const brokerLabel = source.label;
       const count = pendingImportHoldings.length;
-      const totalLive = pendingImportHoldings.reduce((sum, h) => sum + (Number(h.currentValue) || 0), 0);
-
+      
       // 2. VISUAL CLUE: Loaded File Banner in the dropzone!
       if (els.importDropzone) {
         els.importDropzone.classList.remove("is-reading");
@@ -2289,15 +2322,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
             <div class="import-file-action">Click or drop another file to change</div>
           </div>
-        `;
-      }
-
-      // Summary Stats
-      if (els.importStatsSummary) {
-        els.importStatsSummary.style.display = "flex";
-        els.importStatsSummary.innerHTML = `
-          <span>Detected: <strong>${escapeHTML(brokerLabel)}</strong> (${count} holdings)</span>
-          <span>Live Value: <strong>₹${Math.round(totalLive).toLocaleString("en-IN")}</strong></span>
         `;
       }
 
@@ -2335,7 +2359,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const finalIncoming = pendingImportHoldings.map(h => ({ ...h, member: selectedMember }));
 
     // Upsert into rawHoldings
-    const { holdings: merged, addedCount, updatedCount } = window.KYF_BROKER_IMPORTER.upsertHoldings(rawHoldings, finalIncoming);
+    const sourceId = els.importSourceSelect ? els.importSourceSelect.value : "";
+    if (!sourceId) { showToast("Choose where this file is from first.", "warning"); return; }
+    const { holdings: merged, addedCount, updatedCount, removedCount } = window.KYF_BROKER_IMPORTER.replaceBucket(rawHoldings, finalIncoming, selectedMember, sourceId);
     rawHoldings = merged;
     userHoldings = [...rawHoldings];
     localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
@@ -2349,7 +2375,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderApp();
 
     const brokerStr = pendingImportBrokers[0] || "Broker";
-    showToast(`✓ Imported ${addedCount} new, updated ${updatedCount} existing holdings for ${selectedMember} from ${brokerStr}.`, "success");
+    showToast(`✓ ${brokerStr} for ${selectedMember}: ${addedCount} new, ${updatedCount} updated, ${removedCount} removed.`, "success");
   }
 
   // ==========================================================================
@@ -2665,6 +2691,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (e.target.files && e.target.files.length > 0) {
           handleBrokerFile(e.target.files[0]);
         }
+      });
+    }
+    if (els.importSourceSelect) {
+      els.importSourceSelect.addEventListener("change", () => {
+        if (currentLoadedFile && els.importSourceSelect.value) handleBrokerFile(currentLoadedFile);
       });
     }
     if (els.importMemberSelect) {

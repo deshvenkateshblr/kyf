@@ -9,7 +9,7 @@
 (function () {
   "use strict";
 
-  var KYF_APP_VERSION = "1.9.4";
+  var KYF_APP_VERSION = "1.10.0";
   var FEEDBACK_EMAIL = "info@vividnova.com";
 
   window.KYF_APP_VERSION = KYF_APP_VERSION;
