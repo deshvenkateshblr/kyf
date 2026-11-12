@@ -39,7 +39,11 @@
 .mw-term { font-size: 20px; font-weight: 700; margin: 4px 0 2px; }
 .mw-tip { margin: 0 0 10px; font-size: 14px; line-height: 1.45; color: var(--ink-soft, #3d4a44); }
 
-.mw-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.mw-actions { display: flex; flex-direction: column; gap: 8px; }
+.mw-actions .mw-btn-primary:only-child { align-self: flex-start; }
+.mw-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mw-count { font-size: 12px; color: var(--muted, #6d786f); font-family: var(--mono, ui-monospace, monospace); }
+.mw-btn:disabled { opacity: 0.4; cursor: default; }
 .mw-btn {
   border: 1px solid var(--line, #d7ddd2);
   background: transparent;

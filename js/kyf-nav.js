@@ -46,8 +46,21 @@
   }
 
   function normaliseDesktopLinks(nav) {
-    // Index keeps its own marketing nav (with the Framework dropdown); inner pages get the shared set.
-    if (pageName() === "index.html") return;
+    // Home keeps its marketing extras (All tools, Framework dropdown, Start), but its tool links come from the catalog too.
+    if (pageName() === "index.html") {
+      var catalogHrefs = MENU.map(function (m) { return m.href; });
+      var tools = document.createDocumentFragment();
+      MENU.filter(function (m) { return m.topBar && m.href.indexOf("#") === -1; }).forEach(function (m) {
+        var link = el("a", "", m.label);
+        link.href = m.href;
+        tools.appendChild(link);
+      });
+      nav.querySelectorAll(":scope > a").forEach(function (a) {
+        if (!a.classList.contains("btn") && catalogHrefs.indexOf(a.getAttribute("href")) !== -1) a.remove();
+      });
+      nav.insertBefore(tools, nav.firstChild);
+      return;
+    }
     var anchors = nav.querySelectorAll(":scope > a");
     var first = anchors[0];
     var fragment = document.createDocumentFragment();

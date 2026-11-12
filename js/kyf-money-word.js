@@ -2,8 +2,8 @@
  * Money Word (`js/kyf-money-word.js`): a small floating card on the home page that introduces
  * one finance word at a time, in curriculum order (words come from data/kyf-terms.js).
  *
- * Buttons: "Next word" (moves on), "I know this" (never shown again), × (hide for this visit),
- * and "Don't show again". "Tell me more" appears only once KYF_TERMS.topicPage is set.
+ * Buttons: Prev / Next (walk the words in order), × (hide for this visit) and "Don't show again".
+ * "Tell me more" appears only once KYF_TERMS.topicPage is set.
  * Everything stays in this browser (localStorage). Footer switch turns it back on.
  */
 (function () {
@@ -16,11 +16,10 @@
   var current = null;
 
   function load() {
-    var s = { known: [], seen: [], off: false, last: null };
+    var s = { seen: [], off: false, last: null };
     try {
       var raw = JSON.parse(localStorage.getItem(STORE) || "null");
       if (raw && typeof raw === "object") {
-        s.known = Array.isArray(raw.known) ? raw.known : [];
         s.seen = Array.isArray(raw.seen) ? raw.seen : [];
         s.off = raw.off === true;
         s.last = raw.last || null;
@@ -44,19 +43,18 @@
     return (window.KYF_TERMS && window.KYF_TERMS.terms) || [];
   }
 
-  // Resume where the person left off: the word after the last one shown, skipping known words.
-  function pickNext(afterId) {
+  function indexOfId(id) {
+    var list = terms();
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return i;
+    return -1;
+  }
+
+  // Resume where the person left off: the word after the last one shown (wraps round to the start).
+  function startWord() {
     var list = terms();
     if (!list.length) return null;
-    var start = 0;
-    if (afterId) {
-      for (var i = 0; i < list.length; i++) if (list[i].id === afterId) { start = i + 1; break; }
-    }
-    for (var k = 0; k < list.length; k++) {
-      var t = list[(start + k) % list.length];
-      if (state.known.indexOf(t.id) === -1) return t;
-    }
-    return null; // everything is known
+    var i = indexOfId(state.last);
+    return list[i === -1 ? 0 : (i + 1) % list.length];
   }
 
   function el(tag, cls, text) {
@@ -88,17 +86,11 @@
     head.lastChild.setAttribute("aria-label", "Hide Money Word for now");
     card.appendChild(head);
 
-    if (!current) {
-      card.appendChild(el("p", "mw-tip", "You have marked every word as known. Nicely done."));
-      card.appendChild(button("Start over", "mw-btn", function () {
-        state.known = []; state.last = null; save(); current = pickNext(null); render();
-      }));
-      return;
-    }
-
     card.appendChild(el("div", "mw-term", current.term));
     card.appendChild(el("p", "mw-tip", current.tip));
 
+    var list = terms();
+    var pos = indexOfId(current.id);
     var row = el("div", "mw-actions");
     var href = topicHref(current);
     if (href) {
@@ -106,8 +98,18 @@
       more.href = href;
       row.appendChild(more);
     }
-    row.appendChild(button("Next word", "mw-btn" + (href ? "" : " mw-btn-primary"), next));
-    row.appendChild(button("I know this", "mw-btn", known));
+    var nav = el("div", "mw-nav");
+    var prevBtn = button("‹ Prev", "mw-btn", prev);
+    prevBtn.disabled = pos <= 0;
+    prevBtn.setAttribute("aria-label", "Previous word");
+    var count = el("span", "mw-count", (pos + 1) + " of " + list.length);
+    var nextBtn = button("Next ›", "mw-btn mw-btn-primary", next);
+    nextBtn.disabled = pos >= list.length - 1;
+    nextBtn.setAttribute("aria-label", "Next word");
+    nav.appendChild(prevBtn);
+    nav.appendChild(count);
+    nav.appendChild(nextBtn);
+    row.appendChild(nav);
     card.appendChild(row);
 
     card.appendChild(button("Don't show again", "mw-off", turnOff));
@@ -123,12 +125,13 @@
     render();
   }
 
-  function next() { show(pickNext(current && current.id)); }
-  function known() {
-    if (current && state.known.indexOf(current.id) === -1) state.known.push(current.id);
-    save();
-    show(pickNext(current && current.id));
+  function step(by) {
+    var list = terms();
+    var i = indexOfId(current && current.id) + by;
+    if (i >= 0 && i < list.length) show(list[i]);
   }
+  function next() { step(1); }
+  function prev() { step(-1); }
 
   function close() {
     if (card) { card.remove(); card = null; }
@@ -139,8 +142,8 @@
 
   function open() {
     if (card) return;
-    var first = pickNext(state.last);
-    if (!first && !terms().length) return;
+    var first = startWord();
+    if (!first) return;
     card = el("aside", "mw-card");
     card.id = "kyf-money-word";
     card.setAttribute("role", "complementary");
