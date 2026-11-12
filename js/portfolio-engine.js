@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Live Market Valuation & Aggregation Engine (`js/portfolio-engine.js`)
- * Version: v1.9.2
+ * Version: v1.9.3
  * Pure Vanilla ES6+ | O(1) Indexing, Live Valuation, Multi-Horizon Returns (1M, 3M, 6M, 1Y),
  * Goal Envelopes, Macro Inflation Compounding, Virtual Lot Splitting,
  * Dual-Unit Commodity & Real Estate Engine (Gold Grams + RESIDEX Sq.Ft + INR) & Divergence Detection
