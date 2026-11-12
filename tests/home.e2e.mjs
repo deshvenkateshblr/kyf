@@ -95,7 +95,7 @@ ok(errs.length === 0, "no page errors: " + errs.join("|"));
   // top menu comes from the catalog on home too
   await p.setViewportSize({ width: 1280, height: 800 });
   const topLinks = await p.locator(".nav-links > a:not(.btn)").allInnerTexts();
-  ok(["Goals","Cadence","Portfolio","Markets","Framework"].every(t => topLinks.some(x => x.trim().toLowerCase() === t.toLowerCase())), "home top bar lists the catalog tools: " + topLinks.join(","));
+  ok(["Goals","Cadence","Portfolio","Markets"].every(t => topLinks.some(x => x.trim().toLowerCase() === t.toLowerCase())), "home top bar lists the catalog tools: " + topLinks.join(","));
   ok(await p.locator("#navOpenFileBtn").isVisible() && await p.locator("#navSaveDataBtn").isVisible(), "home top bar has Open and Save like every page");
   ok(await p.locator(".nav-dropdown, .btn-nav").count() === 0, "home has no extra marketing nav items");
   await p.setViewportSize({ width: 390, height: 800 });

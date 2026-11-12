@@ -75,7 +75,7 @@
   // Not tools, but places people look for
   var EXTRAS = [
     { id: "home", name: "Home", href: "index.html", icon: "🏠", tagline: "" },
-    { id: "framework", topOrder: 5, name: "Framework", href: "index.html#framework", icon: "🧭", tagline: "How KYF thinks about money", topBar: true }
+    { id: "framework", name: "Framework", href: "index.html#framework", icon: "🧭", tagline: "How KYF thinks about money", topBar: false }
   ];
 
   global.KYF_FEATURES = {
