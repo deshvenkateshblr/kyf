@@ -634,9 +634,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         scopeLabel = Array.from(activeMemberScope).join(", ");
       }
       const unitWord = activeDimension === "goal" ? "slices" : "holdings";
+      const totalUsdWorth = enriched.reduce((sum, h) => sum + (h.currency === "USD" ? (h.currentValueUSD || 0) : 0), 0);
+      const usdNote = totalUsdWorth > 0 ? ` • Includes $${totalUsdWorth.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})} in US assets` : "";
       els.kpiNetWorthSub.textContent = kpis.totalLiabilities > 0
-        ? `Assets ${formatINR(kpis.totalAssets, true)} − Debt ${formatINR(kpis.totalLiabilities, true)} • ${scopeLabel} (${kpis.holdingsCount} ${unitWord})`
-        : `Scope: ${scopeLabel} (${kpis.holdingsCount} ${unitWord})`;
+        ? `Assets ${formatINR(kpis.totalAssets, true)} − Debt ${formatINR(kpis.totalLiabilities, true)} • ${scopeLabel} (${kpis.holdingsCount} ${unitWord})${usdNote}`
+        : `Scope: ${scopeLabel} (${kpis.holdingsCount} ${unitWord})${usdNote}`;
     }
 
     if (els.kpiReturnPct && els.kpiGainLoss) {
@@ -803,6 +805,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // Goal Specific Sub-Header (Progress Bar, Dual-Unit Accumulation, Divergence & Horizon Badge)
       let goalHeaderExtra = "";
+      const groupUsdTotal = group.holdings.reduce((sum, h) => sum + (h.currency === "USD" ? (h.currentValueUSD || 0) : 0), 0);
+      const groupUsdInvested = group.holdings.reduce((sum, h) => sum + (h.currency === "USD" ? (h.investedValueUSD || 0) : 0), 0);
       if (activeDimension === "goal" && group.goalMeta) {
         const meta = group.goalMeta;
         const infl = meta.inflation || {};
@@ -879,11 +883,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             <!-- Col 3: Total Invested (Hidden on Mobile via .cell-hide-mobile) -->
             <div class="tree-group-num-cell tree-col-right mono-num cell-hide-mobile">
               ${formatINR(group.totalInvested)}
+              ${groupUsdInvested > 0 ? `<div style="font-size:11px;color:var(--muted);font-weight:normal;margin-top:2px;">(inc. $${groupUsdInvested.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})})</div>` : ""}
             </div>
 
             <!-- Col 4: Total Current Value (Visible on both Desktop and Mobile) -->
             <div class="tree-group-num-cell tree-col-right mono-num group-value-cell${group.totalCurrentValue < 0 ? " is-debt" : ""}">
               ${formatINR(group.totalCurrentValue)}
+              ${groupUsdTotal > 0 ? `<div style="font-size:11px;color:var(--teal, #0b6b6d);font-weight:normal;margin-top:2px;">(inc. $${groupUsdTotal.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})})</div>` : ""}
             </div>
 
             <!-- Col 5: Group Horizon Return % (Visible on both Desktop and Mobile) -->
@@ -960,7 +966,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         ${regularDragTag}
                       </div>
                       <div class="leaf-mobile-sub mono-num">
-                        ${escapeHTML(h.priceLabel || "")} &bull; 👤 ${escapeHTML(h.member || "")} &bull; Inv: ${h.investedValue != null ? formatINR(h.investedValue, true) : "—"}
+                        ${escapeHTML(h.priceLabel || "")} &bull; 👤 ${escapeHTML(h.member || "")} &bull; Inv: ${(h.currency === "USD" || h.pricingMode === "LIVE_US") ? (h.investedValueUSD != null && h.investedValueUSD > 0 ? `$${h.investedValueUSD.toLocaleString("en-US", {minimumFractionDigits: 2})} (≈${formatINR(h.investedValue, true)})` : "—") : (h.investedValue != null ? formatINR(h.investedValue, true) : "—")}
                       </div>
                     </div>
 
@@ -976,14 +982,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                     <!-- Col 3: Invested Value (Hidden on Mobile via .cell-hide-mobile) -->
                     <div class="leaf-num-cell tree-col-right mono-num cell-hide-mobile">
-                      ${h.investedValue != null ? formatINR(h.investedValue) : "—"}
-                      ${(h.investedValueUSD != null && h.investedValueUSD > 0) ? `<div class="leaf-usd-sub" style="font-size:11px;color:var(--muted);font-weight:normal;">$${h.investedValueUSD.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>` : ""}
+                      ${(h.currency === "USD" || h.pricingMode === "LIVE_US")
+                        ? (h.investedValueUSD != null && h.investedValueUSD > 0
+                            ? `<div><span class="leaf-primary-usd" style="font-size:14px;font-weight:600;color:var(--text);">$${h.investedValueUSD.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span><div class="leaf-inr-sub" style="font-size:11px;color:var(--muted);font-weight:normal;margin-top:2px;">≈ ${formatINR(h.investedValue)}</div></div>`
+                            : "—")
+                        : (h.investedValue != null ? formatINR(h.investedValue) : "—")
+                      }
                     </div>
 
                     <!-- Col 4: Live Current Value (Visible on both Desktop and Mobile) -->
                     <div class="leaf-num-cell leaf-value-cell tree-col-right mono-num${h.isLiability ? " is-debt" : ""}">
-                      ${formatINR(h.currentValue)}
-                      ${(h.currentValueUSD != null && h.currentValueUSD > 0) ? `<div class="leaf-usd-sub" style="font-size:11px;color:var(--muted);font-weight:normal;">$${h.currentValueUSD.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>` : ""}
+                      ${(h.currency === "USD" || h.pricingMode === "LIVE_US")
+                        ? (h.currentValueUSD != null && h.currentValueUSD > 0
+                            ? `<div><span class="leaf-primary-usd" style="font-size:15px;font-weight:700;color:var(--teal, #0b6b6d);">$${h.currentValueUSD.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span><div class="leaf-inr-sub" style="font-size:11.5px;color:var(--muted);font-weight:normal;margin-top:2px;">≈ ${formatINR(h.currentValue)}</div></div>`
+                            : formatINR(h.currentValue))
+                        : formatINR(h.currentValue)
+                      }
                     </div>
 
                     <!-- Col 5: Horizon Return % (Visible on both Desktop and Mobile) -->
@@ -2010,6 +2024,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (els.inputHoldingPrice) els.inputHoldingPrice.value = "";
       if (els.inputHoldingSubCategory) els.inputHoldingSubCategory.value = "";
       if (els.inputHoldingCustodian) els.inputHoldingCustodian.value = "";
+      if (els.selectHoldingMember) {
+        if (activeMemberScope instanceof Set && activeMemberScope.size === 1) {
+          const activeName = Array.from(activeMemberScope)[0];
+          if (activeName) els.selectHoldingMember.value = activeName;
+        }
+      }
       applyHoldingTypeMode();
       recalcHoldingValues();
     }
@@ -2166,18 +2186,38 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     rawHoldings = rawHoldings.filter((h) => h.id !== holdingId && h.originalHoldingId !== holdingId);
-    await persistHoldings();
-    markDataChanged();
-
+    if (rawHoldings.length === 0) {
+      activeMemberScope = "ALL";
+      selectedPills = "ALL";
+      searchQuery = "";
+      if (els.searchInput) els.searchInput.value = "";
+    }
+    userHoldings = [...rawHoldings];
+    localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
     closeHoldingModal();
     renderApp();
+    markDataChanged();
+
+    try {
+      await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+    } catch (err) {
+      console.warn("[KYF Portfolio] Error persisting to DB:", err);
+    }
+
     showToast(`Deleted "${hName}"`, "info", {
       label: "Undo",
       onAction: async () => {
         rawHoldings = snapshot;
-        await persistHoldings();
-        markDataChanged();
+        userHoldings = [...rawHoldings];
+        localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
+        closeHoldingModal();
         renderApp();
+        markDataChanged();
+        try {
+          await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+        } catch (err) {
+          console.warn("[KYF Portfolio] Error persisting to DB:", err);
+        }
         showToast(`✓ Restored "${hName}"`, "success");
       }
     });
@@ -2185,9 +2225,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function populateHoldingModalDropdowns() {
     if (els.selectHoldingMember) {
-      const membersList = (rawMembers && rawMembers.length > 0)
+      const knownNames = new Set();
+      const membersList = [];
+
+      const baseList = (rawMembers && rawMembers.length > 0)
         ? rawMembers
         : (isDemoMode ? window.KYF_PORTFOLIO_DATA.getDemoMembers() : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }]);
+
+      for (const m of baseList) {
+        if (m.name && !knownNames.has(m.name)) {
+          knownNames.add(m.name);
+          membersList.push(m);
+        }
+      }
+
+      for (const h of rawHoldings || []) {
+        if (h.member && !knownNames.has(h.member) && h.member !== "Unassigned" && !h.member.includes("&")) {
+          knownNames.add(h.member);
+          membersList.push({ id: `mem_${h.member.toLowerCase()}`, name: h.member, role: "Family", avatar: "👤" });
+        }
+      }
 
       els.selectHoldingMember.innerHTML = membersList.map((m) => {
         return `<option value="${escapeHTML(m.name)}">${escapeHTML(m.name)}${m.role && m.role.toLowerCase() !== String(m.name).toLowerCase() ? ` (${escapeHTML(m.role)})` : ""}</option>`;
@@ -2415,13 +2472,28 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
+    // Ensure the new / updated holding is visible in the view
+    if (activeMemberScope !== "ALL" && activeMemberScope instanceof Set && !activeMemberScope.has(member)) {
+      activeMemberScope = "ALL";
+    }
+    selectedPills = "ALL";
+    searchQuery = "";
+    if (els.searchInput) els.searchInput.value = "";
+    if (els.searchClearBtn) els.searchClearBtn.style.display = "none";
+
+    // Immediate UI update
     userHoldings = [...rawHoldings];
     localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
-    await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
-    markDataChanged();
-
     closeHoldingModal();
     renderApp();
+    markDataChanged();
+
+    // Async persist to IndexedDB in safe background block
+    try {
+      await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+    } catch (err) {
+      console.warn("[KYF Portfolio] Error saving holdings to IndexedDB:", err);
+    }
   }
 
   // ==========================================================================
