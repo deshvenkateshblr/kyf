@@ -33,6 +33,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
   let mfMap = null;
   let equityIsinMap = null;
   let mfIsinMap = null;
+  let usMap = null;
   let isIndexed = false;
 
   function ensureIndexed() {
@@ -89,6 +90,39 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         }
         if (schemeObj.regularIsin) {
           mfIsinMap.set(schemeObj.regularIsin, { scheme: schemeObj, planType: "REGULAR" });
+        }
+      }
+    }
+
+    // 3. Index US Equities & Mutual Funds (from window.KYF_MARKET_US)
+    usMap = new Map();
+    if (window.KYF_MARKET_US) {
+      if (window.KYF_MARKET_US.byTicker && typeof window.KYF_MARKET_US.byTicker === "object") {
+        for (const [ticker, obj] of Object.entries(window.KYF_MARKET_US.byTicker)) {
+          usMap.set(ticker.toUpperCase(), {
+            ticker: ticker.toUpperCase(),
+            name: obj.name || ticker,
+            closePrice: Number(obj.closePrice) || 0,
+            type: obj.type || "EQUITY",
+            currency: obj.currency || "USD",
+            lastUpdated: obj.lastUpdated || null,
+            ret1m: obj.ret1m != null ? Number(obj.ret1m) : null,
+            ret3m: obj.ret3m != null ? Number(obj.ret3m) : null,
+            ret6m: obj.ret6m != null ? Number(obj.ret6m) : null,
+            ret1y: obj.ret1y != null ? Number(obj.ret1y) : null
+          });
+        }
+      } else if (Array.isArray(window.KYF_MARKET_US.instruments)) {
+        for (const row of window.KYF_MARKET_US.instruments) {
+          const [ticker, name, closePrice, type, currency, lastUpdated] = row;
+          usMap.set(String(ticker).toUpperCase(), {
+            ticker: String(ticker).toUpperCase(),
+            name: name || ticker,
+            closePrice: Number(closePrice) || 0,
+            type: type || "EQUITY",
+            currency: currency || "USD",
+            lastUpdated: lastUpdated || null
+          });
         }
       }
     }
@@ -169,12 +203,17 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     const meta = holding.instrumentMeta || {};
     const gramsGold = convertHoldingToGoldGrams(holding, targetPurity);
     const carpetSqft = Number(meta.carpetSqft) || 0;
+    const isUs = holding.pricingMode === "LIVE_US";
+    const sym = (meta.ticker || meta.symbol || "").toUpperCase();
+    const usItem = isUs && usMap ? usMap.get(sym) : null;
+    const isUsFund = usItem && usItem.type === "MUTUAL_FUND";
+    const qty = Number(meta.quantity) || Number(holding.units) || 0;
 
     return {
       gramsGold: Number(gramsGold.toFixed(2)),
       carpetSqft: Number(carpetSqft.toFixed(2)),
-      sharesQty: Number(meta.quantity) || 0,
-      mfUnits: Number(meta.units) || 0
+      sharesQty: isUs ? (isUsFund ? 0 : qty) : (Number(meta.quantity) || 0),
+      mfUnits: isUs ? (isUsFund ? qty : 0) : (Number(meta.units) || 0)
     };
   }
 
@@ -513,6 +552,63 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           break;
         }
 
+        case "LIVE_US": {
+          const sym = (meta.ticker || meta.symbol || "").toUpperCase();
+          const usItem = usMap ? usMap.get(sym) : null;
+          const fxRate = (window.KYF_MARKET_US && Number(window.KYF_MARKET_US.fxRateUsdInr)) ||
+                         (window.KYF_MARKET_PULSE && window.KYF_MARKET_PULSE.macro && Number(window.KYF_MARKET_PULSE.macro.usdInrRate)) ||
+                         87.50;
+          const qty = Number(meta.quantity) != null && !isNaN(Number(meta.quantity)) && Number(meta.quantity) > 0
+            ? Number(meta.quantity)
+            : (Number(h.units) || 0);
+
+          if (usItem && usItem.closePrice > 0) {
+            livePrice = usItem.closePrice;
+            const curValUSD = qty > 0 ? (qty * livePrice) : (Number(h.investedValueUSD) || (typedValue > 0 ? typedValue / fxRate : 0));
+            calculatedValue = Math.round(curValUSD * fxRate);
+            ret1m = usItem.ret1m;
+            ret3m = usItem.ret3m;
+            ret6m = usItem.ret6m;
+            ret1y = usItem.ret1y;
+
+            const formattedUnits = qty % 1 === 0
+              ? qty.toLocaleString("en-US")
+              : qty.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+            const unitName = usItem.type === "MUTUAL_FUND" ? "units" : "shares";
+
+            priceLabel = `$${livePrice.toFixed(2)} (₹${Math.round(livePrice * fxRate).toLocaleString("en-IN")})`;
+            physicalUnitsLabel = `${formattedUnits} ${unitName}`;
+
+            enriched.currency = "USD";
+            enriched.fxRate = fxRate;
+            enriched.priceUSD = livePrice;
+            enriched.currentValueUSD = Number(curValUSD.toFixed(2));
+            if (meta.avgBuyPrice != null && meta.avgBuyPrice !== "") {
+              enriched.avgBuyPriceUSD = Number(meta.avgBuyPrice);
+            }
+            if (qty > 0 && enriched.avgBuyPriceUSD > 0) {
+              enriched.investedValueUSD = Number((qty * enriched.avgBuyPriceUSD).toFixed(2));
+            } else if (h.investedValueUSD != null) {
+              enriched.investedValueUSD = Number(h.investedValueUSD);
+            }
+          } else {
+            livePrice = Number(meta.price) || Number(meta.avgBuyPrice) || 0;
+            const curValUSD = qty > 0 && livePrice > 0
+              ? (qty * livePrice)
+              : (Number(h.investedValueUSD) || (typedValue > 0 ? typedValue / fxRate : 0));
+            calculatedValue = Math.round(curValUSD * fxRate);
+            priceLabel = sym ? `Ticker: ${sym} ($)` : "Manual US ($)";
+            const formattedUnits = qty % 1 === 0
+              ? qty.toLocaleString("en-US")
+              : qty.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+            physicalUnitsLabel = `${formattedUnits} units`;
+            enriched.currency = "USD";
+            enriched.fxRate = fxRate;
+            enriched.currentValueUSD = Number(curValUSD.toFixed(2));
+          }
+          break;
+        }
+
         case "LIVE_GOLD": {
           const purity = (meta.purity || "24K").toUpperCase();
           const grams = Number(meta.grams) || 0;
@@ -620,6 +716,11 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         return enriched;
       }
 
+      if (h.pricingMode === "LIVE_US" && (h.investedValue == null || h.investedValue === "") && enriched.investedValueUSD > 0) {
+        const purchaseFx = Number(meta.purchaseFxRate) || enriched.fxRate || 87.50;
+        h.investedValue = Math.round(enriched.investedValueUSD * purchaseFx);
+      }
+
       const hasBasis = h.investedValue != null && h.investedValue !== "" && !isNaN(Number(h.investedValue)) && Number(h.investedValue) > 0;
       const invested = hasBasis ? Number(h.investedValue) : null;
       const gainLoss = hasBasis ? (calculatedValue - invested) : null;
@@ -653,10 +754,12 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
       }
 
       // Outlier guard on market-sourced returns
-      const guardKind = h.pricingMode === "LIVE_MF" ? "fund" : "stock";
+      const isUsHolding = h.pricingMode === "LIVE_US";
+      const usItem = isUsHolding && usMap ? usMap.get((meta.ticker || meta.symbol || "").toUpperCase()) : null;
+      const guardKind = (h.pricingMode === "LIVE_MF" || (isUsHolding && usItem && usItem.type === "MUTUAL_FUND")) ? "fund" : "stock";
       const guardCategory = h.pricingMode === "LIVE_MF" && mfMap ? ((mfMap.get(Number(meta.amfiCode)) || {}).category || "") : "";
       const suspectHorizons = [];
-      if (h.pricingMode === "LIVE_MF" || h.pricingMode === "LIVE_EQUITY") {
+      if (h.pricingMode === "LIVE_MF" || h.pricingMode === "LIVE_EQUITY" || h.pricingMode === "LIVE_US") {
         const rets = { ret1m, ret3m, ret6m, ret1y };
         for (const k of Object.keys(rets)) {
           if (isSuspectReturn(rets[k], k, guardKind, guardCategory)) suspectHorizons.push(k);
@@ -678,6 +781,12 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
       enriched.gainLoss = gainLoss != null ? Math.round(gainLoss) : null;
       enriched.totalReturnPct = totalReturnPct != null ? Number(totalReturnPct.toFixed(2)) : null;
       enriched.returnPct = enriched.totalReturnPct;
+      if (h.pricingMode === "LIVE_US") {
+        if (enriched.currentValueUSD != null && enriched.investedValueUSD != null && enriched.investedValueUSD > 0) {
+          enriched.gainLossUSD = Number((enriched.currentValueUSD - enriched.investedValueUSD).toFixed(2));
+          enriched.returnPctUSD = Number((((enriched.currentValueUSD - enriched.investedValueUSD) / enriched.investedValueUSD) * 100).toFixed(2));
+        }
+      }
       enriched.activeHorizonReturn = activeHorizonReturn != null ? Number(activeHorizonReturn.toFixed(2)) : null;
       enriched.activeHorizonLabel = activeHorizonLabel;
       enriched.priceLabel = priceLabel;
@@ -1102,6 +1211,12 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     return null;
   }
 
+  function lookupUsByTicker(ticker) {
+    ensureIndexed();
+    if (!ticker) return null;
+    return usMap ? (usMap.get(String(ticker).trim().toUpperCase()) || null) : null;
+  }
+
   return {
     ensureIndexed,
     lookupByIsin,
@@ -1109,6 +1224,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     lookupMfByCode,
     lookupEquity,
     lookupMf,
+    lookupUsByTicker,
     convertHoldingToGoldGrams,
     computeHoldingPhysicalUnits,
     calculateInflationAdjustedTarget,

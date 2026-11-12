@@ -14,7 +14,8 @@
     "arbitrageFundAvg": 7.2,
     "homeLoanAvg": 8.65,
     "personalLoanAvg": 14.5,
-    "creditCardApr": 39
+    "creditCardApr": 39,
+    "usdInrRate": 87.50
   },
   "preciousMetals": {
     "gold24kPerGram": 13800,

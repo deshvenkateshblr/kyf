@@ -37,6 +37,7 @@ function loadScript(relPath) {
 // Load datasets and engine
 loadScript("data/market-equities.js");
 loadScript("data/market-mf.js");
+loadScript("data/market-us.js");
 loadScript("data/market-pulse.js");
 loadScript("js/portfolio-engine.js");
 loadScript("js/portfolio-importer.js");
@@ -439,7 +440,8 @@ test("Maps scheme without 'Direct' to REGULAR with regular NAV and regular ISIN"
   });
   assert.equal(res.instrumentMeta.planType, "REGULAR", "Plan type must be REGULAR");
   assert.equal(res.instrumentMeta.isin, "INF879O01019", "Must map to regular ISIN");
-  assert.ok(Math.abs(res.livePrice - 85.5091) < 0.01, "Must use regular NAV (85.51)");
+  const ppScheme = engine.lookupMfByCode(122639);
+  assert.ok(Math.abs(res.livePrice - ppScheme.regularNav) < 0.01, "Must use live regular NAV");
 });
 
 test("Maps scheme with 'Direct' to DIRECT with direct NAV and direct ISIN", () => {
@@ -449,7 +451,8 @@ test("Maps scheme with 'Direct' to DIRECT with direct NAV and direct ISIN", () =
   });
   assert.equal(res.instrumentMeta.planType, "DIRECT", "Plan type must be DIRECT");
   assert.equal(res.instrumentMeta.isin, "INF879O01027", "Must map to direct ISIN");
-  assert.ok(Math.abs(res.livePrice - 93.9483) < 0.01, "Must use direct NAV (93.95)");
+  const ppScheme = engine.lookupMfByCode(122639);
+  assert.ok(Math.abs(res.livePrice - ppScheme.directNav) < 0.01, "Must use live direct NAV");
 });
 
 test("Maps abbreviations 'Reg', 'Reg.', 'RP' to REGULAR", () => {
@@ -498,6 +501,87 @@ Parag Parikh Flexi Cap Fund - Direct Plan - Growth,2222/00,100,7000,9395`;
   assert.ok(enrichedReg.regularAlert != null, "Regular holding triggers Regular Alert");
   assert.ok(enrichedReg.regularAlert.gapPct > 0, "Shows positive corpus gap for direct plan");
   assert.equal(enrichedDir.regularAlert, null, "Direct holding has no regular alert");
+});
+
+console.log("\n[TEST GROUP 10] US Equities & Mutual Funds (LIVE_US Engine Valuation)");
+test("lookupUsByTicker resolves US stocks and US mutual funds", () => {
+  const aapl = engine.lookupUsByTicker("AAPL");
+  assert.ok(aapl, "AAPL must resolve in US market dataset");
+  assert.equal(aapl.ticker, "AAPL");
+  assert.equal(aapl.type, "EQUITY");
+  assert.ok(aapl.closePrice > 0, "AAPL must have positive close price");
+
+  const fxaix = engine.lookupUsByTicker("FXAIX");
+  assert.ok(fxaix, "FXAIX must resolve in US market dataset");
+  assert.equal(fxaix.ticker, "FXAIX");
+  assert.equal(fxaix.type, "MUTUAL_FUND");
+  assert.ok(fxaix.closePrice > 0, "FXAIX must have positive close price");
+});
+
+test("LIVE_US enriches US equity holding with USD price, INR converted value, and fractional shares", () => {
+  const holding = {
+    id: "us_stock_test",
+    name: "Apple Inc.",
+    pricingMode: "LIVE_US",
+    currency: "USD",
+    instrumentMeta: {
+      ticker: "AAPL",
+      quantity: 12.5,
+      avgBuyPrice: 300
+    }
+  };
+
+  const [enriched] = engine.enrichHoldingsWithLiveMarket([holding]);
+  assert.equal(enriched.currency, "USD");
+  assert.ok(enriched.priceUSD > 0, "Enriched priceUSD must be positive");
+  assert.equal(enriched.currentValueUSD, Math.round(12.5 * enriched.priceUSD * 100) / 100);
+  assert.equal(enriched.investedValueUSD, 3750);
+  assert.ok(enriched.currentValue > 0, "Current value in INR must be positive");
+  assert.ok(enriched.investedValue > 0, "Invested value in INR must be auto-calculated");
+  assert.ok(enriched.priceLabel.includes("$"), "Price label includes dollar sign");
+  assert.ok(enriched.priceLabel.includes("₹"), "Price label includes rupee equivalent");
+  assert.ok(enriched.physicalUnitsLabel.includes("shares"), "Units label specifies shares for equities");
+});
+
+test("LIVE_US enriches US mutual fund with units label and accurate USD/INR basis calculation", () => {
+  const holding = {
+    id: "us_fund_test",
+    name: "Fidelity 500 Index Fund",
+    pricingMode: "LIVE_US",
+    currency: "USD",
+    instrumentMeta: {
+      ticker: "FXAIX",
+      quantity: 35.819,
+      avgBuyPrice: 200
+    }
+  };
+
+  const [enriched] = engine.enrichHoldingsWithLiveMarket([holding]);
+  assert.equal(enriched.currency, "USD");
+  assert.ok(enriched.priceUSD > 0);
+  assert.ok(enriched.physicalUnitsLabel.includes("units"), "Units label specifies units for mutual funds");
+  assert.equal(enriched.investedValueUSD, Math.round(35.819 * 200 * 100) / 100);
+  assert.ok(enriched.gainLossUSD != null, "Calculates USD gain/loss");
+  assert.ok(enriched.returnPctUSD != null, "Calculates USD return percentage");
+});
+
+test("computeHoldingPhysicalUnits correctly distinguishes US stocks (shares) and US funds (units)", () => {
+  const stockHolding = {
+    pricingMode: "LIVE_US",
+    instrumentMeta: { ticker: "AAPL", quantity: 15.5 }
+  };
+  const fundHolding = {
+    pricingMode: "LIVE_US",
+    instrumentMeta: { ticker: "FXAIX", quantity: 28.25 }
+  };
+
+  const stockUnits = engine.computeHoldingPhysicalUnits(stockHolding);
+  assert.equal(stockUnits.sharesQty, 15.5);
+  assert.equal(stockUnits.mfUnits, 0);
+
+  const fundUnits = engine.computeHoldingPhysicalUnits(fundHolding);
+  assert.equal(fundUnits.sharesQty, 0);
+  assert.equal(fundUnits.mfUnits, 28.25);
 });
 
 console.log(`\n========================================`);

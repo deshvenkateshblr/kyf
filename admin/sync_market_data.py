@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
-Know Your Finance (KYF) — Unified EOD Market Data Build Script (Modules 3, 4 & 5)
+Know Your Finance (KYF) — Unified EOD Market Data Build Script (Modules 3, 4, 5 & 5B)
 Run via VS Code Build Task (Ctrl+Shift+B) or `python admin/sync_market_data.py`
 Outputs:
   - ../data/market-pulse.js    (Module 3: Macro, Gold & Live NSE Index Multiples/Returns)
   - ../data/market-equities.js (Module 4: NSE Stocks with Latest, 1M, 3M, 6M, 1Y Growth %)
   - ../data/market-mf.js       (Module 5: AMFI Direct/Regular NAVs with 1M, 3M, 6M, 1Y Growth %)
+  - ../data/market-us.js       (Module 5B: US Stocks & Mutual Funds with USD/INR)
 """
 
 import csv
 import datetime
+import gzip
 import http.cookiejar
 import io
 import json
@@ -424,6 +426,7 @@ DEFAULT_PULSE_CONFIG = {
         "homeLoanAvg": 8.65,
         "personalLoanAvg": 14.50,
         "creditCardApr": 39.00,
+        "usdInrRate": 87.50,
     },
     "preciousMetals": {
         "gold24kPerGram": 13800,
@@ -594,6 +597,55 @@ def compute_live_precious_metals(opener, horizons: dict, base_pm: dict) -> dict:
     return out
 
 
+def fetch_live_usdinr_rate(fallback_rate: float = 87.50) -> float:
+    """
+    Fetches the live USD/INR exchange rate on-demand from free, public forex feeds with multi-source fallback.
+    1. open.er-api.com (Open Exchange Rates public free tier)
+    2. api.frankfurter.app (European Central Bank official reference feed)
+    3. Yahoo Finance USDINR=X
+    4. Local cache (.cache/usdinr_latest.json)
+    5. fallback_rate / pulse_config.json
+    """
+    cache_file = os.path.join(CACHE_DIR, "usdinr_latest.json")
+
+    sources = [
+        ("open.er-api.com", "https://open.er-api.com/v6/latest/USD", lambda d: d.get("rates", {}).get("INR")),
+        ("Frankfurter (ECB)", "https://api.frankfurter.app/latest?from=USD&to=INR", lambda d: d.get("rates", {}).get("INR")),
+        ("Yahoo Finance", "https://query1.finance.yahoo.com/v8/finance/chart/USDINR=X", lambda d: d["chart"]["result"][0]["meta"].get("regularMarketPrice")),
+    ]
+
+    for name, url, extractor in sources:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                val = extractor(data)
+                if val and float(val) > 0:
+                    rate = round(float(val), 2)
+                    print(f"  [Live USD/INR Rate] Fetched {rate} from {name}")
+                    try:
+                        with open(cache_file, "w", encoding="utf-8") as f:
+                            json.dump({"rate": rate, "source": name, "timestamp": datetime.datetime.now().isoformat()}, f)
+                    except Exception:
+                        pass
+                    return rate
+        except Exception:
+            continue
+
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cdata = json.load(f)
+                rate = float(cdata.get("rate", fallback_rate))
+                print(f"  [Cache USD/INR Rate] Using cached {rate} from {cdata.get('source', 'cache')}")
+                return rate
+        except Exception:
+            pass
+
+    print(f"  [Fallback USD/INR Rate] Using default {fallback_rate}")
+    return fallback_rate
+
+
 def build_pulse_js(opener, horizons: dict):
     print("\n--- Building Module 3: data/market-pulse.js ---")
     if not os.path.exists(PULSE_CONFIG_PATH):
@@ -666,11 +718,16 @@ def build_pulse_js(opener, horizons: dict):
 
     effective_as_of = horizons["latest"].isoformat() if has_live_latest else existing_pulse.get("asOf", horizons["latest"].isoformat())
 
+    cfg_fx = float(cfg.get("macro", {}).get("usdInrRate", 87.50))
+    live_fx = fetch_live_usdinr_rate(fallback_rate=cfg_fx)
+    macro_payload = dict(cfg["macro"])
+    macro_payload["usdInrRate"] = live_fx
+
     pulse_payload = {
         "asOf": effective_as_of,
         "lastTradingDay": effective_as_of,
         "horizons": {k: v.isoformat() for k, v in horizons.items()},
-        "macro": cfg["macro"],
+        "macro": macro_payload,
         "preciousMetals": live_pm,
         "indices": indices_out,
     }
@@ -1049,6 +1106,252 @@ def build_mf_js(opener, horizons: dict):
     print(f"  [Success] Wrote {len(tuples)} MF schemes to {out_path} ({len(js_content)/1024:.1f} KB)")
 
 
+KNOWN_US_METADATA = {
+    # Top US Equities
+    "AAPL": ("Apple Inc.", "EQUITY"),
+    "MSFT": ("Microsoft Corporation", "EQUITY"),
+    "GOOGL": ("Alphabet Inc. (Class A)", "EQUITY"),
+    "GOOG": ("Alphabet Inc. (Class C)", "EQUITY"),
+    "AMZN": ("Amazon.com Inc.", "EQUITY"),
+    "NVDA": ("NVIDIA Corporation", "EQUITY"),
+    "TSLA": ("Tesla Inc.", "EQUITY"),
+    "META": ("Meta Platforms Inc.", "EQUITY"),
+    "BRK.B": ("Berkshire Hathaway Inc. (Class B)", "EQUITY"),
+    "BRK.A": ("Berkshire Hathaway Inc. (Class A)", "EQUITY"),
+    "AVGO": ("Broadcom Inc.", "EQUITY"),
+    "JPM": ("JPMorgan Chase & Co.", "EQUITY"),
+    "V": ("Visa Inc.", "EQUITY"),
+    "WMT": ("Walmart Inc.", "EQUITY"),
+    "LLY": ("Eli Lilly and Company", "EQUITY"),
+    "UNH": ("UnitedHealth Group Inc.", "EQUITY"),
+    "JNJ": ("Johnson & Johnson", "EQUITY"),
+    "PG": ("Procter & Gamble Co.", "EQUITY"),
+    # Major US ETFs
+    "VOO": ("Vanguard S&P 500 ETF", "ETF"),
+    "SPY": ("SPDR S&P 500 ETF Trust", "ETF"),
+    "QQQ": ("Invesco QQQ Trust (Nasdaq-100)", "ETF"),
+    "VTI": ("Vanguard Total Stock Market ETF", "ETF"),
+    "IWM": ("iShares Russell 2000 ETF", "ETF"),
+    "VEA": ("Vanguard FTSE Developed Markets ETF", "ETF"),
+    "VWO": ("Vanguard FTSE Emerging Markets ETF", "ETF"),
+    "BND": ("Vanguard Total Bond Market ETF", "ETF"),
+    # US Mutual Funds / 401(k) / Index Funds
+    "FXAIX": ("Fidelity 500 Index Fund", "MUTUAL_FUND"),
+    "VFIAX": ("Vanguard 500 Index Fund Admiral", "MUTUAL_FUND"),
+    "VTSAX": ("Vanguard Total Stock Market Index Admiral", "MUTUAL_FUND"),
+    "FCNTX": ("Fidelity Contrafund", "MUTUAL_FUND"),
+    "VWENX": ("Vanguard Wellington Fund Admiral", "MUTUAL_FUND"),
+    "FZROX": ("Fidelity ZERO Total Market Index", "MUTUAL_FUND"),
+    "FNILX": ("Fidelity ZERO Large Cap Index", "MUTUAL_FUND"),
+    "VBTLX": ("Vanguard Total Bond Market Index Admiral", "MUTUAL_FUND"),
+    "VTIAX": ("Vanguard Total International Stock Index Admiral", "MUTUAL_FUND"),
+}
+
+
+def clean_sec_title(title: str) -> str:
+    """Converts ALL-CAPS SEC company names to clean Title Case while preserving standard acronyms."""
+    if not title:
+        return ""
+    if title.isupper():
+        words = title.split()
+        preserved = {"LLC", "LP", "PLC", "ETF", "USA", "UK", "US", "INC", "CORP", "CO", "LTD", "S&P"}
+        cleaned = []
+        for w in words:
+            up = w.upper()
+            if up in ("INC", "CORP", "CO", "LTD"):
+                cleaned.append(w.capitalize() + ("." if not w.endswith(".") else ""))
+            elif up in preserved:
+                cleaned.append("S&P" if up == "S&P" else up)
+            else:
+                cleaned.append(w.capitalize())
+        return " ".join(cleaned)
+    return title
+
+
+def fetch_sec_company_tickers(cache_dir: str = CACHE_DIR, max_age_days: int = 30) -> dict:
+    """
+    Loads 10,000+ US public company / ETF ticker symbols from local cache or official SEC feed.
+    Feed: https://www.sec.gov/files/company_tickers.json
+    Cache: admin/.cache/sec_company_tickers.json (TTL: 30 days)
+    """
+    cache_file = os.path.join(cache_dir, "sec_company_tickers.json")
+
+    # 1. Return fresh cache if available (< 30 days old)
+    if os.path.exists(cache_file) and os.path.getsize(cache_file) > 1000:
+        age_days = (datetime.datetime.now().timestamp() - os.path.getmtime(cache_file)) / 86400
+        if age_days < max_age_days:
+            try:
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+
+    # 2. Attempt download from SEC EDGAR
+    url = "https://www.sec.gov/files/company_tickers.json"
+    headers = {
+        "User-Agent": "KYF_Portfolio_Tracker/1.9 admin@kyf.local",
+        "Accept-Encoding": "gzip, deflate",
+    }
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            content = resp.read()
+            if resp.info().get("Content-Encoding") == "gzip":
+                content = gzip.decompress(content)
+            raw = json.loads(content.decode("utf-8"))
+
+        ticker_map = {}
+        for entry in raw.values():
+            t = (entry.get("ticker") or "").strip().upper()
+            title = (entry.get("title") or "").strip()
+            if t and title:
+                ticker_map[t] = title
+
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump(ticker_map, f)
+        print(f"  [SEC Cache Updated] Cached {len(ticker_map)} company tickers to {cache_file}")
+        return ticker_map
+    except Exception as e:
+        # Fall back to existing cache if available (even if expired)
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        print(f"  [Info] SEC ticker feed unavailable ({e}); using built-in metadata.")
+        return {}
+
+
+def build_us_market_js(horizons: dict = None):
+    """Module 5B: Build data/market-us.js from data/us_bhavcopy_latest.csv (or us_bhavcopy.csv)."""
+    print("\n--- Building Module 5B: data/market-us.js (US Stocks & Funds) ---")
+
+    candidate_files = [
+        os.path.join(DATA_DIR, "us_bhavcopy_latest.csv"),
+        os.path.join(DATA_DIR, "us_bhavcopy.csv"),
+    ]
+    csv_file = None
+    for cf in candidate_files:
+        if os.path.exists(cf) and os.path.getsize(cf) > 0:
+            csv_file = cf
+            break
+
+    if not csv_file:
+        import glob
+        pattern = os.path.join(DATA_DIR, "us_bhavcopy_*.csv")
+        matches = sorted(glob.glob(pattern), reverse=True)
+        if matches:
+            csv_file = matches[0]
+
+    if not csv_file:
+        print("  [Skip] No us_bhavcopy CSV found in data/ directory.")
+        return
+
+    # Load SEC Master Tickers (~10,000+ US symbols)
+    sec_tickers = fetch_sec_company_tickers(cache_dir=CACHE_DIR)
+    if sec_tickers:
+        print(f"  [Loaded SEC Reference] {len(sec_tickers)} US symbols ready for enrichment.")
+
+    # Fetch live USD/INR exchange rate on demand (with multi-source fallback and local cache)
+    cfg_fx = 87.50
+    if os.path.exists(PULSE_CONFIG_PATH):
+        try:
+            with open(PULSE_CONFIG_PATH, "r", encoding="utf-8") as f:
+                pcfg = json.load(f)
+                cfg_fx = float(pcfg.get("macro", {}).get("usdInrRate", 87.50))
+        except Exception:
+            pass
+    fx_rate = fetch_live_usdinr_rate(fallback_rate=cfg_fx)
+
+    records = []
+    as_of = horizons["latest"].isoformat() if (horizons and "latest" in horizons) else datetime.date.today().isoformat()
+
+    try:
+        with open(csv_file, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                ticker = (row.get("Ticker") or row.get("symbol") or "").strip().upper()
+                if not ticker:
+                    continue
+                try:
+                    close_price = float(row.get("Close") or row.get("close") or 0.0)
+                except ValueError:
+                    continue
+
+                last_updated = (row.get("Last_Updated_UTC") or "").strip()
+                if last_updated:
+                    date_part = last_updated.split(" ")[0].strip()
+                    if re.match(r"^\d{4}-\d{2}-\d{2}$", date_part):
+                        as_of = date_part
+
+                # 3-Tier enrichment:
+                # 1. Curated metadata
+                # 2. Official SEC EDGAR company tickers (~10,000+ US equities/ETFs)
+                # 3. NASDAQ/FINRA 5-letter 'X' mutual fund heuristic
+                if ticker in KNOWN_US_METADATA:
+                    name, inst_type = KNOWN_US_METADATA[ticker]
+                elif ticker in sec_tickers:
+                    name = clean_sec_title(sec_tickers[ticker])
+                    inst_type = "ETF" if ("ETF" in name.upper() or "TRUST" in name.upper()) else "EQUITY"
+                elif len(ticker) == 5 and ticker.endswith("X"):
+                    name = f"{ticker} Mutual Fund"
+                    inst_type = "MUTUAL_FUND"
+                else:
+                    name = ticker
+                    inst_type = "EQUITY"
+
+                records.append({
+                    "ticker": ticker,
+                    "name": name,
+                    "closePrice": close_price,
+                    "type": inst_type,
+                    "currency": "USD",
+                    "lastUpdated": last_updated,
+                })
+    except Exception as e:
+        print(f"  [Error] Failed to read {csv_file}: {e}")
+        return
+        return
+
+    records.sort(key=lambda x: x["ticker"])
+
+    instruments_array = [
+        [r["ticker"], r["name"], r["closePrice"], r["type"], r["currency"], r["lastUpdated"]]
+        for r in records
+    ]
+
+    by_ticker = {
+        r["ticker"]: {
+            "ticker": r["ticker"],
+            "name": r["name"],
+            "closePrice": r["closePrice"],
+            "type": r["type"],
+            "currency": r["currency"],
+            "lastUpdated": r["lastUpdated"],
+        }
+        for r in records
+    }
+
+    out_payload = {
+        "asOf": as_of,
+        "fxRateUsdInr": fx_rate,
+        "columns": ["ticker", "name", "closePrice", "type", "currency", "lastUpdated"],
+        "instruments": instruments_array,
+        "byTicker": by_ticker,
+    }
+
+    js_content = (
+        f"// Auto-generated by admin/sync_market_data.py on {datetime.datetime.now().isoformat()}\n"
+        f"window.KYF_MARKET_US = {json.dumps(out_payload, indent=2)};\n"
+    )
+
+    out_path = os.path.join(DATA_DIR, "market-us.js")
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(js_content)
+    print(f"  [Success] Wrote {len(records)} US instruments to {out_path} ({len(js_content)/1024:.1f} KB)")
+
+
 def sync_nhb_residex():
     """Module 6: NHB RESIDEX Real Estate Sync via admin/sync_nhb_residex.mjs"""
     print("\n--- Building Module 6: Real Estate (NHB RESIDEX) ---")
@@ -1112,6 +1415,7 @@ if __name__ == "__main__":
     ca_data = build_corporate_actions_js(http_opener)
     build_equities_js(http_opener, target_horizons, ca_data)
     build_mf_js(http_opener, target_horizons)
+    build_us_market_js(target_horizons)
     sync_nhb_residex()
     git_commit_and_push(target_horizons)
-    print("\n=== All Market Bundles (pulse, corporate-actions, equities, mf, realestate) Updated in /data/ ===")
+    print("\n=== All Market Bundles (pulse, corporate-actions, equities, mf, us, realestate) Updated in /data/ ===")
