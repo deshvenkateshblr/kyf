@@ -1537,7 +1537,7 @@ def load_cached_us_bhavcopy(dt: datetime.date) -> dict:
     return None
 
 
-def fetch_us_bhavcopy_for_date(dt: datetime.date, tickers: list, session=None, is_latest=False) -> dict:
+def fetch_us_bhavcopy_for_date(dt: datetime.date, tickers: list, is_latest=False) -> dict:
     """
     Option 1: Fetches US market quotes for a specific calendar date dt.
     Always looks for local cache first before querying Yahoo Finance.
@@ -1552,25 +1552,18 @@ def fetch_us_bhavcopy_for_date(dt: datetime.date, tickers: list, session=None, i
     # 2. Check dependencies
     try:
         import yfinance as yf
-        import requests
         import pandas as pd
     except ImportError:
-        print("  [US Bhavcopy Info] yfinance, requests, or pandas not installed in this environment.")
+        print("  [US Bhavcopy Info] yfinance or pandas not installed in this environment.")
         return load_cached_us_bhavcopy(dt) or {}
 
-    if session is None:
-        session = requests.Session()
-        session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        })
-
-    # 3. Download from Yahoo Finance with buffer [dt - 5 days, dt + 1 day] to capture weekend/holiday close
-    start_dt = dt - datetime.timedelta(days=5)
+    # 3. Download from Yahoo Finance with tight buffer [dt - 4 days, dt + 1 day] to capture weekend/holiday close
+    start_dt = dt - datetime.timedelta(days=4)
     end_dt = dt + datetime.timedelta(days=1)
     print(f"  [Yahoo Finance Download] Fetching US Bhavcopy for {dt.strftime('%Y-%m-%d')} (window {start_dt} to {end_dt})...")
 
     try:
-        data = yf.download(tickers, start=start_dt.strftime("%Y-%m-%d"), end=end_dt.strftime("%Y-%m-%d"), session=session, progress=False)
+        data = yf.download(tickers, start=start_dt.strftime("%Y-%m-%d"), end=end_dt.strftime("%Y-%m-%d"), progress=False)
         if data is None or getattr(data, "empty", True):
             print(f"  [US Bhavcopy Warning] Empty dataset from Yahoo Finance for {dt}; attempting cache fallback.")
             return load_cached_us_bhavcopy(dt) or {}
@@ -1675,19 +1668,10 @@ def fetch_us_bhavcopy_yfinance(horizons: dict = None, tickers: list = None) -> t
         except Exception:
             pass
 
-    try:
-        import requests
-        session = requests.Session()
-        session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        })
-    except Exception:
-        session = None
-
     snapshots = {}
     for h_key, dt in horizons.items():
         is_latest = (h_key == "latest")
-        prices = fetch_us_bhavcopy_for_date(dt, all_tickers, session=session, is_latest=is_latest)
+        prices = fetch_us_bhavcopy_for_date(dt, all_tickers, is_latest=is_latest)
         snapshots[h_key] = prices
 
     latest_prices = snapshots.get("latest", {})

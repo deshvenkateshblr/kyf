@@ -21,6 +21,11 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install yfinance pandas requests
+
       - name: Execute KYF Market Data Sync (with remote us_bhavcopy fetch)
         run: |
           python admin/sync_market_data.py --skip-nhb

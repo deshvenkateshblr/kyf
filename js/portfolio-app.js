@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.11.0
+ * Version: v1.11.1
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -2582,8 +2582,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    // Ensure the new / updated holding is always visible by resetting scope and search filters
-    activeMemberScope = "ALL";
+    // Preserve active family member scope (do not reset to "ALL")
+    if (activeMemberScope instanceof Set) {
+      if (!activeMemberScope.has(member)) {
+        activeMemberScope = new Set([member]);
+      }
+    }
     selectedPills = "ALL";
     searchQuery = "";
     if (els.searchInput) els.searchInput.value = "";
