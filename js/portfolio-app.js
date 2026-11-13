@@ -98,6 +98,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     importPreviewTitle: document.getElementById("import-preview-title"),
     importPreviewCount: document.getElementById("import-preview-count"),
     importPreviewTbody: document.getElementById("import-preview-tbody"),
+    importErrorBanner: document.getElementById("import-error-banner"),
+    importErrorTitle: document.getElementById("import-error-title"),
+    importErrorDetail: document.getElementById("import-error-detail"),
     // Investment Holding Modal elements
     btnOpenHoldingModal: document.getElementById("btn-open-holding-modal"),
     holdingModal: document.getElementById("holding-modal"),
@@ -2702,7 +2705,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  function showImportError(title, detail) {
+    if (!els.importErrorBanner) return;
+    if (els.importErrorTitle) els.importErrorTitle.textContent = title || "Unable to process file";
+    if (els.importErrorDetail) els.importErrorDetail.textContent = detail || "";
+    els.importErrorBanner.style.display = "flex";
+  }
+
+  function hideImportError() {
+    if (els.importErrorBanner) {
+      els.importErrorBanner.style.display = "none";
+    }
+  }
+
   function resetImportDropzone() {
+    hideImportError();
     if (!els.importDropzone) return;
     els.importDropzone.classList.remove("has-file", "is-reading", "dragover");
     if (els.importDropzoneContent) {
@@ -2785,6 +2802,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function closeImportModal() {
     if (!els.importModal) return;
+    hideImportError();
     els.importModal.style.display = "none";
     els.importModal.setAttribute("aria-hidden", "true");
     pendingImportHoldings = [];
@@ -2935,6 +2953,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function handleBrokerFile(file) {
     if (!file || !window.KYF_BROKER_IMPORTER) return;
     currentLoadedFile = file;
+    hideImportError();
+
+    if (file.size === 0) {
+      if (els.importDropzone) {
+        els.importDropzone.classList.remove("is-reading", "has-file");
+      }
+      if (els.importStatsSummary) els.importStatsSummary.style.display = "none";
+      if (els.importPreviewWrap) els.importPreviewWrap.style.display = "none";
+      if (els.btnConfirmImport) els.btnConfirmImport.disabled = true;
+      showImportError(
+        `"${file.name}" is empty`,
+        "The selected file contains 0 bytes. Please select a valid statement export."
+      );
+      showToast("Selected file is empty (0 bytes).", "warning");
+      return;
+    }
 
     let sourceId = els.importSourceSelect ? els.importSourceSelect.value : "";
     if (!sourceId) {
@@ -2994,9 +3028,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         if (els.importStatsSummary) els.importStatsSummary.style.display = "none";
         if (els.importPreviewWrap) els.importPreviewWrap.style.display = "none";
+        if (els.btnConfirmImport) els.btnConfirmImport.disabled = true;
+        showImportError(
+          `No valid holdings recognized in "${file.name}"`,
+          "Check that you chose the right broker/source, and that the file contains position rows with a security name/ticker and quantity. Click or drop another file to retry."
+        );
         showToast("No valid holdings detected in this file.", "warning");
         return;
       }
+
+      hideImportError();
 
       // Explicitly assign EVERY holding to the user's chosen member
       pendingImportHoldings = parsed.holdings.map(h => ({ ...h, member: selectedMember }));
@@ -3044,6 +3085,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           </div>
         `;
       }
+      if (els.importStatsSummary) els.importStatsSummary.style.display = "none";
+      if (els.importPreviewWrap) els.importPreviewWrap.style.display = "none";
+      if (els.btnConfirmImport) els.btnConfirmImport.disabled = true;
+      showImportError(
+        `Failed to process "${file.name}"`,
+        (err.message || "Parse error") + ". Please verify that the file is a supported statement (CSV, TSV, or Excel .xlsx / .xls)."
+      );
       showToast(err.message || "Failed to parse statement file.", "danger");
     }
   }

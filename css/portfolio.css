@@ -3028,6 +3028,48 @@ button {
   to { transform: rotate(360deg); }
 }
 
+.import-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--rose-soft);
+  border: 1px solid var(--rose);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 14px 0 6px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.import-error-icon {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--rose);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.import-error-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.import-error-title {
+  display: block;
+  color: var(--rose);
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.import-error-detail {
+  display: block;
+  color: var(--ink);
+  font-size: 12px;
+  opacity: 0.9;
+}
+
 .import-stats-summary {
   font-size: 12px;
   font-weight: 500;

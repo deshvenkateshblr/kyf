@@ -753,6 +753,30 @@ test("Imports Chase positions CSV for family member with USD valuation and INR c
   assert.strictEqual(cash.currency, "USD");
 });
 
+console.log("\n[TEST GROUP 13] Inline Import Error Banner in DOM & UI");
+test("portfolio.html contains import-error-banner with title and detail containers", () => {
+  const html = fs.readFileSync(path.join(BASE_DIR, "portfolio.html"), "utf-8");
+  assert.ok(html.includes('id="import-error-banner"'), "import-error-banner element present");
+  assert.ok(html.includes('id="import-error-title"'), "import-error-title element present");
+  assert.ok(html.includes('id="import-error-detail"'), "import-error-detail element present");
+  assert.ok(html.includes('role="alert"'), "banner has accessible role=alert");
+});
+
+test("css/portfolio.css includes styling for .import-error-banner and children", () => {
+  const css = fs.readFileSync(path.join(BASE_DIR, "css/portfolio.css"), "utf-8");
+  assert.ok(css.includes(".import-error-banner"), ".import-error-banner selector styled");
+  assert.ok(css.includes(".import-error-icon"), ".import-error-icon selector styled");
+  assert.ok(css.includes(".import-error-title"), ".import-error-title selector styled");
+  assert.ok(css.includes(".import-error-detail"), ".import-error-detail selector styled");
+});
+
+test("js/portfolio-app.js defines showImportError and hideImportError handlers", () => {
+  const js = fs.readFileSync(path.join(BASE_DIR, "js/portfolio-app.js"), "utf-8");
+  assert.ok(js.includes("showImportError"), "showImportError function defined");
+  assert.ok(js.includes("hideImportError"), "hideImportError function defined");
+  assert.ok(js.includes("importErrorBanner: document.getElementById(\"import-error-banner\")"), "importErrorBanner cached in els");
+});
+
 console.log(`\n========================================`);
 console.log(`TEST SUMMARY: ${totalPassed} passed, 0 failed`);
 console.log(`========================================\n`);
