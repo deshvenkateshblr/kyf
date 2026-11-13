@@ -1885,10 +1885,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nameVal = els.inputHoldingName ? els.inputHoldingName.value : "";
     const nameTicker = extractUsTicker(nameVal);
     const existingHolding = editingHoldingId ? rawHoldings.find((h) => h.id === editingHoldingId) : null;
-    const isUs = !!(
+    const isIndian = activeModalInstrument && (activeModalInstrument.type === "stock" || activeModalInstrument.type === "fund" || activeModalInstrument.type === "gold" || activeModalInstrument.type === "property" || activeModalInstrument.type === "fd");
+    const isUs = !isIndian && !!(
       (activeModalInstrument && (activeModalInstrument.type === "us_asset" || activeModalInstrument.pricingMode === "LIVE_US")) ||
       (existingHolding && (existingHolding.pricingMode === "LIVE_US" || existingHolding.currency === "USD")) ||
-      (nameTicker && window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker && window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(nameTicker))
+      (!existingHolding && nameTicker && window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker && window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(nameTicker) && !window.KYF_PORTFOLIO_ENGINE?.lookupEquity?.(nameTicker))
     );
 
     const setHidden = (id, hide) => {
@@ -2035,10 +2036,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nameVal = els.inputHoldingName ? els.inputHoldingName.value : "";
     const nameTicker = extractUsTicker(nameVal);
     const existingHolding = editingHoldingId ? rawHoldings.find((h) => h.id === editingHoldingId) : null;
-    const isUs = !!(
+    const isIndian = activeModalInstrument && (activeModalInstrument.type === "stock" || activeModalInstrument.type === "fund" || activeModalInstrument.type === "gold" || activeModalInstrument.type === "property" || activeModalInstrument.type === "fd");
+    const isUs = !isIndian && !!(
       (activeModalInstrument && (activeModalInstrument.type === "us_asset" || activeModalInstrument.pricingMode === "LIVE_US")) ||
       (existingHolding && (existingHolding.pricingMode === "LIVE_US" || existingHolding.currency === "USD")) ||
-      (nameTicker && window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker && window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(nameTicker))
+      (!existingHolding && nameTicker && window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker && window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(nameTicker) && !window.KYF_PORTFOLIO_ENGINE?.lookupEquity?.(nameTicker))
     );
 
     const price = parseFloat(els.inputHoldingPrice ? els.inputHoldingPrice.value : "0") || 0;
@@ -2183,8 +2185,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let unitPrice = 0;
     const candidateTicker = (meta.ticker || meta.symbol || extractUsTicker(holding.name || "") || "").toUpperCase();
-    const usItem = candidateTicker && window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker ? window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(candidateTicker) : null;
-    const isUsHolding = holding.pricingMode === "LIVE_US" || holding.currency === "USD" || (holding.currentValueUSD != null && holding.currentValueUSD > 0) || !!usItem;
+    const isUsHolding = holding.pricingMode === "LIVE_US" || holding.currency === "USD" || (holding.currentValueUSD != null && holding.currentValueUSD > 0);
+    const usItem = isUsHolding && candidateTicker && window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker ? window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(candidateTicker) : null;
 
     if (isUsHolding) {
       hideMfVariantBox();
@@ -2422,10 +2424,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const usLookup = candidateTicker && window.KYF_PORTFOLIO_ENGINE?.lookupUsByTicker
       ? window.KYF_PORTFOLIO_ENGINE.lookupUsByTicker(candidateTicker)
       : null;
-    const isUsInstrument = !!(
+    const isIndianInstrument = activeModalInstrument && (activeModalInstrument.type === "stock" || activeModalInstrument.type === "fund" || activeModalInstrument.type === "gold" || activeModalInstrument.type === "property" || activeModalInstrument.type === "fd");
+    const existingH = editingHoldingId ? rawHoldings.find((h) => h.id === editingHoldingId) : null;
+    const isUsInstrument = !isIndianInstrument && !!(
       (activeModalInstrument && (activeModalInstrument.type === "us_asset" || activeModalInstrument.pricingMode === "LIVE_US")) ||
-      usLookup ||
-      (editingHoldingId && (rawHoldings.find((h) => h.id === editingHoldingId)?.pricingMode === "LIVE_US" || rawHoldings.find((h) => h.id === editingHoldingId)?.currency === "USD"))
+      (existingH && (existingH.pricingMode === "LIVE_US" || existingH.currency === "USD")) ||
+      (!existingH && usLookup && !window.KYF_PORTFOLIO_ENGINE?.lookupEquity?.(candidateTicker))
     );
 
     if (isUsInstrument) {

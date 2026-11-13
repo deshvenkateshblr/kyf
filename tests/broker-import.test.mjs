@@ -651,6 +651,7 @@ test("US Holding typed in USD ($807 VFIAX) auto-promotes to LIVE_US, converts to
     name: "Vanguard 500 Index Fund Admiral (VFIAX)",
     member: "Self",
     assetClass: "Mutual Funds",
+    currency: "USD",
     pricingMode: "MANUAL",
     currentValue: 807,
     investedValue: null
@@ -664,6 +665,36 @@ test("US Holding typed in USD ($807 VFIAX) auto-promotes to LIVE_US, converts to
   assert.strictEqual(enriched.currentValue, expectedInr, `Must convert USD to INR (@ ₹${enriched.fxRate}): ${expectedInr}`);
   assert.ok(enriched.physicalUnitsLabel.includes("units"), "Must format physical units for US fund");
   assert.ok(enriched.priceLabel.includes("$"), "Must format price in USD");
+});
+
+test("Indian stock with US ticker collision (BIL, ON, TEAM) does NOT promote to LIVE_US", () => {
+  const holdingBil = {
+    id: "hold_bil_1",
+    name: "Bhartiya International Ltd (BIL)",
+    member: "Self",
+    assetClass: "Equities",
+    currency: "INR",
+    pricingMode: "LIVE_EQUITY",
+    currentValue: 1167,
+    investedValue: 1000,
+    instrumentMeta: { symbol: "BIL" }
+  };
+  const holdingOn = {
+    id: "hold_on_1",
+    name: "ON",
+    member: "Self",
+    assetClass: "Equities",
+    currency: "INR",
+    pricingMode: "MANUAL",
+    currentValue: 50000,
+    investedValue: 40000
+  };
+
+  const enriched = engine.enrichHoldingsWithLiveMarket([holdingBil, holdingOn], "1y");
+  assert.strictEqual(enriched[0].pricingMode, "LIVE_EQUITY", "BIL must remain LIVE_EQUITY");
+  assert.strictEqual(enriched[0].currency, "INR", "BIL must remain INR");
+  assert.strictEqual(enriched[1].pricingMode, "MANUAL", "ON must remain MANUAL");
+  assert.strictEqual(enriched[1].currency, "INR", "ON must remain INR");
 });
 
 console.log(`\n========================================`);

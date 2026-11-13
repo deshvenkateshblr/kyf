@@ -261,7 +261,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     const gramsGold = convertHoldingToGoldGrams(holding, targetPurity);
     const carpetSqft = Number(meta.carpetSqft) || 0;
     const detectedTicker = (meta.ticker || meta.symbol || extractUsTicker(holding.name) || "").toUpperCase();
-    const isUs = holding.pricingMode === "LIVE_US" || holding.currency === "USD" || (detectedTicker && usMap && usMap.has(detectedTicker));
+    const isUs = holding.pricingMode === "LIVE_US" || (holding.currency === "USD" && holding.pricingMode !== "LIVE_EQUITY");
     const sym = detectedTicker;
     const usItem = isUs && usMap ? usMap.get(sym) : null;
     const isUsFund = usItem && usItem.type === "MUTUAL_FUND";
@@ -534,11 +534,11 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
       let regularAlert = null;
       let physicalUnitsLabel = "";
 
-      // Auto-detect US Assets if saved with generic MANUAL or LIVE_MF pricing mode
+      // Auto-detect US Assets only when currency is USD (never promote LIVE_EQUITY or MANUAL INR holdings solely due to ticker collision)
       let effectivePricingMode = h.pricingMode;
       const detectedUsTicker = (meta.ticker || meta.symbol || extractUsTicker(h.name) || "").toUpperCase();
-      if (effectivePricingMode !== "LIVE_US") {
-        if (h.currency === "USD" || (detectedUsTicker && usMap && usMap.has(detectedUsTicker))) {
+      if (effectivePricingMode !== "LIVE_US" && effectivePricingMode !== "LIVE_EQUITY" && h.currency === "USD") {
+        if (detectedUsTicker && usMap && usMap.has(detectedUsTicker)) {
           effectivePricingMode = "LIVE_US";
           meta.ticker = detectedUsTicker;
         }
