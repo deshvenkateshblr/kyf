@@ -106,6 +106,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
             type: obj.type || "EQUITY",
             currency: obj.currency || "USD",
             lastUpdated: obj.lastUpdated || null,
+            category: obj.category || "EQUITY",
             ret1m: obj.ret1m != null ? Number(obj.ret1m) : null,
             ret3m: obj.ret3m != null ? Number(obj.ret3m) : null,
             ret6m: obj.ret6m != null ? Number(obj.ret6m) : null,
@@ -114,14 +115,15 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         }
       } else if (Array.isArray(window.KYF_MARKET_US.instruments)) {
         for (const row of window.KYF_MARKET_US.instruments) {
-          const [ticker, name, closePrice, type, currency, lastUpdated] = row;
+          const [ticker, name, closePrice, type, currency, lastUpdated, category] = row;
           usMap.set(String(ticker).toUpperCase(), {
             ticker: String(ticker).toUpperCase(),
             name: name || ticker,
             closePrice: Number(closePrice) || 0,
             type: type || "EQUITY",
             currency: currency || "USD",
-            lastUpdated: lastUpdated || null
+            lastUpdated: lastUpdated || null,
+            category: category || "EQUITY"
           });
         }
       }
@@ -194,6 +196,35 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
       return pureGrams24k * (24 / 18);
     }
     return pureGrams24k;
+  }
+
+  // One USD/INR rate for the whole app: US market data, then the macro feed, then a last-resort constant.
+  // `source` tells the UI when the rate is only an assumption.
+  const FX_LAST_RESORT = 93.85;
+  function getUsdInr() {
+    const us = window.KYF_MARKET_US && Number(window.KYF_MARKET_US.fxRateUsdInr);
+    if (us > 0) return { rate: us, source: "market-us" };
+    const pulse = window.KYF_MARKET_PULSE && window.KYF_MARKET_PULSE.macro && Number(window.KYF_MARKET_PULSE.macro.usdInrRate);
+    if (pulse > 0) return { rate: pulse, source: "pulse" };
+    return { rate: FX_LAST_RESORT, source: "fallback" };
+  }
+
+  // US instrument -> the app's asset classes (an ETF is not a mutual fund; gold is gold; bonds are fixed income)
+  function usAssetInfo(item) {
+    const cat = (item && item.category) || "EQUITY";
+    const isFund = item && item.type === "MUTUAL_FUND";
+    switch (cat) {
+      case "BOND": return { assetClass: "Fixed Income", subCategory: isFund ? "US Bond Fund" : "US Bond ETF" };
+      case "GOLD": return { assetClass: "Commodities & Gold", subCategory: "US Gold ETF" };
+      case "SILVER": return { assetClass: "Commodities & Gold", subCategory: "US Silver ETF" };
+      case "REIT": return { assetClass: "Real Estate", subCategory: "US REIT ETF" };
+      case "CRYPTO": return { assetClass: "Alternative", subCategory: "US Bitcoin ETF" };
+      case "HYBRID": return { assetClass: isFund ? "Mutual Funds" : "Equities", subCategory: "US Balanced Fund" };
+      default:
+        if (isFund) return { assetClass: "Mutual Funds", subCategory: "US Index / Mutual Fund" };
+        if (item && item.type === "ETF") return { assetClass: "Equities", subCategory: "US Index ETF" };
+        return { assetClass: "Equities", subCategory: "US Equities" };
+    }
   }
 
   function extractUsTicker(name) {
@@ -579,9 +610,9 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         case "LIVE_US": {
           const sym = (meta.ticker || meta.symbol || extractUsTicker(h.name) || "").toUpperCase();
           const usItem = usMap ? usMap.get(sym) : null;
-          const fxRate = (window.KYF_MARKET_US && Number(window.KYF_MARKET_US.fxRateUsdInr)) ||
-                         (window.KYF_MARKET_PULSE && window.KYF_MARKET_PULSE.macro && Number(window.KYF_MARKET_PULSE.macro.usdInrRate)) ||
-                         87.50;
+          const fxInfo = getUsdInr();
+          const fxRate = fxInfo.rate;
+          enriched.fxSource = fxInfo.source;
           let qty = Number(meta.quantity) != null && !isNaN(Number(meta.quantity)) && Number(meta.quantity) > 0
             ? Number(meta.quantity)
             : (Number(h.units) || 0);
@@ -624,6 +655,9 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
             priceLabel = `$${livePrice.toFixed(2)} (₹${Math.round(livePrice * fxRate).toLocaleString("en-IN")})`;
             physicalUnitsLabel = `${formattedUnits} ${unitName}`;
 
+            const usInfo = usAssetInfo(usItem);
+            enriched.assetClass = usInfo.assetClass;
+            enriched.subCategory = usInfo.subCategory;
             enriched.currency = "USD";
             enriched.fxRate = fxRate;
             enriched.priceUSD = livePrice;
@@ -651,7 +685,13 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
               curValUSD = typedValue > 0 ? (typedValue / fxRate) : 0;
             }
             calculatedValue = Math.round(curValUSD * fxRate);
-            priceLabel = sym ? `Ticker: ${sym} ($)` : "Manual US ($)";
+            priceLabel = sym ? `No live price for ${sym} ($)` : "Manual US ($)";
+            if (meta.avgBuyPrice != null && meta.avgBuyPrice !== "" && qty > 0) {
+              enriched.avgBuyPriceUSD = Number(meta.avgBuyPrice);
+              enriched.investedValueUSD = Number((qty * enriched.avgBuyPriceUSD).toFixed(2));
+            } else if (h.investedValueUSD != null) {
+              enriched.investedValueUSD = Number(h.investedValueUSD);
+            }
             const formattedUnits = qty % 1 === 0
               ? qty.toLocaleString("en-US")
               : qty.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
@@ -770,13 +810,18 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         return enriched;
       }
 
-      if (effectivePricingMode === "LIVE_US" && (h.investedValue == null || h.investedValue === "") && enriched.investedValueUSD > 0) {
-        const purchaseFx = Number(meta.purchaseFxRate) || enriched.fxRate || 87.50;
-        h.investedValue = Math.round(enriched.investedValueUSD * purchaseFx);
+      // US holdings: the rupee cost is always the dollar cost x the rate on the day it was bought.
+      // Without a "rate when bought" the rupee gain equals the dollar gain (no currency effect is claimed).
+      let investedForGain = h.investedValue;
+      if (effectivePricingMode === "LIVE_US" && enriched.investedValueUSD > 0) {
+        const boughtFx = Number(meta.purchaseFxRate) > 0 ? Number(meta.purchaseFxRate) : (enriched.fxRate || getUsdInr().rate);
+        investedForGain = Math.round(enriched.investedValueUSD * boughtFx);
+        enriched.purchaseFxRate = Number(meta.purchaseFxRate) > 0 ? Number(meta.purchaseFxRate) : null;
+        enriched.fxEffectIncluded = enriched.purchaseFxRate != null;
       }
 
-      const hasBasis = h.investedValue != null && h.investedValue !== "" && !isNaN(Number(h.investedValue)) && Number(h.investedValue) > 0;
-      const invested = hasBasis ? Number(h.investedValue) : null;
+      const hasBasis = investedForGain != null && investedForGain !== "" && !isNaN(Number(investedForGain)) && Number(investedForGain) > 0;
+      const invested = hasBasis ? Number(investedForGain) : null;
       const gainLoss = hasBasis ? (calculatedValue - invested) : null;
       const totalReturnPct = hasBasis && invested > 0 ? ((gainLoss / invested) * 100) : null;
 
@@ -1280,6 +1325,8 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     lookupEquity,
     lookupMf,
     lookupUsByTicker,
+    getUsdInr,
+    usAssetInfo,
     convertHoldingToGoldGrams,
     computeHoldingPhysicalUnits,
     calculateInflationAdjustedTarget,

@@ -124,6 +124,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     inputHoldingUnits: document.getElementById("input-holding-units"),
     inputHoldingCurVal: document.getElementById("input-holding-curval"),
     inputHoldingInvVal: document.getElementById("input-holding-invval"),
+    inputHoldingPurchaseFx: document.getElementById("input-holding-purchasefx"),
     selectHoldingGoal: document.getElementById("select-holding-goal"),
     // Market Data Status Modal elements
     dataStatusModal: document.getElementById("data-status-modal"),
@@ -646,9 +647,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 8. Update KPI Hero Cards (Reflects Active Family Scope, Active Currency & Slicers)
     const kpis = pivotResult.kpis;
-    const fxDefault = (window.KYF_MARKET_US && Number(window.KYF_MARKET_US.fxRateUsdInr)) ||
-                      (window.KYF_MARKET_PULSE && window.KYF_MARKET_PULSE.macro && Number(window.KYF_MARKET_PULSE.macro.usdInrRate)) ||
-                      87.50;
+    const fxDefault = window.KYF_PORTFOLIO_ENGINE.getUsdInr().rate;
 
     // Scoped USD totals (strictly for holdings currently visible in scope)
     const scopedUsdWorth = scopedHoldings.reduce((sum, h) => sum + (h.currency === "USD" ? (h.currentValueUSD || 0) : 0), 0);
@@ -1540,7 +1539,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (usCandidates.length > 0) {
-      const fxRate = Number(window.KYF_MARKET_US?.fxRateUsdInr) || 93.85;
+      const fxRate = window.KYF_PORTFOLIO_ENGINE.getUsdInr().rate;
       for (const inst of usCandidates) {
         // columns: [ticker, name, closePrice, type, currency, lastUpdated]
         const ticker = String(inst[0] || "");
@@ -1558,7 +1557,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if (score > 0) {
-          const isFund = instType === "MUTUAL_FUND" || instType === "ETF";
+          const usInfo = window.KYF_PORTFOLIO_ENGINE.usAssetInfo({ type: instType, category: inst[6] || "EQUITY" });
           const inrPrice = Math.round(priceUSD * fxRate);
           const tag = instType === "ETF" ? "US ETF" : (instType === "MUTUAL_FUND" ? "US Fund" : "US Stock");
           const subText = instType === "ETF" ? `US Exchange-Traded Fund (${ticker})` : (instType === "MUTUAL_FUND" ? `US Mutual Fund (${ticker})` : `US Equity (${ticker})`);
@@ -1575,8 +1574,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             rawPrice: inrPrice,
             priceUSD: priceUSD,
             fxRate: fxRate,
-            assetClass: isFund ? "Mutual Funds" : "Equities",
-            subCategory: instType === "ETF" ? "US Index ETF" : (instType === "MUTUAL_FUND" ? "US Index / Mutual Fund" : "US Equities"),
+            assetClass: usInfo.assetClass,
+            subCategory: usInfo.subCategory,
             custodian: "Vested / DriveWealth",
             pricingMode: "LIVE_US",
             score
@@ -1855,6 +1854,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.inputHoldingInvVal) {
       els.inputHoldingInvVal.value = "";
     }
+    if (els.inputHoldingPurchaseFx) els.inputHoldingPurchaseFx.value = "";
     if (els.inputHoldingRate) {
       els.inputHoldingRate.value = item.interestRate != null ? item.interestRate : "";
     }
@@ -1901,6 +1901,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setHidden("field-holding-invval", debt);
     setHidden("field-holding-price", debt);
     setHidden("field-holding-rate", !(debt || cls === "Fixed Income"));
+    setHidden("field-holding-purchasefx", !isUs);
 
     // With units hidden, the balance gets the full row
     const worthField = document.getElementById("field-holding-curval");
@@ -2071,7 +2072,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (unitsHintEl) {
       if (isUs) {
         const curWorth = parseFloat(els.inputHoldingCurVal ? els.inputHoldingCurVal.value : "0") || 0;
-        const fxRate = Number(window.KYF_MARKET_US?.fxRateUsdInr) || 93.85;
+        const fxRate = window.KYF_PORTFOLIO_ENGINE.getUsdInr().rate;
         if (curWorth > 0) {
           const inrVal = Math.round(curWorth * fxRate);
           unitsHintEl.innerHTML = `💡 <strong>$${curWorth.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> ≈ <strong>₹${inrVal.toLocaleString("en-IN")}</strong> (@ ₹${fxRate.toFixed(2)}/$)`;
@@ -2187,7 +2188,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (isUsHolding) {
       hideMfVariantBox();
-      const fxRate = Number(window.KYF_MARKET_US?.fxRateUsdInr) || 93.85;
+      const fxRate = window.KYF_PORTFOLIO_ENGINE.getUsdInr().rate;
       const priceUSD = usItem ? usItem.closePrice : (holding.priceUSD || meta.priceUSD || 0);
       activeModalInstrument = {
         type: "us_asset",
@@ -2246,7 +2247,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (isUsHolding) {
-      const fxRate = Number(window.KYF_MARKET_US?.fxRateUsdInr) || 93.85;
+      const fxRate = window.KYF_PORTFOLIO_ENGINE.getUsdInr().rate;
       const curValUSD = holding.currentValueUSD != null
         ? holding.currentValueUSD
         : (holding.currentValue ? Number((holding.currentValue / fxRate).toFixed(2)) : "");
@@ -2255,6 +2256,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         : (holding.investedValue ? Number((holding.investedValue / fxRate).toFixed(2)) : "");
       if (els.inputHoldingCurVal) els.inputHoldingCurVal.value = curValUSD;
       if (els.inputHoldingInvVal) els.inputHoldingInvVal.value = invValUSD;
+      if (els.inputHoldingPurchaseFx) els.inputHoldingPurchaseFx.value = meta.purchaseFxRate > 0 ? meta.purchaseFxRate : "";
     } else {
       if (els.inputHoldingCurVal) els.inputHoldingCurVal.value = holding.currentValue != null ? holding.currentValue : "";
       if (els.inputHoldingInvVal) els.inputHoldingInvVal.value = holding.investedValue != null ? holding.investedValue : "";
@@ -2431,8 +2433,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const finalTicker = (candidateTicker || (activeModalInstrument && activeModalInstrument.symbol) || "").toUpperCase();
       instrumentMeta.ticker = finalTicker;
       const fxRate = (activeModalInstrument && activeModalInstrument.fxRate) ||
-                     (window.KYF_MARKET_US && Number(window.KYF_MARKET_US.fxRateUsdInr)) ||
-                     93.85;
+                     window.KYF_PORTFOLIO_ENGINE.getUsdInr().rate;
       const priceUSD = (activeModalInstrument && activeModalInstrument.priceUSD) ||
                        (usLookup ? usLookup.closePrice : 0) ||
                        (price > 0 ? price : 0);
@@ -2501,7 +2502,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const isUs = (pricingMode === "LIVE_US");
-    const fxRate = (activeModalInstrument && activeModalInstrument.fxRate) || (window.KYF_MARKET_US && Number(window.KYF_MARKET_US.fxRateUsdInr)) || 93.85;
+    const fxRate = (activeModalInstrument && activeModalInstrument.fxRate) || window.KYF_PORTFOLIO_ENGINE.getUsdInr().rate;
 
     let baseCurrentValINR = currentVal;
     let baseInvestedValINR = investedVal;
@@ -2511,9 +2512,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (isUs) {
       currentValueUSD = currentVal;
       baseCurrentValINR = Math.round(currentVal * fxRate);
+      const boughtFx = els.inputHoldingPurchaseFx ? parseFloat(els.inputHoldingPurchaseFx.value) : NaN;
+      if (boughtFx > 0) instrumentMeta.purchaseFxRate = boughtFx; else delete instrumentMeta.purchaseFxRate;
       if (investedVal != null) {
         investedValueUSD = investedVal;
-        baseInvestedValINR = Math.round(investedVal * fxRate);
+        baseInvestedValINR = Math.round(investedVal * (boughtFx > 0 ? boughtFx : fxRate));
       }
       instrumentMeta.priceUSD = price;
       instrumentMeta.fxRate = fxRate;
@@ -2815,7 +2818,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         status: (window.KYF_MARKET_US && window.KYF_MARKET_US.asOf) ? "HEALTHY" : "UNKNOWN",
         asOf: (window.KYF_MARKET_US && window.KYF_MARKET_US.asOf) || "Unknown",
         count: (window.KYF_MARKET_US && window.KYF_MARKET_US.instruments) ? Object.keys(window.KYF_MARKET_US.instruments).length : 0,
-        details: `USD/INR Rate: ₹${(window.KYF_MARKET_US && window.KYF_MARKET_US.usdInr) || 93.85}`,
+        details: `USD/INR Rate: ₹${window.KYF_PORTFOLIO_ENGINE.getUsdInr().rate}` + (window.KYF_PORTFOLIO_ENGINE.getUsdInr().source === "fallback" ? " (assumed: live rate missing)" : ""),
         source: "GitHub us_bhavcopy & Yahoo Finance"
       },
       bullion: {

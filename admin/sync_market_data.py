@@ -1648,6 +1648,22 @@ def fetch_remote_us_bhavcopy_from_repo() -> bool:
     return False
 
 
+# What each US instrument really is (the app maps this to its asset classes).
+# EQUITY is the default; list only the exceptions.
+US_CATEGORY_OVERRIDES = {
+    "AGG": "BOND", "BND": "BOND", "TLT": "BOND", "HYG": "BOND", "VBTLX": "BOND",
+    "GLD": "GOLD", "IAU": "GOLD",
+    "SLV": "SILVER",
+    "VNQ": "REIT",
+    "IBIT": "CRYPTO",
+    "VWENX": "HYBRID",
+}
+
+
+def us_category(ticker: str) -> str:
+    return US_CATEGORY_OVERRIDES.get(ticker, "EQUITY")
+
+
 def build_us_market_js(horizons: dict = None):
     """Module 5B: Build data/market-us.js from data/us_bhavcopy_latest.csv (or us_bhavcopy.csv)."""
     print("\n--- Building Module 5B: data/market-us.js (US Stocks & Funds) ---")
@@ -1740,6 +1756,7 @@ def build_us_market_js(horizons: dict = None):
                     "type": inst_type,
                     "currency": "USD",
                     "lastUpdated": last_updated,
+                    "category": us_category(ticker),
                 })
     except Exception as e:
         print(f"  [Error] Failed to read {csv_file}: {e}")
@@ -1749,7 +1766,7 @@ def build_us_market_js(horizons: dict = None):
     records.sort(key=lambda x: x["ticker"])
 
     instruments_array = [
-        [r["ticker"], r["name"], r["closePrice"], r["type"], r["currency"], r["lastUpdated"]]
+        [r["ticker"], r["name"], r["closePrice"], r["type"], r["currency"], r["lastUpdated"], r["category"]]
         for r in records
     ]
 
@@ -1761,6 +1778,7 @@ def build_us_market_js(horizons: dict = None):
             "type": r["type"],
             "currency": r["currency"],
             "lastUpdated": r["lastUpdated"],
+            "category": r["category"],
         }
         for r in records
     }
@@ -1768,7 +1786,7 @@ def build_us_market_js(horizons: dict = None):
     out_payload = {
         "asOf": as_of,
         "fxRateUsdInr": fx_rate,
-        "columns": ["ticker", "name", "closePrice", "type", "currency", "lastUpdated"],
+        "columns": ["ticker", "name", "closePrice", "type", "currency", "lastUpdated", "category"],
         "instruments": instruments_array,
         "byTicker": by_ticker,
     }

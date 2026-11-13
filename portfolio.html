@@ -390,6 +390,12 @@
                 <input type="number" id="input-holding-invval" class="form-control" placeholder="Blank = no returns shown" min="0" step="any">
               </div>
 
+              <div class="form-field" id="field-holding-purchasefx" hidden>
+                <label class="form-label" for="input-holding-purchasefx">₹ per $ when bought (optional)</label>
+                <input type="number" id="input-holding-purchasefx" class="form-control" placeholder="e.g. 83.2" min="0" step="any">
+                <div class="form-hint">Leave blank and the rupee gain will match the dollar gain. Fill it in to include the effect of the rupee moving.</div>
+              </div>
+
               <div class="form-field" id="field-holding-price">
                 <label class="form-label" id="label-holding-price" for="input-holding-price">Price / NAV (₹)</label>
                 <input type="number" id="input-holding-price" class="form-control" placeholder="Live price / NAV" min="0" step="any">
