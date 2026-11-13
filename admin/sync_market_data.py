@@ -1505,28 +1505,154 @@ def fetch_sec_company_tickers(cache_dir: str = CACHE_DIR, max_age_days: int = 30
         return {}
 
 
-def fetch_us_bhavcopy_yfinance(tickers: list = None) -> bool:
+def load_cached_us_bhavcopy(dt: datetime.date) -> dict:
     """
-    Downloads daily US market quotes using yfinance (NASDAQ-100 + Top US Funds/ETFs).
-    Saves:
-      - data/us_bhavcopy_{date_str}.csv (dated archive)
-      - data/us_bhavcopy_latest.csv (master latest dataset)
-      - data/us_bhavcopy.csv (mirror for backward compatibility)
-    Returns True on success, or False if yfinance is not available/fails.
+    Checks DATA_DIR and CACHE_DIR for an already-saved US Bhavcopy for date dt.
+    Historical trading dates are immutable, so cached files avoid redundant Yahoo calls.
     """
-    all_tickers = sorted(list(set(tickers or ALL_US_TICKERS)))
-    print(f"\n--- Fetching US Bhavcopy for {len(all_tickers)} Tickers (NASDAQ-100 & Top US Funds/ETFs) ---")
+    date_str = dt.strftime("%Y-%m-%d")
+    compact = dt.strftime("%Y%m%d")
+    candidate_paths = [
+        os.path.join(DATA_DIR, f"us_bhavcopy_{date_str}.csv"),
+        os.path.join(CACHE_DIR, f"us_bhavcopy_{compact}.csv"),
+        os.path.join(CACHE_DIR, f"us_bhavcopy_{date_str}.csv"),
+    ]
+    for p in candidate_paths:
+        if os.path.exists(p) and os.path.getsize(p) > 50:
+            prices = {}
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    for row in csv.DictReader(f):
+                        ticker = (row.get("Ticker") or row.get("symbol") or "").strip().upper()
+                        val_str = (row.get("Close") or row.get("close") or "").strip()
+                        if ticker and val_str:
+                            try:
+                                prices[ticker] = float(val_str)
+                            except ValueError:
+                                pass
+                if len(prices) > 0:
+                    return prices
+            except Exception:
+                pass
+    return None
 
+
+def fetch_us_bhavcopy_for_date(dt: datetime.date, tickers: list, session=None, is_latest=False) -> dict:
+    """
+    Option 1: Fetches US market quotes for a specific calendar date dt.
+    Always looks for local cache first before querying Yahoo Finance.
+    """
+    # 1. Check local cache (historical horizon dates are immutable)
+    if not is_latest:
+        cached = load_cached_us_bhavcopy(dt)
+        if cached:
+            print(f"  [Cache Hit] US Bhavcopy for {dt.strftime('%Y-%m-%d')} loaded from cache ({len(cached)} tickers)")
+            return cached
+
+    # 2. Check dependencies
     try:
         import yfinance as yf
         import requests
         import pandas as pd
     except ImportError:
         print("  [US Bhavcopy Info] yfinance, requests, or pandas not installed in this environment.")
-        return False
+        return load_cached_us_bhavcopy(dt) or {}
 
-    # Load existing prices so no ticker loses its price on temporary rate-limits
+    if session is None:
+        session = requests.Session()
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        })
+
+    # 3. Download from Yahoo Finance with buffer [dt - 5 days, dt + 1 day] to capture weekend/holiday close
+    start_dt = dt - datetime.timedelta(days=5)
+    end_dt = dt + datetime.timedelta(days=1)
+    print(f"  [Yahoo Finance Download] Fetching US Bhavcopy for {dt.strftime('%Y-%m-%d')} (window {start_dt} to {end_dt})...")
+
+    try:
+        data = yf.download(tickers, start=start_dt.strftime("%Y-%m-%d"), end=end_dt.strftime("%Y-%m-%d"), session=session, progress=False)
+        if data is None or getattr(data, "empty", True):
+            print(f"  [US Bhavcopy Warning] Empty dataset from Yahoo Finance for {dt}; attempting cache fallback.")
+            return load_cached_us_bhavcopy(dt) or {}
+    except Exception as e:
+        print(f"  [US Bhavcopy Warning] Yahoo Finance download failed for {dt} ({e}); using cache fallback.")
+        return load_cached_us_bhavcopy(dt) or {}
+
+    prices = {}
+    date_cutoff = dt.strftime("%Y-%m-%d")
+
+    for ticker in tickers:
+        close_price = None
+        try:
+            s = None
+            if isinstance(data.columns, pd.MultiIndex):
+                if ('Close', ticker) in data.columns:
+                    s = data[('Close', ticker)].dropna()
+                elif (ticker, 'Close') in data.columns:
+                    s = data[(ticker, 'Close')].dropna()
+                elif 'Close' in data and ticker in data['Close']:
+                    s = data['Close'][ticker].dropna()
+            elif 'Close' in data:
+                if ticker in data['Close']:
+                    s = data['Close'][ticker].dropna()
+                elif len(tickers) == 1:
+                    s = data['Close'].dropna()
+
+            if s is not None and not s.empty:
+                s_filtered = s.loc[:date_cutoff]
+                if not s_filtered.empty:
+                    close_price = s_filtered.iloc[-1]
+                else:
+                    close_price = s.iloc[-1]
+        except Exception:
+            pass
+
+        if close_price is not None and not pd.isna(close_price):
+            prices[ticker] = round(float(close_price), 4)
+
+    # 4. Save to cache only when active quotes were received
+    if len(prices) > 0:
+        date_str = dt.strftime("%Y-%m-%d")
+        compact = dt.strftime("%Y%m%d")
+        cache_path = os.path.join(CACHE_DIR, f"us_bhavcopy_{compact}.csv")
+        archive_path = os.path.join(DATA_DIR, f"us_bhavcopy_{date_str}.csv")
+        now_utc = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+        rows = [["Ticker", "Close", "Last_Updated_UTC"]]
+        for ticker in sorted(tickers):
+            val = prices.get(ticker, "")
+            rows.append([ticker, str(val) if val != "" else "", now_utc])
+
+        for fpath in [cache_path, archive_path]:
+            try:
+                with open(fpath, "w", newline="", encoding="utf-8") as f:
+                    csv.writer(f).writerows(rows)
+            except Exception:
+                pass
+
+        print(f"  [Cache Saved] Cached US Bhavcopy for {date_str} ({len(prices)}/{len(tickers)} active quotes)")
+    return prices
+
+
+def fetch_us_bhavcopy_yfinance(horizons: dict = None, tickers: list = None) -> tuple:
+    """
+    Downloads US market quotes across all horizons (latest, m1, m3, m6, y1) using Option 1:
+    - Checks cache first for each specific date.
+    - Only queries Yahoo Finance for dates not already cached.
+    - Computes trailing returns (1M, 3M, 6M, 1Y).
+    - Preserves existing cached quotes if network/environment is offline.
+    - Saves master data/us_bhavcopy_latest.csv with trailing returns.
+    Returns (snapshots_dict, returns_by_ticker_dict).
+    """
+    all_tickers = sorted(list(set(tickers or ALL_US_TICKERS)))
+    if horizons is None:
+        horizons = get_horizons()
+
+    print(f"\n--- Fetching US Bhavcopy for {len(all_tickers)} Tickers Across Horizons (Option 1 with Cache) ---")
+
+    # Load existing prices so no ticker loses its price on temporary rate-limits or offline runs
     existing_prices = {}
+    existing_rets = {}
     latest_file = os.path.join(DATA_DIR, "us_bhavcopy_latest.csv")
     if os.path.exists(latest_file):
         try:
@@ -1534,118 +1660,93 @@ def fetch_us_bhavcopy_yfinance(tickers: list = None) -> bool:
                 for row in csv.DictReader(f):
                     t = (row.get("Ticker") or "").strip().upper()
                     c = (row.get("Close") or "").strip()
-                    if t and c:
-                        existing_prices[t] = c
+                    if t and c and c != "0.0" and c != "0":
+                        try:
+                            existing_prices[t] = float(c)
+                        except ValueError:
+                            pass
+                    if t:
+                        existing_rets[t] = {
+                            "ret1m": float(row["Ret_1M"]) if (row.get("Ret_1M") and row["Ret_1M"] != "") else None,
+                            "ret3m": float(row["Ret_3M"]) if (row.get("Ret_3M") and row["Ret_3M"] != "") else None,
+                            "ret6m": float(row["Ret_6M"]) if (row.get("Ret_6M") and row["Ret_6M"] != "") else None,
+                            "ret1y": float(row["Ret_1Y"]) if (row.get("Ret_1Y") and row["Ret_1Y"] != "") else None,
+                        }
         except Exception:
             pass
-
-    session = requests.Session()
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    })
 
     try:
-        print(f"  [US Bhavcopy] Downloading batch data from Yahoo Finance for {len(all_tickers)} tickers...")
-        data = yf.download(all_tickers, period="1d", session=session, progress=False)
-        if data is None or getattr(data, "empty", True):
-            print("  [US Bhavcopy Warning] Yahoo Finance returned empty dataset; falling back.")
-            return False
-        print("  [US Bhavcopy] Data successfully downloaded from Yahoo Finance.")
-    except Exception as e:
-        print(f"  [US Bhavcopy Warning] yfinance download encountered an error ({e}); using fallback.")
-        return False
+        import requests
+        session = requests.Session()
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        })
+    except Exception:
+        session = None
 
-    now = datetime.datetime.utcnow()
-    date_str = now.strftime("%Y-%m-%d")
-    update_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    snapshots = {}
+    for h_key, dt in horizons.items():
+        is_latest = (h_key == "latest")
+        prices = fetch_us_bhavcopy_for_date(dt, all_tickers, session=session, is_latest=is_latest)
+        snapshots[h_key] = prices
 
-    archive_file = os.path.join(DATA_DIR, f"us_bhavcopy_{date_str}.csv")
-    backup_file = os.path.join(DATA_DIR, "us_bhavcopy.csv")
+    latest_prices = snapshots.get("latest", {})
+    m1_prices = snapshots.get("m1", {})
+    m3_prices = snapshots.get("m3", {})
+    m6_prices = snapshots.get("m6", {})
+    y1_prices = snapshots.get("y1", {})
 
-    rows_to_write = [["Ticker", "Close", "Last_Updated_UTC"]]
-    active_count = 0
+    returns_by_ticker = {}
+    now_utc = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    master_rows = [["Ticker", "Close", "Last_Updated_UTC", "Ret_1M", "Ret_3M", "Ret_6M", "Ret_1Y"]]
 
     for ticker in all_tickers:
-        close_price = None
-        try:
-            if isinstance(data.columns, pd.MultiIndex):
-                if ('Close', ticker) in data.columns:
-                    s = data[('Close', ticker)].dropna()
-                    if not s.empty:
-                        close_price = s.iloc[-1]
-                elif (ticker, 'Close') in data.columns:
-                    s = data[(ticker, 'Close')].dropna()
-                    if not s.empty:
-                        close_price = s.iloc[-1]
-                elif 'Close' in data and ticker in data['Close']:
-                    s = data['Close'][ticker].dropna()
-                    if not s.empty:
-                        close_price = s.iloc[-1]
-            elif 'Close' in data:
-                if ticker in data['Close']:
-                    s = data['Close'][ticker].dropna()
-                    if not s.empty:
-                        close_price = s.iloc[-1]
-                elif len(all_tickers) == 1:
-                    s = data['Close'].dropna()
-                    if not s.empty:
-                        close_price = s.iloc[-1]
-        except Exception:
-            pass
+        c_latest = latest_prices.get(ticker) or existing_prices.get(ticker)
+        c_m1 = m1_prices.get(ticker)
+        c_m3 = m3_prices.get(ticker)
+        c_m6 = m6_prices.get(ticker)
+        c_y1 = y1_prices.get(ticker)
 
-        if close_price is not None and not pd.isna(close_price):
-            val_str = str(round(float(close_price), 4))
-            rows_to_write.append([ticker, val_str, update_time])
-            active_count += 1
-        elif ticker in existing_prices:
-            rows_to_write.append([ticker, existing_prices[ticker], update_time])
-            active_count += 1
-        else:
-            rows_to_write.append([ticker, "", update_time])
+        r1m = calc_pct(c_latest, c_m1) if (c_latest and c_m1) else existing_rets.get(ticker, {}).get("ret1m")
+        r3m = calc_pct(c_latest, c_m3) if (c_latest and c_m3) else existing_rets.get(ticker, {}).get("ret3m")
+        r6m = calc_pct(c_latest, c_m6) if (c_latest and c_m6) else existing_rets.get(ticker, {}).get("ret6m")
+        r1y = calc_pct(c_latest, c_y1) if (c_latest and c_y1) else existing_rets.get(ticker, {}).get("ret1y")
 
-    # Save to all target files
-    for filepath in [archive_file, latest_file, backup_file]:
-        with open(filepath, mode="w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerows(rows_to_write)
+        returns_by_ticker[ticker] = {
+            "close": c_latest,
+            "ret1m": r1m,
+            "ret3m": r3m,
+            "ret6m": r6m,
+            "ret1y": r1y,
+        }
 
-    print(f"  [US Bhavcopy Success] Saved {archive_file} and {latest_file} ({active_count}/{len(all_tickers)} active quotes)")
-    return True
+        master_rows.append([
+            ticker,
+            str(c_latest) if c_latest is not None else "",
+            now_utc,
+            str(r1m) if r1m is not None else "",
+            str(r3m) if r3m is not None else "",
+            str(r6m) if r6m is not None else "",
+            str(r1y) if r1y is not None else "",
+        ])
 
+    active_cnt = sum(1 for t in all_tickers if returns_by_ticker.get(t, {}).get("close") is not None)
 
-def fetch_remote_us_bhavcopy_from_repo() -> bool:
-    """
-    Module 5B Step 0: Fetches the latest us_bhavcopy_latest.csv from the GitHub repository
-    prior to building data/market-us.js. Ensures cloud updates are synced down to local.
-    """
-    target_path = os.path.join(DATA_DIR, "us_bhavcopy_latest.csv")
-    backup_path = os.path.join(DATA_DIR, "us_bhavcopy.csv")
+    # Save to latest & backup CSV files only if active quotes are present
+    if active_cnt > 0:
+        latest_file = os.path.join(DATA_DIR, "us_bhavcopy_latest.csv")
+        backup_file = os.path.join(DATA_DIR, "us_bhavcopy.csv")
+        for filepath in [latest_file, backup_file]:
+            try:
+                with open(filepath, mode="w", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerows(master_rows)
+            except Exception:
+                pass
 
-    candidate_urls = [
-        "https://raw.githubusercontent.com/deshvenkateshblr/kyf/master/data/us_bhavcopy_latest.csv",
-        "https://raw.githubusercontent.com/deshvenkateshblr/kyf/master/data/us_bhavcopy.csv",
-    ]
-
-    headers = {"User-Agent": "KYF_Sync/1.9 (admin@kyf.local)"}
-
-    for url in candidate_urls:
-        try:
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=8) as resp:
-                content = resp.read().decode("utf-8")
-                lines = [l for l in content.splitlines() if l.strip()]
-                if len(lines) > 2 and "Ticker" in lines[0]:
-                    with open(target_path, "w", encoding="utf-8") as f:
-                        f.write(content)
-                    with open(backup_path, "w", encoding="utf-8") as f:
-                        f.write(content)
-                    print(f"  [Remote Repo Fetch] Successfully fetched latest us_bhavcopy from GitHub ({len(lines) - 1} tickers)")
-                    return True
-        except Exception:
-            continue
-
-    print("  [Remote Repo Fetch] GitHub repo unreachable or offline; using local us_bhavcopy files.")
-    return False
+    print(f"  [US Bhavcopy Horizons Success] Computed returns for {active_cnt}/{len(all_tickers)} active tickers")
+    return snapshots, returns_by_ticker
 
 
 # What each US instrument really is (the app maps this to its asset classes).
@@ -1665,14 +1766,16 @@ def us_category(ticker: str) -> str:
 
 
 def build_us_market_js(horizons: dict = None):
-    """Module 5B: Build data/market-us.js from data/us_bhavcopy_latest.csv (or us_bhavcopy.csv)."""
-    print("\n--- Building Module 5B: data/market-us.js (US Stocks & Funds) ---")
+    """Module 5B: Build data/market-us.js from data/us_bhavcopy_latest.csv with trailing returns."""
+    print("\n--- Building Module 5B: data/market-us.js (US Stocks & Funds with Horizons) ---")
+    if horizons is None:
+        horizons = get_horizons()
 
-    # 1. First attempt to fetch live bhavcopy using yfinance (batch)
-    yf_success = fetch_us_bhavcopy_yfinance()
+    # 1. First attempt to fetch live bhavcopy using yfinance across horizons with date caching
+    snapshots, returns_by_ticker = fetch_us_bhavcopy_yfinance(horizons)
 
     # 2. If yfinance is unavailable or offline, pull latest us_bhavcopy from GitHub repo
-    if not yf_success:
+    if not returns_by_ticker:
         fetch_remote_us_bhavcopy_from_repo()
 
     candidate_files = [
@@ -1727,11 +1830,34 @@ def build_us_market_js(horizons: dict = None):
                 except ValueError:
                     continue
 
+                if close_price <= 0 and returns_by_ticker and returns_by_ticker.get(ticker, {}).get("close"):
+                    close_price = float(returns_by_ticker[ticker]["close"])
+
                 last_updated = (row.get("Last_Updated_UTC") or "").strip()
                 if last_updated:
                     date_part = last_updated.split(" ")[0].strip()
                     if re.match(r"^\d{4}-\d{2}-\d{2}$", date_part):
                         as_of = date_part
+
+                # Extract trailing horizon returns
+                t_rets = returns_by_ticker.get(ticker, {}) if returns_by_ticker else {}
+                r1m = t_rets.get("ret1m")
+                r3m = t_rets.get("ret3m")
+                r6m = t_rets.get("ret6m")
+                r1y = t_rets.get("ret1y")
+
+                if r1m is None and row.get("Ret_1M") and row["Ret_1M"] != "":
+                    try: r1m = float(row["Ret_1M"])
+                    except ValueError: pass
+                if r3m is None and row.get("Ret_3M") and row["Ret_3M"] != "":
+                    try: r3m = float(row["Ret_3M"])
+                    except ValueError: pass
+                if r6m is None and row.get("Ret_6M") and row["Ret_6M"] != "":
+                    try: r6m = float(row["Ret_6M"])
+                    except ValueError: pass
+                if r1y is None and row.get("Ret_1Y") and row["Ret_1Y"] != "":
+                    try: r1y = float(row["Ret_1Y"])
+                    except ValueError: pass
 
                 # 3-Tier enrichment:
                 # 1. Curated metadata
@@ -1753,6 +1879,10 @@ def build_us_market_js(horizons: dict = None):
                     "ticker": ticker,
                     "name": name,
                     "closePrice": close_price,
+                    "ret1m": r1m,
+                    "ret3m": r3m,
+                    "ret6m": r6m,
+                    "ret1y": r1y,
                     "type": inst_type,
                     "currency": "USD",
                     "lastUpdated": last_updated,
@@ -1761,12 +1891,11 @@ def build_us_market_js(horizons: dict = None):
     except Exception as e:
         print(f"  [Error] Failed to read {csv_file}: {e}")
         return
-        return
 
     records.sort(key=lambda x: x["ticker"])
 
     instruments_array = [
-        [r["ticker"], r["name"], r["closePrice"], r["type"], r["currency"], r["lastUpdated"], r["category"]]
+        [r["ticker"], r["name"], r["closePrice"], r["type"], r["currency"], r["lastUpdated"], r["category"], r["ret1m"], r["ret3m"], r["ret6m"], r["ret1y"]]
         for r in records
     ]
 
@@ -1779,14 +1908,20 @@ def build_us_market_js(horizons: dict = None):
             "currency": r["currency"],
             "lastUpdated": r["lastUpdated"],
             "category": r["category"],
+            "ret1m": r["ret1m"],
+            "ret3m": r["ret3m"],
+            "ret6m": r["ret6m"],
+            "ret1y": r["ret1y"],
         }
         for r in records
     }
 
+    horizon_iso = {k: v.isoformat() for k, v in horizons.items()}
     out_payload = {
         "asOf": as_of,
+        "horizons": horizon_iso,
         "fxRateUsdInr": fx_rate,
-        "columns": ["ticker", "name", "closePrice", "type", "currency", "lastUpdated", "category"],
+        "columns": ["ticker", "name", "closePrice", "type", "currency", "lastUpdated", "category", "ret1m", "ret3m", "ret6m", "ret1y"],
         "instruments": instruments_array,
         "byTicker": by_ticker,
     }
@@ -1799,7 +1934,7 @@ def build_us_market_js(horizons: dict = None):
     out_path = os.path.join(DATA_DIR, "market-us.js")
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(js_content)
-    print(f"  [Success] Wrote {len(records)} US instruments to {out_path} ({len(js_content)/1024:.1f} KB)")
+    print(f"  [Success] Wrote {len(records)} US instruments with 1M, 3M, 6M, 1Y returns to {out_path} ({len(js_content)/1024:.1f} KB)")
 
 
 def sync_nhb_residex():
@@ -1941,6 +2076,7 @@ def build_market_status_js(horizons: dict):
                 "fxRateUsdInr": fx_rate,
                 "details": f"{us_cnt} instruments (VOOG, QQQM, TAN, AAPL, etc.) • USD/INR: ₹{fx_rate:.2f}",
                 "source": "GitHub us_bhavcopy & Yahoo Finance",
+                "horizons": ["1M", "3M", "6M", "1Y"],
                 "error": None
             }
         except Exception as e:

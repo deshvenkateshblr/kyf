@@ -115,16 +115,33 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         }
       } else if (Array.isArray(window.KYF_MARKET_US.instruments)) {
         for (const row of window.KYF_MARKET_US.instruments) {
-          const [ticker, name, closePrice, type, currency, lastUpdated, category] = row;
-          usMap.set(String(ticker).toUpperCase(), {
-            ticker: String(ticker).toUpperCase(),
-            name: name || ticker,
-            closePrice: Number(closePrice) || 0,
-            type: type || "EQUITY",
-            currency: currency || "USD",
-            lastUpdated: lastUpdated || null,
-            category: category || "EQUITY"
-          });
+          if (row.length >= 11) {
+            const [ticker, name, closePrice, type, currency, lastUpdated, category, ret1m, ret3m, ret6m, ret1y] = row;
+            usMap.set(String(ticker).toUpperCase(), {
+              ticker: String(ticker).toUpperCase(),
+              name: name || ticker,
+              closePrice: Number(closePrice) || 0,
+              type: type || "EQUITY",
+              currency: currency || "USD",
+              lastUpdated: lastUpdated || null,
+              category: category || "EQUITY",
+              ret1m: ret1m != null ? Number(ret1m) : null,
+              ret3m: ret3m != null ? Number(ret3m) : null,
+              ret6m: ret6m != null ? Number(ret6m) : null,
+              ret1y: ret1y != null ? Number(ret1y) : null
+            });
+          } else {
+            const [ticker, name, closePrice, type, currency, lastUpdated, category] = row;
+            usMap.set(String(ticker).toUpperCase(), {
+              ticker: String(ticker).toUpperCase(),
+              name: name || ticker,
+              closePrice: Number(closePrice) || 0,
+              type: type || "EQUITY",
+              currency: currency || "USD",
+              lastUpdated: lastUpdated || null,
+              category: category || "EQUITY"
+            });
+          }
         }
       }
     }
