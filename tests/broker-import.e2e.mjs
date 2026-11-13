@@ -70,15 +70,63 @@ const holdingsCount = (p) => p.evaluate(() => (document.getElementById("kpi-net-
   // a second broker is a separate bucket
   await importFile(p, { name: "u.csv", mimeType: "text/csv", buffer: Buffer.from("Instrument,Qty.,Avg. cost,LTP\r\nRELIANCE,3,1200,1300\r\n") }, null, "upstox");
   ok(await holdingsCount(p) === 2, "csv: the same stock at another broker is kept separately");
-  // no source chosen: the app guesses one from the file name/content and shows the guess in the list
+  // no broker chosen: the file is previewed but cannot be imported; nothing is guessed
   await p.click("#btn-open-import-modal");
-  await p.setInputFiles("#broker-file-input", { name: "h.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+  await p.setInputFiles("#broker-file-input", { name: "chase_positions.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
   await p.waitForSelector("#import-preview-tbody tr");
-  ok(await p.inputValue("#import-source-select") !== "", "csv: a guessed source is filled into the list (changeable)");
+  ok(await p.inputValue("#import-source-select") === "", "csv: the broker list stays empty (not guessed from the file name)");
+  ok(await p.isDisabled("#btn-confirm-import"), "csv: import is disabled until a broker is chosen");
+  ok(/Choose/.test(await p.textContent("#btn-confirm-import")), "csv: the button says what to do");
   await p.selectOption("#import-source-select", "groww_stocks");
   await p.waitForTimeout(500);
-  ok(await p.locator("#import-preview-tbody tr").count() === 2, "csv: changing the broker re-reads the file");
+  ok(await p.locator("#import-preview-tbody tr").count() === 2 && !(await p.isDisabled("#btn-confirm-import")), "csv: choosing the broker enables the import");
+  await p.click("#btn-cancel-import");
+  // a broker that is not in the list
+  await p.click("#btn-open-import-modal");
+  await p.setInputFiles("#broker-file-input", { name: "dhan.csv", mimeType: "text/csv", buffer: Buffer.from("Instrument,Qty.,Avg. cost,LTP\r\nITC,10,400,420\r\n") });
+  await p.waitForSelector("#import-preview-tbody tr");
+  await p.selectOption("#import-source-select", "__add__");
+  ok(await p.isVisible("#import-custom-source"), "csv: 'Add another broker' opens the small form");
+  await p.fill("#import-custom-name", "Dhan");
+  await p.click("#btn-add-custom-source");
+  ok(await p.inputValue("#import-source-select") === "custom_dhan", "csv: the new broker is selected");
+  await p.waitForFunction(() => !document.getElementById("btn-confirm-import").disabled, null, { timeout: 5000 }).catch(() => {});
+  ok(!(await p.isDisabled("#btn-confirm-import")), "csv: and the import can go ahead");
+  await p.click("#btn-confirm-import"); await p.waitForTimeout(600);
+  ok(await holdingsCount(p) === 3, "csv: the new broker's holding is added next to the others");
+  await p.reload(); await p.waitForTimeout(500);
+  await p.click("#btn-open-import-modal");
+  ok((await p.locator("#import-source-select option[value='custom_dhan']").count()) === 1, "csv: the new broker is remembered");
+  await p.click("#btn-cancel-import");
   ok(p.errs.length === 0, "csv: no page errors " + p.errs.join("|"));
+  await p.context().close();
+}
+
+// ---------- importing into one broker never touches the rest of the portfolio ----------
+{
+  const p = await freshPage();
+  await p.goto(p.url());
+  const seeded = [
+    { id: "hold_manual_flat", name: "Flat in Pune", member: "Self", custodian: "", assetClass: "Real Estate", subCategory: "Residential", pricingMode: "MANUAL", currentValue: 9000000, allocations: [] },
+    { id: "hold_manual_rel", name: "Reliance Industries", member: "Self", custodian: "Zerodha", assetClass: "Equities", subCategory: "Large Cap", pricingMode: "MANUAL", currentValue: 50000, allocations: [] },
+    { id: "hold_manual_fd", name: "SBI FD", member: "Self", custodian: "SBI", assetClass: "Fixed Income", subCategory: "Bank FD", pricingMode: "MANUAL", currentValue: 100000, allocations: [] }
+  ];
+  await p.evaluate((h) => localStorage.setItem("kyf_user_holdings", JSON.stringify(h)), seeded);
+  await p.reload(); await p.waitForTimeout(600);
+  const stored = () => p.evaluate(() => JSON.parse(localStorage.getItem("kyf_user_holdings") || "[]"));
+  await importFile(p, { name: "z.csv", mimeType: "text/csv", buffer: Buffer.from("Instrument,Qty.,Avg. cost,LTP\r\nRELIANCE,10,1200,1300\r\nINFY,5,1400,1600\r\n") }, null, "zerodha_stocks");
+  await importFile(p, { name: "u.csv", mimeType: "text/csv", buffer: Buffer.from("Instrument,Qty.,Avg. cost,LTP\r\nRELIANCE,3,1250,1300\r\n") }, null, "upstox");
+  const mid = await stored();
+  ok(mid.length === 3 + 2 + 1, `before the re-import: 3 manual, 2 Zerodha, 1 Upstox (${mid.length})`);
+  const snap = JSON.stringify(mid.filter((h) => h.importSource !== "zerodha_stocks"));
+  await importFile(p, { name: "z2.csv", mimeType: "text/csv", buffer: Buffer.from("Instrument,Qty.,Avg. cost,LTP\r\nITC,100,400,420\r\n") }, null, "zerodha_stocks");
+  const after = await stored();
+  ok(JSON.stringify(after.filter((h) => h.importSource !== "zerodha_stocks")) === snap, "saved data: manual holdings and other brokers are byte-for-byte unchanged");
+  const z = after.filter((h) => h.importSource === "zerodha_stocks");
+  ok(z.length === 1 && /ITC|Indian Tobacco/i.test(z[0].name), "saved data: Zerodha now holds exactly what the new file lists");
+  ok(after.some((h) => h.id === "hold_manual_rel"), "saved data: a hand-entered Reliance under Zerodha is still there");
+  ok(await holdingsCount(p) === 5, "the page shows 5 holdings");
+  ok(p.errs.length === 0, "overwrite safety: no page errors " + p.errs.join("|"));
   await p.context().close();
 }
 

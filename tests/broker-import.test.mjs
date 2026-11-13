@@ -698,13 +698,8 @@ test("Indian stock with US ticker collision (BIL, ON, TEAM) does NOT promote to 
 });
 
 console.log("\n[TEST GROUP 12] US Broker & Chase Portfolio Import");
-test("sniffSource auto-detects Chase from filename or content", () => {
-  assert.strictEqual(importer.sniffSource("Chase_Positions_2026.csv"), "chase");
-  assert.strictEqual(importer.sniffSource("JPMorgan_Holdings.csv"), "chase");
-  assert.strictEqual(importer.sniffSource("positions.csv", "Account Number,Symbol,Shares,Cost Basis"), "chase");
-  assert.strictEqual(importer.sniffSource("schwab_export.csv"), "schwab");
-  assert.strictEqual(importer.sniffSource("fidelity_positions.csv"), "fidelity");
-  assert.strictEqual(importer.sniffSource("vested_portfolio.csv"), "us_broker");
+test("there is no broker auto-detection any more", () => {
+  assert.strictEqual(importer.sniffSource, undefined, "sniffSource is gone from the API");
 });
 
 test("Detects Chase / J.P. Morgan positions statement headers", () => {

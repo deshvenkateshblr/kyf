@@ -140,3 +140,9 @@ Create a lean vanilla ES6 module `window.KYF_BROKER_IMPORTER` (~250 lines) with 
 4. **Pledged shares** are counted as held: Quantity Pledged (Margin) and (Loan) are added to Quantity Available. This assumes the broker's available quantity excludes pledged shares; verify against a real file.
 5. **ISINs starting IN00/IN0020** are government securities (fixed income), not gold. Only SGB names or symbols are valued as gold.
 6. API: `replaceBucket`, `previewBucket`, `IMPORT_SOURCES`, `getSource`, `detectHeader` replace `upsertHoldings` and `detectHeaderAndBroker`.
+
+### Addendum 2: broker choice and overwrite safety
+
+- **Auto-detection is removed again** (`sniffSource` is gone; it misread file names such as `cash_report.csv`). A file dropped before choosing a broker is previewed only: the broker list stays empty, the preview says "Choose where this file is from", and the import button is disabled until a broker is picked.
+- **Brokers not in the list:** "＋ Add another broker…" opens a small form (name, stocks or mutual funds, ₹ or $). The id comes from the name (`custom_<name>`), so the same name is the same bucket on any device. Custom brokers are remembered in `localStorage.kyf_custom_sources` and recovered from holdings' `importSource` when a `.kyf` file is opened.
+- **Overwrite safety:** an import changes only holdings whose member and `importSource` match. Manual holdings, other brokers, other people and US holdings are left untouched. Older imports (no `importSource`) are adopted only when their id starts with `hold_imp_`, so a hand-entered holding is never taken over. The member spelling already in the portfolio is kept ("priya" and "Priya" are one person). `tests/broker-overwrite.test.mjs` and the e2e "never touches the rest of the portfolio" scenario cover this.

@@ -464,6 +464,23 @@
           </select>
         </div>
 
+        <div class="import-custom-source" id="import-custom-source" hidden>
+          <div class="form-label">Add a broker that is not in the list</div>
+          <div class="import-custom-row">
+            <input type="text" id="import-custom-name" class="form-control" placeholder="Broker name, e.g. Dhan" maxlength="40" aria-label="Broker name">
+            <select id="import-custom-kind" class="form-control" aria-label="What the file lists">
+              <option value="stocks">Stocks &amp; ETFs</option>
+              <option value="mf">Mutual funds</option>
+            </select>
+            <select id="import-custom-currency" class="form-control" aria-label="Currency">
+              <option value="INR">₹ Indian</option>
+              <option value="USD">$ US</option>
+            </select>
+            <button type="button" id="btn-add-custom-source" class="btn btn-primary">Add</button>
+          </div>
+          <div class="form-hint">Importing again for the same name replaces that broker's list, like any other.</div>
+        </div>
+
         <!-- Step 1: Explicit Family Member Assignment -->
         <div class="form-field full import-member-field">
           <label class="form-label" for="import-member-select">Assign to Family Member *</label>

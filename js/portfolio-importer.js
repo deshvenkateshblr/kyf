@@ -101,42 +101,36 @@ window.KYF_BROKER_IMPORTER = (() => {
     return IMPORT_SOURCES.find((x) => x.id === id) || null;
   }
 
-  function sniffSource(fileName = "", sampleText = "") {
-    const fn = String(fileName || "").toLowerCase();
-    const txt = String(sampleText || "").slice(0, 4096).toLowerCase();
+  // Shown while a file is being previewed and the person has not yet said where it came from.
+  // It is never saved: importing requires a real source.
+  const PREVIEW_SOURCE = { id: "", label: "Broker not chosen yet", custodian: "Not chosen", defaultAssetClass: "Equities", currency: "INR" };
 
-    if (fn.includes("fidelity") || txt.includes("fidelity")) return "fidelity";
-    if (fn.includes("vanguard") || txt.includes("vanguard")) return "vanguard";
-    if (fn.includes("schwab") || txt.includes("schwab")) return "schwab";
-    if (fn.includes("chase") || fn.includes("jpmorgan") || fn.includes("jp_morgan") || txt.includes("chase") || txt.includes("jpmorgan") || txt.includes("j.p. morgan")) {
-      return "chase";
-    }
-    if (fn.includes("vested") || fn.includes("drivewealth") || txt.includes("drivewealth")) {
-      return "us_broker";
-    }
-    if (fn.includes("zerodha") || txt.includes("zerodha")) {
-      return (fn.includes("coin") || txt.includes("coin")) ? "zerodha_coin" : "zerodha_stocks";
-    }
-    if (fn.includes("groww") || txt.includes("groww")) {
-      return (fn.includes("mf") || txt.includes("mutual")) ? "groww_mf" : "groww_stocks";
-    }
-    if (fn.includes("cams") || fn.includes("kfintech") || fn.includes("mfcentral") || fn.includes("cas") ||
-        txt.includes("cams") || txt.includes("kfintech") || txt.includes("consolidated account statement")) {
-      return "mfcentral";
-    }
-    if (fn.includes("icici") || txt.includes("icicidirect")) return "icici_direct";
-    if (fn.includes("hdfc") || txt.includes("hdfcsec")) return "hdfc_sec";
-    if (fn.includes("sbi") || txt.includes("sbisec")) return "sbi_sec";
-    if (fn.includes("upstox") || txt.includes("upstox")) return "upstox";
-    if (fn.includes("angel") || txt.includes("angelone")) return "angel_one";
-    if (fn.includes("kuvera") || txt.includes("kuvera")) return "kuvera";
+  // A broker or statement type that is not in the list. The id comes from the name, so adding the same
+  // name again (even on another device) lands in the same bucket.
+  function registerCustomSource({ label, kind = "stocks", currency = "INR" } = {}) {
+    const name = String(label || "").replace(/\s+/g, " ").trim().slice(0, 40);
+    if (!name) throw new Error("Give the broker a name.");
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+    if (!slug) throw new Error("Give the broker a name using letters or numbers.");
+    const id = "custom_" + slug;
+    const existing = IMPORT_SOURCES.find((x) => x.id === id);
+    if (existing) return existing;
+    const isMf = kind === "mf";
+    const src = {
+      id,
+      label: name + (isMf ? " (Mutual Funds)" : ""),
+      custodian: name,
+      defaultAssetClass: isMf ? "Mutual Funds" : "Equities",
+      currency: currency === "USD" ? "USD" : "INR",
+      custom: true,
+      kind: isMf ? "mf" : "stocks"
+    };
+    IMPORT_SOURCES.push(src);
+    return src;
+  }
 
-    // If text has "shares" or "cost basis" alongside "symbol" or "ticker", it's a US statement
-    if ((txt.includes("shares") || txt.includes("cost basis")) && (txt.includes("symbol") || txt.includes("ticker"))) {
-      return "chase";
-    }
-
-    return null;
+  function customSources() {
+    return IMPORT_SOURCES.filter((x) => x.custom).map((x) => ({ label: x.custodian, kind: x.kind, currency: x.currency }));
   }
 
   // ==========================================================================
@@ -995,14 +989,16 @@ window.KYF_BROKER_IMPORTER = (() => {
   function replaceBucket(existingHoldings, incomingHoldings, memberArg, sourceArg) {
     const source = getSource(sourceArg);
     if (!source) throw new Error("Choose where this file came from.");
-    const member = (memberArg || "Self").trim();
-    const memberKey = member.toLowerCase();
+    const memberKey = (memberArg || "Self").trim().toLowerCase();
     const now = new Date().toISOString();
     const existing = existingHoldings || [];
+    // Keep the spelling the portfolio already uses for this person ("priya" and "Priya" are one person)
+    const knownMember = existing.find((h) => (h.member || "Self").trim().toLowerCase() === memberKey);
+    const member = knownMember ? (knownMember.member || "Self") : (memberArg || "Self").trim();
     const inMember = (h) => (h.member || "Self").toLowerCase().trim() === memberKey;
     const inBucket = (h) => inMember(h) && h.importSource === source.id;
     // Older imports carry no source: adopt them rather than duplicate (never remove them)
-    const legacy = (h) => inMember(h) && !h.importSource && !!h.custodian
+    const legacy = (h) => inMember(h) && !h.importSource && String(h.id || "").startsWith("hold_imp_") && !!h.custodian
       && normalizeCustodian(h.custodian) === normalizeCustodian(source.custodian);
 
     const bucket = existing.filter(inBucket);
@@ -1058,11 +1054,7 @@ window.KYF_BROKER_IMPORTER = (() => {
     const membersDetected = new Set();
 
     for (const file of Array.from(fileList || [])) {
-      let source = getSource(sourceArg);
-      if (!source) {
-        const sniffedId = sniffSource(file.name);
-        source = getSource(sniffedId) || IMPORT_SOURCES.find((x) => x.id === "chase") || IMPORT_SOURCES[0];
-      }
+      const source = getSource(sourceArg) || PREVIEW_SOURCE;
       const sheets = await fileToMatrices(file);
       for (const { matrix } of sheets) {
         const extracted = extractHoldingsFromMatrix(matrix, defaultMember, source);
@@ -1094,7 +1086,9 @@ window.KYF_BROKER_IMPORTER = (() => {
     previewBucket,
     IMPORT_SOURCES,
     getSource,
-    sniffSource,
+    PREVIEW_SOURCE,
+    registerCustomSource,
+    customSources,
     parseCSVToMatrix,
     parseHTMLTableToMatrix,
     detectDelimiter,

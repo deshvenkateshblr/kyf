@@ -93,6 +93,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     brokerFileInput: document.getElementById("broker-file-input"),
     importMemberSelect: document.getElementById("import-member-select"),
     importSourceSelect: document.getElementById("import-source-select"),
+    importCustomBox: document.getElementById("import-custom-source"),
+    importCustomName: document.getElementById("import-custom-name"),
+    importCustomKind: document.getElementById("import-custom-kind"),
+    importCustomCurrency: document.getElementById("import-custom-currency"),
+    btnAddCustomSource: document.getElementById("btn-add-custom-source"),
     importStatsSummary: document.getElementById("import-stats-summary"),
     importPreviewWrap: document.getElementById("import-preview-wrap"),
     importPreviewTitle: document.getElementById("import-preview-title"),
@@ -2693,11 +2698,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         ? `$${totalUSD.toLocaleString("en-US", { minimumFractionDigits: 2 })} ≈ ₹${Math.round(totalINR).toLocaleString("en-IN")}`
         : `₹${Math.round(totalINR).toLocaleString("en-IN")}`;
       els.importStatsSummary.style.display = "flex";
-      els.importStatsSummary.innerHTML = `<span>Live value: <strong>${totalStr}</strong></span>` + impactHTML;
+      els.importStatsSummary.innerHTML = `<span>Live value: <strong>${totalStr}</strong></span>` + (sourceId ? impactHTML : `<span class="import-warn">Choose where this file is from, so it replaces the right list.</span>`);
     }
     if (els.btnConfirmImport) {
-      els.btnConfirmImport.disabled = false;
-      els.btnConfirmImport.textContent = `Replace ${selectedMember}'s list with these ${count}`;
+      els.btnConfirmImport.disabled = !sourceId;
+      els.btnConfirmImport.textContent = sourceId
+        ? `Replace ${selectedMember}'s list with these ${count}`
+        : "Choose the broker above to continue";
     }
   }
 
@@ -2771,11 +2778,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    if (els.importSourceSelect) {
-      els.importSourceSelect.innerHTML = '<option value="">Choose broker or statement…</option>' +
-        window.KYF_BROKER_IMPORTER.IMPORT_SOURCES.map(x => `<option value="${x.id}">${escapeHTML(x.label)}</option>`).join("");
-      els.importSourceSelect.value = "";
-    }
+    loadCustomSources();
+    fillSourceOptions("");
+    if (els.importCustomBox) els.importCustomBox.hidden = true;
 
     // Reset dropzone & preview
     if (els.brokerFileInput) els.brokerFileInput.value = "";
@@ -2966,19 +2971,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    let sourceId = els.importSourceSelect ? els.importSourceSelect.value : "";
-    if (!sourceId) {
-      let sniffed = window.KYF_BROKER_IMPORTER.sniffSource ? window.KYF_BROKER_IMPORTER.sniffSource(file.name) : null;
-      if (!sniffed) {
-        try {
-          const sample = await file.slice(0, 4096).text();
-          sniffed = window.KYF_BROKER_IMPORTER.sniffSource ? window.KYF_BROKER_IMPORTER.sniffSource(file.name, sample) : null;
-        } catch (_) {}
-      }
-      sourceId = sniffed || (file.name.toLowerCase().includes("chase") ? "chase" : "other_stocks");
-      if (els.importSourceSelect) els.importSourceSelect.value = sourceId;
-    }
-    const source = window.KYF_BROKER_IMPORTER.getSource(sourceId) || window.KYF_BROKER_IMPORTER.IMPORT_SOURCES[0];
+    // The person chooses the broker. Until they do, the file is only previewed (nothing can be imported).
+    const sourceId = els.importSourceSelect && els.importSourceSelect.value !== "__add__" ? els.importSourceSelect.value : "";
+    const source = window.KYF_BROKER_IMPORTER.getSource(sourceId) || window.KYF_BROKER_IMPORTER.PREVIEW_SOURCE;
 
     const selectedMember = (els.importMemberSelect && els.importMemberSelect.value) ? els.importMemberSelect.value.trim() : "Self";
 
@@ -2994,7 +2989,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="import-dropzone-text">
             <strong>Reading &amp; analyzing ${escapeHTML(file.name)}...</strong>
           </div>
-          <div class="import-dropzone-hint">${formatBytes(file.size)} • Reading as ${escapeHTML(source.label)}</div>
+          <div class="import-dropzone-hint">${formatBytes(file.size)} • ${sourceId ? "Reading as " + escapeHTML(source.label) : "Previewing"}</div>
         </div>
       `;
     }
@@ -3037,7 +3032,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // Explicitly assign EVERY holding to the user's chosen member
       pendingImportHoldings = parsed.holdings.map(h => ({ ...h, member: selectedMember }));
-      pendingImportBrokers = [source.label];
+      pendingImportBrokers = [sourceId ? source.label : ""];
 
       const brokerLabel = source.label;
       const count = pendingImportHoldings.length;
@@ -3064,7 +3059,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Render Preview Table
       renderImportPreview(selectedMember);
 
-      showToast(`✓ Loaded ${count} holdings from ${brokerLabel}.`, "success");
+      showToast(sourceId ? `✓ Loaded ${count} holdings from ${brokerLabel}.` : `✓ Found ${count} holdings. Choose the broker to continue.`, sourceId ? "success" : "info");
     } catch (err) {
       console.error("[Broker Import Error]", err);
       if (els.importDropzone) {
@@ -3089,6 +3084,47 @@ document.addEventListener("DOMContentLoaded", async () => {
         (err.message || "Parse error") + ". Please verify that the file is a supported statement (CSV, TSV, or Excel .xlsx / .xls)."
       );
       showToast(err.message || "Failed to parse statement file.", "danger");
+    }
+  }
+
+  // ---- Brokers that are not in the built-in list ----
+  const CUSTOM_SOURCES_KEY = "kyf_custom_sources";
+  function loadCustomSources() {
+    const importer = window.KYF_BROKER_IMPORTER;
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem(CUSTOM_SOURCES_KEY) || "[]"); } catch (_) { saved = []; }
+    saved.forEach((c) => { try { importer.registerCustomSource(c); } catch (_) { /* skip bad entry */ } });
+    // Brokers already used by holdings (for example after opening a .kyf file on a new device)
+    (rawHoldings || []).forEach((h) => {
+      if (h && typeof h.importSource === "string" && h.importSource.startsWith("custom_") && !importer.getSource(h.importSource)) {
+        try { importer.registerCustomSource({ label: h.custodian || h.importSource.slice(7).replace(/_/g, " "), kind: h.assetClass === "Mutual Funds" ? "mf" : "stocks", currency: h.currency === "USD" ? "USD" : "INR" }); } catch (_) { /* skip */ }
+      }
+    });
+  }
+  function saveCustomSources() {
+    try { localStorage.setItem(CUSTOM_SOURCES_KEY, JSON.stringify(window.KYF_BROKER_IMPORTER.customSources())); } catch (_) { /* ignore */ }
+  }
+  function fillSourceOptions(selectedId) {
+    if (!els.importSourceSelect) return;
+    els.importSourceSelect.innerHTML = '<option value="">Choose broker or statement…</option>' +
+      window.KYF_BROKER_IMPORTER.IMPORT_SOURCES.map(x => `<option value="${escapeHTML(x.id)}">${escapeHTML(x.label)}</option>`).join("") +
+      '<option value="__add__">＋ Add another broker…</option>';
+    els.importSourceSelect.value = selectedId || "";
+  }
+  function addCustomSourceFromForm() {
+    try {
+      const src = window.KYF_BROKER_IMPORTER.registerCustomSource({
+        label: els.importCustomName ? els.importCustomName.value : "",
+        kind: els.importCustomKind ? els.importCustomKind.value : "stocks",
+        currency: els.importCustomCurrency ? els.importCustomCurrency.value : "INR"
+      });
+      saveCustomSources();
+      fillSourceOptions(src.id);
+      if (els.importCustomBox) els.importCustomBox.hidden = true;
+      if (els.importCustomName) els.importCustomName.value = "";
+      if (currentLoadedFile) handleBrokerFile(currentLoadedFile);
+    } catch (err) {
+      showToast(err.message || "Could not add the broker.", "warning");
     }
   }
 
@@ -3456,8 +3492,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (els.importSourceSelect) {
       els.importSourceSelect.addEventListener("change", () => {
-        if (currentLoadedFile && els.importSourceSelect.value) handleBrokerFile(currentLoadedFile);
+        if (els.importSourceSelect.value === "__add__") {
+          if (els.importCustomBox) els.importCustomBox.hidden = false;
+          els.importSourceSelect.value = "";
+          if (els.importCustomName) els.importCustomName.focus();
+          return;
+        }
+        if (els.importCustomBox) els.importCustomBox.hidden = true;
+        if (currentLoadedFile) handleBrokerFile(currentLoadedFile);
       });
+    }
+    if (els.btnAddCustomSource) els.btnAddCustomSource.addEventListener("click", addCustomSourceFromForm);
+    if (els.importCustomName) {
+      els.importCustomName.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addCustomSourceFromForm(); } });
     }
     if (els.importMemberSelect) {
       els.importMemberSelect.addEventListener("change", () => {
