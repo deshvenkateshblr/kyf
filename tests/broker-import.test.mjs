@@ -697,6 +697,62 @@ test("Indian stock with US ticker collision (BIL, ON, TEAM) does NOT promote to 
   assert.strictEqual(enriched[1].currency, "INR", "ON must remain INR");
 });
 
+console.log("\n[TEST GROUP 12] US Broker & Chase Portfolio Import");
+test("sniffSource auto-detects Chase from filename or content", () => {
+  assert.strictEqual(importer.sniffSource("Chase_Positions_2026.csv"), "chase");
+  assert.strictEqual(importer.sniffSource("JPMorgan_Holdings.csv"), "chase");
+  assert.strictEqual(importer.sniffSource("positions.csv", "Account Number,Symbol,Shares,Cost Basis"), "chase");
+  assert.strictEqual(importer.sniffSource("schwab_export.csv"), "us_broker");
+});
+
+test("Detects Chase / J.P. Morgan positions statement headers", () => {
+  const matrix = [
+    ["Portfolio as of 11/12/2026"],
+    ["Account Number", "Symbol", "Description", "Shares", "Price", "Market Value", "Cost Basis"]
+  ];
+  const detected = importer.detectHeader(matrix);
+  assert.ok(detected);
+  assert.strictEqual(detected.headerRowIndex, 1);
+});
+
+test("Imports Chase positions CSV for family member with USD valuation and INR conversion", () => {
+  const matrix = [
+    ["Account Number", "Symbol", "Description", "Shares", "Price", "Market Value", "Cost Basis"],
+    ["...1234", "VOOG", "Vanguard S&P 500 Growth ETF", "10", "80.43", "804.30", "750.00"],
+    ["...1234", "QQQM", "Invesco NASDAQ 100 ETF", "5", "283.39", "1416.95", "1300.00"],
+    ["...1234", "CASH", "JPMorgan Chase Bank NA Deposit Sweep", "500", "1.00", "500.00", "500.00"]
+  ];
+
+  const chaseSource = importer.getSource("chase");
+  assert.ok(chaseSource, "Chase source must exist in IMPORT_SOURCES");
+  assert.strictEqual(chaseSource.currency, "USD");
+
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "VAISH", chaseSource);
+  assert.strictEqual(holdings.length, 3, "Extracted 3 holdings");
+
+  const voog = holdings.find(h => h.name.includes("Vanguard") || h.instrumentMeta.ticker === "VOOG");
+  assert.ok(voog, "Found VOOG");
+  assert.strictEqual(voog.member, "VAISH", "Assigned to VAISH");
+  assert.strictEqual(voog.currency, "USD", "Currency is USD");
+  assert.strictEqual(voog.pricingMode, "LIVE_US", "PricingMode is LIVE_US");
+  assert.strictEqual(voog.units, 10, "10 shares");
+  assert.strictEqual(voog.currentValueUSD, 804.3, "USD current value $804.30");
+  assert.strictEqual(voog.investedValueUSD, 750, "USD cost basis $750");
+  assert.ok(voog.currentValue > 70000, `INR value converted: ${voog.currentValue}`);
+  assert.ok(voog.investedValue > 65000, `INR invested converted: ${voog.investedValue}`);
+
+  const qqqm = holdings.find(h => h.instrumentMeta.ticker === "QQQM");
+  assert.ok(qqqm, "Found QQQM");
+  assert.strictEqual(qqqm.member, "VAISH");
+  assert.strictEqual(qqqm.currency, "USD");
+  assert.strictEqual(qqqm.units, 5);
+
+  const cash = holdings.find(h => h.assetClass === "Cash & Bank");
+  assert.ok(cash, "Found Cash & Bank sweep");
+  assert.strictEqual(cash.member, "VAISH");
+  assert.strictEqual(cash.currency, "USD");
+});
+
 console.log(`\n========================================`);
 console.log(`TEST SUMMARY: ${totalPassed} passed, 0 failed`);
 console.log(`========================================\n`);

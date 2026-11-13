@@ -2651,8 +2651,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.importPreviewTbody) {
       els.importPreviewTbody.innerHTML = pendingImportHoldings.map((h) => {
         const qtyStr = typeof h.units === "number" ? h.units.toLocaleString("en-IN", { maximumFractionDigits: 3 }) : (h.units || "—");
-        const invStr = h.investedValue != null ? `₹${Math.round(h.investedValue).toLocaleString("en-IN")}` : "—";
-        const curStr = h.currentValue != null ? `₹${Math.round(h.currentValue).toLocaleString("en-IN")}` : "—";
+        const isUs = h.currency === "USD" || h.pricingMode === "LIVE_US";
+        const invStr = isUs && h.investedValueUSD != null
+          ? `$${h.investedValueUSD.toLocaleString("en-US", { minimumFractionDigits: 2 })} ≈ ₹${Math.round(h.investedValue || 0).toLocaleString("en-IN")}`
+          : (h.investedValue != null ? `₹${Math.round(h.investedValue).toLocaleString("en-IN")}` : "—");
+        const curStr = isUs && h.currentValueUSD != null
+          ? `$${h.currentValueUSD.toLocaleString("en-US", { minimumFractionDigits: 2 })} ≈ ₹${Math.round(h.currentValue || 0).toLocaleString("en-IN")}`
+          : (h.currentValue != null ? `₹${Math.round(h.currentValue).toLocaleString("en-IN")}` : "—");
         return `
           <tr>
             <td><strong>${escapeHTML(h.name)}</strong></td>
@@ -2682,9 +2687,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
     if (els.importStatsSummary) {
-      const total = pendingImportHoldings.reduce((sum, h) => sum + (Number(h.currentValue) || 0), 0);
+      const totalINR = pendingImportHoldings.reduce((sum, h) => sum + (Number(h.currentValue) || 0), 0);
+      const totalUSD = pendingImportHoldings.reduce((sum, h) => sum + (Number(h.currentValueUSD) || 0), 0);
+      const hasUs = pendingImportHoldings.some(h => h.currency === "USD");
+      const totalStr = hasUs && totalUSD > 0
+        ? `$${totalUSD.toLocaleString("en-US", { minimumFractionDigits: 2 })} ≈ ₹${Math.round(totalINR).toLocaleString("en-IN")}`
+        : `₹${Math.round(totalINR).toLocaleString("en-IN")}`;
       els.importStatsSummary.style.display = "flex";
-      els.importStatsSummary.innerHTML = `<span>Live value: <strong>₹${Math.round(total).toLocaleString("en-IN")}</strong></span>` + impactHTML;
+      els.importStatsSummary.innerHTML = `<span>Live value: <strong>${totalStr}</strong></span>` + impactHTML;
     }
     if (els.btnConfirmImport) {
       els.btnConfirmImport.disabled = false;
@@ -2926,13 +2936,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!file || !window.KYF_BROKER_IMPORTER) return;
     currentLoadedFile = file;
 
-    const sourceId = els.importSourceSelect ? els.importSourceSelect.value : "";
+    let sourceId = els.importSourceSelect ? els.importSourceSelect.value : "";
     if (!sourceId) {
-      showToast("Choose where this file is from first.", "warning");
-      if (els.importSourceSelect) els.importSourceSelect.focus();
-      return;
+      let sniffed = window.KYF_BROKER_IMPORTER.sniffSource ? window.KYF_BROKER_IMPORTER.sniffSource(file.name) : null;
+      if (!sniffed) {
+        try {
+          const sample = await file.slice(0, 4096).text();
+          sniffed = window.KYF_BROKER_IMPORTER.sniffSource ? window.KYF_BROKER_IMPORTER.sniffSource(file.name, sample) : null;
+        } catch (_) {}
+      }
+      sourceId = sniffed || (file.name.toLowerCase().includes("chase") ? "chase" : "other_stocks");
+      if (els.importSourceSelect) els.importSourceSelect.value = sourceId;
     }
-    const source = window.KYF_BROKER_IMPORTER.getSource(sourceId);
+    const source = window.KYF_BROKER_IMPORTER.getSource(sourceId) || window.KYF_BROKER_IMPORTER.IMPORT_SOURCES[0];
 
     const selectedMember = (els.importMemberSelect && els.importMemberSelect.value) ? els.importMemberSelect.value.trim() : "Self";
 

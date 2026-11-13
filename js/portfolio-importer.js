@@ -9,41 +9,58 @@
 window.KYF_BROKER_IMPORTER = (() => {
   const ISIN_REGEX = /^IN[EF0][0-9A-Z]{9}$/i;
 
-  // Synonyms and column candidates across Indian brokers & CAS statements
+  function extractUsTicker(name) {
+    if (!name) return null;
+    const str = String(name).trim();
+    const parenMatch = str.match(/\(([A-Za-z0-9.]+)\)/);
+    if (parenMatch) return parenMatch[1].toUpperCase();
+    if (/^[A-Za-z0-9.]{1,6}$/.test(str)) return str.toUpperCase();
+    return null;
+  }
+
+  // Synonyms and column candidates across Indian and US brokers & CAS statements
   const COL_CANDIDATES = {
-    ISIN: ["isin code", "isin no.", "isin no", "security isin", "isin"],
-    SYMBOL: ["symbol", "stock symbol", "instrument", "scrip/contract", "scrip code", "scrip", "ticker", "scheme code"],
+    ISIN: ["isin code", "isin no.", "isin no", "security isin", "isin", "cusip"],
+    SYMBOL: [
+      "symbol", "stock symbol", "instrument", "scrip/contract", "scrip code", "scrip",
+      "ticker", "scheme code", "security symbol", "asset", "code"
+    ],
     NAME: [
       "scheme name", "fund name", "company name", "stock name", "scrip name",
       "name of the fund", "scheme", "fund", "instrument name", "security name",
-      "company", "description", "instrument"
+      "company", "description", "security description", "asset name", "instrument"
     ],
-    FOLIO: ["folio number", "folio no.", "folio no", "folio #", "folio id", "folio"],
+    FOLIO: ["folio number", "folio no.", "folio no", "folio #", "folio id", "folio", "account number", "account #"],
     QTY: [
       "quantity available", "closing unit balance", "balance units", "closing units",
       "units available", "holdings qty", "net qty", "total qty", "available qty",
-      "qty.", "qty", "quantity", "units", "closing balance", "balance"
+      "qty.", "qty", "quantity", "units", "closing balance", "balance",
+      "shares", "total shares", "share quantity", "number of shares", "position quantity", "share balance"
     ],
     AVG_PRICE: [
       "average buy price", "average cost price", "avg cost price", "avg buy price",
       "avg. cost", "average cost", "average price", "avg. price", "avg price",
-      "avg. nav", "buy price", "purchase nav", "cost nav"
+      "avg. nav", "buy price", "purchase nav", "cost nav",
+      "cost basis per share", "cost per share", "average cost per share", "avg cost/share", "average cost / share"
     ],
     INVESTED: [
       "invested amount", "invested value", "total cost", "cost value", "buy value",
       "book value", "investment value", "total investment", "purchase cost",
-      "invested", "investment", "cost"
+      "invested", "investment", "cost",
+      "cost basis", "total cost basis", "cost basis ($)", "total cost ($)"
     ],
     LTP: [
       "closing price", "current market price", "previous closing price", "market price",
-      "current nav", "latest nav", "nav", "ltp", "cmp", "price"
+      "current nav", "latest nav", "nav", "ltp", "cmp", "price",
+      "last price", "current price", "price ($)", "share price", "market price ($)"
     ],
     CURVAL: [
       "valuation (market value)", "current market value", "current value", "market value",
-      "closing value", "present value", "cur. val", "cur val", "valuation", "value"
+      "closing value", "present value", "cur. val", "cur val", "valuation", "value",
+      "total value", "market value ($)", "current value ($)", "value ($)", "ending value"
     ],
     PLEDGED: ["quantity pledged (margin)", "quantity pledged (loan)", "qty pledged (margin)", "qty pledged (loan)", "pledged qty", "quantity pledged", "pledged quantity"],
-    INVESTOR: ["investor name", "holder name", "client name", "investor", "folio holder"]
+    INVESTOR: ["investor name", "holder name", "client name", "investor", "folio holder", "account name"]
   };
 
   const EXCLUSIONS = {
@@ -53,27 +70,64 @@ window.KYF_BROKER_IMPORTER = (() => {
     CURVAL: ["invested", "cost", "buy", "book", "purchase"]
   };
 
-  // Import sources are chosen by the user (never guessed from the file).
-  // Each source is one "bucket" per family member: importing again overwrites that bucket.
+  // Import sources: includes both Indian and US brokerage statements.
   const IMPORT_SOURCES = [
-    { id: "zerodha_stocks", label: "Zerodha (Stocks)", custodian: "Zerodha", defaultAssetClass: "Equities" },
-    { id: "zerodha_coin", label: "Zerodha Coin (Mutual Funds)", custodian: "Zerodha Coin", defaultAssetClass: "Mutual Funds" },
-    { id: "groww_stocks", label: "Groww (Stocks)", custodian: "Groww", defaultAssetClass: "Equities" },
-    { id: "groww_mf", label: "Groww (Mutual Funds)", custodian: "Groww", defaultAssetClass: "Mutual Funds" },
-    { id: "upstox", label: "Upstox", custodian: "Upstox", defaultAssetClass: "Equities" },
-    { id: "angel_one", label: "Angel One", custodian: "Angel One", defaultAssetClass: "Equities" },
-    { id: "icici_direct", label: "ICICI Direct", custodian: "ICICI Direct", defaultAssetClass: "Equities" },
-    { id: "hdfc_sec", label: "HDFC Securities", custodian: "HDFC Securities", defaultAssetClass: "Equities" },
-    { id: "sbi_sec", label: "SBI Securities", custodian: "SBI Securities", defaultAssetClass: "Equities" },
-    { id: "kuvera", label: "Kuvera (Mutual Funds)", custodian: "Kuvera", defaultAssetClass: "Mutual Funds" },
-    { id: "mfcentral", label: "CAMS / KFintech / MFCentral", custodian: "MFCentral / CAMS", defaultAssetClass: "Mutual Funds" },
-    { id: "other_stocks", label: "Other broker (Stocks)", custodian: "Other broker", defaultAssetClass: "Equities" },
-    { id: "other_mf", label: "Other (Mutual Funds)", custodian: "Other", defaultAssetClass: "Mutual Funds" }
+    { id: "chase", label: "Chase / J.P. Morgan (US)", custodian: "Chase", defaultAssetClass: "Equities", currency: "USD" },
+    { id: "us_broker", label: "US Broker (Schwab, Fidelity, Vanguard, Vested)", custodian: "US Broker", defaultAssetClass: "Equities", currency: "USD" },
+    { id: "zerodha_stocks", label: "Zerodha (Stocks)", custodian: "Zerodha", defaultAssetClass: "Equities", currency: "INR" },
+    { id: "zerodha_coin", label: "Zerodha Coin (Mutual Funds)", custodian: "Zerodha Coin", defaultAssetClass: "Mutual Funds", currency: "INR" },
+    { id: "groww_stocks", label: "Groww (Stocks)", custodian: "Groww", defaultAssetClass: "Equities", currency: "INR" },
+    { id: "groww_mf", label: "Groww (Mutual Funds)", custodian: "Groww", defaultAssetClass: "Mutual Funds", currency: "INR" },
+    { id: "upstox", label: "Upstox", custodian: "Upstox", defaultAssetClass: "Equities", currency: "INR" },
+    { id: "angel_one", label: "Angel One", custodian: "Angel One", defaultAssetClass: "Equities", currency: "INR" },
+    { id: "icici_direct", label: "ICICI Direct", custodian: "ICICI Direct", defaultAssetClass: "Equities", currency: "INR" },
+    { id: "hdfc_sec", label: "HDFC Securities", custodian: "HDFC Securities", defaultAssetClass: "Equities", currency: "INR" },
+    { id: "sbi_sec", label: "SBI Securities", custodian: "SBI Securities", defaultAssetClass: "Equities", currency: "INR" },
+    { id: "kuvera", label: "Kuvera (Mutual Funds)", custodian: "Kuvera", defaultAssetClass: "Mutual Funds", currency: "INR" },
+    { id: "mfcentral", label: "CAMS / KFintech / MFCentral", custodian: "MFCentral / CAMS", defaultAssetClass: "Mutual Funds", currency: "INR" },
+    { id: "other_stocks", label: "Other broker (Stocks)", custodian: "Other broker", defaultAssetClass: "Equities", currency: "INR" },
+    { id: "other_mf", label: "Other (Mutual Funds)", custodian: "Other", defaultAssetClass: "Mutual Funds", currency: "INR" }
   ];
 
   function getSource(id) {
     if (id && typeof id === "object" && id.id) return id;
     return IMPORT_SOURCES.find((x) => x.id === id) || null;
+  }
+
+  function sniffSource(fileName = "", sampleText = "") {
+    const fn = String(fileName || "").toLowerCase();
+    const txt = String(sampleText || "").slice(0, 4096).toLowerCase();
+
+    if (fn.includes("chase") || fn.includes("jpmorgan") || fn.includes("jp_morgan") || txt.includes("chase") || txt.includes("jpmorgan") || txt.includes("j.p. morgan")) {
+      return "chase";
+    }
+    if (fn.includes("schwab") || fn.includes("fidelity") || fn.includes("vanguard") || fn.includes("vested") || fn.includes("drivewealth") ||
+        txt.includes("schwab") || txt.includes("fidelity") || txt.includes("vanguard") || txt.includes("drivewealth")) {
+      return "us_broker";
+    }
+    if (fn.includes("zerodha") || txt.includes("zerodha")) {
+      return (fn.includes("coin") || txt.includes("coin")) ? "zerodha_coin" : "zerodha_stocks";
+    }
+    if (fn.includes("groww") || txt.includes("groww")) {
+      return (fn.includes("mf") || txt.includes("mutual")) ? "groww_mf" : "groww_stocks";
+    }
+    if (fn.includes("cams") || fn.includes("kfintech") || fn.includes("mfcentral") || fn.includes("cas") ||
+        txt.includes("cams") || txt.includes("kfintech") || txt.includes("consolidated account statement")) {
+      return "mfcentral";
+    }
+    if (fn.includes("icici") || txt.includes("icicidirect")) return "icici_direct";
+    if (fn.includes("hdfc") || txt.includes("hdfcsec")) return "hdfc_sec";
+    if (fn.includes("sbi") || txt.includes("sbisec")) return "sbi_sec";
+    if (fn.includes("upstox") || txt.includes("upstox")) return "upstox";
+    if (fn.includes("angel") || txt.includes("angelone")) return "angel_one";
+    if (fn.includes("kuvera") || txt.includes("kuvera")) return "kuvera";
+
+    // If text has "shares" or "cost basis" alongside "symbol" or "ticker", it's a US statement
+    if ((txt.includes("shares") || txt.includes("cost basis")) && (txt.includes("symbol") || txt.includes("ticker"))) {
+      return "chase";
+    }
+
+    return null;
   }
 
   // ==========================================================================
@@ -391,7 +445,7 @@ window.KYF_BROKER_IMPORTER = (() => {
     return hasDirect ? "DIRECT" : "REGULAR";
   }
 
-  function resolveMarketInstrument({ isin, symbol, rawName, defaultAssetClass, fileLtp = 0 }) {
+  function resolveMarketInstrument({ isin, symbol, rawName, defaultAssetClass, fileLtp = 0, source = null }) {
     const engine = typeof window !== "undefined" ? window.KYF_PORTFOLIO_ENGINE : null;
     if (engine && typeof engine.ensureIndexed === "function") {
       engine.ensureIndexed();
@@ -399,6 +453,53 @@ window.KYF_BROKER_IMPORTER = (() => {
 
     const cleanIsin = (isin || "").trim().toUpperCase();
     const cleanSym = (symbol || "").replace(/-(EQ|BE|GB|BZ)$/i, "").trim().toUpperCase();
+    const isUsSource = source && (source.currency === "USD" || source.id === "chase" || source.id === "us_broker");
+
+    // 0. US Asset / Chase resolution (when importing US statements or matching a US ticker)
+    const candidateUsTicker = cleanSym || (rawName ? extractUsTicker(rawName) : null);
+    const isIndianStock = cleanSym && engine && typeof engine.lookupEquityBySymbol === "function" && !!engine.lookupEquityBySymbol(cleanSym);
+    const usItem = (!isIndianStock || isUsSource) && candidateUsTicker && engine && typeof engine.lookupUsByTicker === "function"
+      ? engine.lookupUsByTicker(candidateUsTicker)
+      : null;
+
+    if (isUsSource || usItem) {
+      if (cleanSym === "CASH" || /deposit sweep|cash balance|bank sweep|money market/i.test(rawName || "")) {
+        return {
+          assetClass: "Cash & Bank",
+          subCategory: "Bank Deposits",
+          pricingMode: "MANUAL",
+          currency: "USD",
+          name: rawName || cleanSym || "Cash Sweep",
+          livePrice: 1,
+          instrumentMeta: {
+            symbol: cleanSym || "CASH",
+            currency: "USD"
+          }
+        };
+      }
+
+      const isFund = (usItem && usItem.type === "MUTUAL_FUND") || defaultAssetClass === "Mutual Funds";
+      const isEtf = usItem && usItem.type === "ETF";
+      const finalName = usItem ? usItem.name : (rawName || cleanSym || "US Holding");
+      const ticker = usItem ? usItem.ticker : (cleanSym || candidateUsTicker || "");
+      const livePrice = (usItem && usItem.closePrice > 0) ? usItem.closePrice : fileLtp;
+
+      return {
+        assetClass: isFund ? "Mutual Funds" : "Equities",
+        subCategory: isFund ? "US Index / Mutual Fund" : (isEtf ? "US Index ETF" : "US Equities"),
+        pricingMode: "LIVE_US",
+        currency: "USD",
+        name: finalName,
+        livePrice: livePrice || null,
+        instrumentMeta: {
+          ticker: ticker || null,
+          symbol: ticker || null,
+          priceUSD: livePrice || null,
+          currency: "USD"
+        }
+      };
+    }
+
     const isMf = cleanIsin.startsWith("INF") ||
                  defaultAssetClass === "Mutual Funds" ||
                  /\b(fund|scheme|growth|direct|regular|elss|index|arbitrage|hybrid|bluechip|cap)\b/i.test(rawName || "");
@@ -586,14 +687,20 @@ window.KYF_BROKER_IMPORTER = (() => {
       const m = h.instrumentMeta || {};
       const key = [
         (h.member || "").toLowerCase(), normalizeCustodian(h.custodian),
-        (m.isin || m.symbol || h.name || "").toUpperCase(), (m.folio || "").toLowerCase()
+        (m.isin || m.ticker || m.symbol || h.name || "").toUpperCase(), (m.folio || "").toLowerCase()
       ].join("|");
       const first = seen.get(key);
       if (!first) { seen.set(key, h); out.push(h); continue; }
       first.units = Number((first.units + h.units).toFixed(4));
       first.investedValue = (first.investedValue == null && h.investedValue == null)
         ? null : (first.investedValue || 0) + (h.investedValue || 0);
+      if (first.investedValueUSD != null || h.investedValueUSD != null) {
+        first.investedValueUSD = Number(((first.investedValueUSD || 0) + (h.investedValueUSD || 0)).toFixed(2));
+      }
       first.currentValue += h.currentValue;
+      if (first.currentValueUSD != null || h.currentValueUSD != null) {
+        first.currentValueUSD = Number(((first.currentValueUSD || 0) + (h.currentValueUSD || 0)).toFixed(2));
+      }
       first.manualCurrentValue = first.currentValue;
       const fm = first.instrumentMeta;
       if (fm.units != null) fm.units = Number(first.units.toFixed(4));
@@ -688,23 +795,47 @@ window.KYF_BROKER_IMPORTER = (() => {
         rawName,
         defaultAssetClass: source.defaultAssetClass,
         // The price the statement itself implies (never the purchase price, which is not a market price)
-        fileLtp: fileLtp || (fileCurVal > 0 ? fileCurVal / qty : 0)
+        fileLtp: fileLtp || (fileCurVal > 0 ? fileCurVal / qty : 0),
+        source
       });
 
-      // Live market price first; otherwise what the statement itself says it is worth; cost as the last resort
-      let currentValue;
-      if (resolved.livePrice > 0) currentValue = Math.round(qty * resolved.livePrice);
-      else if (fileCurVal > 0) currentValue = Math.round(fileCurVal);
-      else if (fileLtp > 0) currentValue = Math.round(qty * fileLtp);
-      else currentValue = Math.round(investedValue > 0 ? investedValue : qty * avgPrice);
+      const isUs = resolved.currency === "USD" || resolved.pricingMode === "LIVE_US";
+      const engine = typeof window !== "undefined" ? window.KYF_PORTFOLIO_ENGINE : null;
+      const fxRate = (engine && typeof engine.getUsdInr === "function") ? engine.getUsdInr().rate : 87.5;
+
+      let currentValue = 0;
+      let investedValueINR = null;
+      let curValUSD = null;
+      let invValUSD = null;
+
+      if (isUs) {
+        if (resolved.livePrice > 0) curValUSD = Number((qty * resolved.livePrice).toFixed(2));
+        else if (fileCurVal > 0) curValUSD = Number(fileCurVal.toFixed(2));
+        else if (fileLtp > 0) curValUSD = Number((qty * fileLtp).toFixed(2));
+        else curValUSD = investedValue > 0 ? Number(investedValue.toFixed(2)) : Number((qty * avgPrice).toFixed(2));
+
+        invValUSD = investedValue > 0 ? Number(investedValue.toFixed(2)) : (avgPrice > 0 ? Number((qty * avgPrice).toFixed(2)) : null);
+        currentValue = Math.round(curValUSD * fxRate);
+        investedValueINR = invValUSD != null ? Math.round(invValUSD * fxRate) : null;
+      } else {
+        if (resolved.livePrice > 0) currentValue = Math.round(qty * resolved.livePrice);
+        else if (fileCurVal > 0) currentValue = Math.round(fileCurVal);
+        else if (fileLtp > 0) currentValue = Math.round(qty * fileLtp);
+        else currentValue = Math.round(investedValue > 0 ? investedValue : qty * avgPrice);
+        investedValueINR = investedValue > 0 ? Math.round(investedValue) : null;
+      }
+
       const effectivePrice = qty > 0 && currentValue > 0 ? currentValue / qty : 0;
 
       const meta = {
         ...resolved.instrumentMeta,
         isin: resolved.instrumentMeta.isin || isin || null,
+        ticker: resolved.instrumentMeta?.ticker || (isUs ? (rawSym || rawName) : null),
         folio: folio || null,
         avgBuyPrice: avgPrice > 0 ? avgPrice : null,
-        price: effectivePrice > 0 ? Number(effectivePrice.toFixed(4)) : null
+        price: isUs ? (resolved.livePrice || fileLtp || (curValUSD && qty > 0 ? Number((curValUSD / qty).toFixed(2)) : null)) : (effectivePrice > 0 ? Number(effectivePrice.toFixed(4)) : null),
+        priceUSD: isUs ? (resolved.livePrice || fileLtp || (curValUSD && qty > 0 ? Number((curValUSD / qty).toFixed(2)) : null)) : null,
+        currency: isUs ? "USD" : "INR"
       };
 
       if (resolved.pricingMode === "LIVE_MF") {
@@ -728,9 +859,12 @@ window.KYF_BROKER_IMPORTER = (() => {
         assetClass: resolved.assetClass,
         subCategory: resolved.subCategory,
         pricingMode: resolved.pricingMode,
+        currency: isUs ? "USD" : "INR",
         units: qty,
-        investedValue: investedValue > 0 ? Math.round(investedValue) : null,
+        investedValue: investedValueINR,
+        investedValueUSD: invValUSD,
         currentValue,
+        currentValueUSD: curValUSD,
         manualCurrentValue: currentValue,
         allocations: [],
         instrumentMeta: meta,
@@ -747,6 +881,13 @@ window.KYF_BROKER_IMPORTER = (() => {
   // ==========================================================================
   function normalizeCustodian(c) {
     const s = (c || "").toLowerCase().trim();
+    if (s.includes("zerodha")) return "zerodha";
+    if (s.includes("groww")) return "groww";
+    if (s.includes("chase") || s.includes("jpmorgan")) return "chase";
+    if (s.includes("schwab")) return "schwab";
+    if (s.includes("fidelity")) return "fidelity";
+    if (s.includes("vanguard")) return "vanguard";
+    if (s.includes("vested") || s.includes("drivewealth")) return "vested";
     if (s.includes("zerodha")) return "zerodha";
     if (s.includes("groww")) return "groww";
     if (s.includes("icici")) return "icici";
@@ -837,12 +978,17 @@ window.KYF_BROKER_IMPORTER = (() => {
     };
   }
 
-  async function parseFiles(fileList, defaultMember = "Self", source) {
+  async function parseFiles(fileList, defaultMember = "Self", sourceArg) {
     const allHoldings = [];
     const brokersDetected = new Set();
     const membersDetected = new Set();
 
     for (const file of Array.from(fileList || [])) {
+      let source = getSource(sourceArg);
+      if (!source) {
+        const sniffedId = sniffSource(file.name);
+        source = getSource(sniffedId) || IMPORT_SOURCES.find((x) => x.id === "chase") || IMPORT_SOURCES[0];
+      }
       const sheets = await fileToMatrices(file);
       for (const { matrix } of sheets) {
         const extracted = extractHoldingsFromMatrix(matrix, defaultMember, source);
@@ -874,6 +1020,7 @@ window.KYF_BROKER_IMPORTER = (() => {
     previewBucket,
     IMPORT_SOURCES,
     getSource,
+    sniffSource,
     parseCSVToMatrix,
     parseHTMLTableToMatrix,
     detectDelimiter,
