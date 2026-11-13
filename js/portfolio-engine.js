@@ -253,6 +253,43 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     return null;
   }
 
+  function isUsMutualFund({ symbol = "", name = "", rawType = "", usItem = null, defaultAssetClass = "" } = {}) {
+    if (usItem && usItem.type === "MUTUAL_FUND") return true;
+    if (defaultAssetClass === "Mutual Funds") return true;
+
+    const typeStr = String(rawType || "").toLowerCase();
+    if (typeStr.includes("mutual fund") || typeStr.includes("open-end") || typeStr.includes("oe fund") || typeStr === "mf") {
+      return true;
+    }
+
+    const cleanSym = String(symbol || "").trim().toUpperCase();
+    const cleanName = String(name || "").trim();
+
+    // If explicitly designated as an ETF in name or type, it is an ETF, not an open-end mutual fund
+    const isExplicitEtf = /\b(etf|etfs|exchange traded fund|trust|etn)\b/i.test(cleanName) ||
+                          typeStr.includes("etf") || (usItem && usItem.type === "ETF");
+    if (isExplicitEtf) return false;
+
+    // Standard US Mutual Fund Ticker: 5 letters ending in 'X' (e.g. FBALX, VFIAX, VTSAX, FXAIX, FBGRX, PRGFX)
+    if (/^[A-Z]{4}X$/i.test(cleanSym)) {
+      return true;
+    }
+
+    // Mutual fund keywords in instrument name
+    const isFundKeyword = /\b(fund|funds|balanced|allocation|lifestyle|lifecycle|target retirement|target date|admiral|investor shares|institutional|instl)\b/i.test(cleanName);
+    if (isFundKeyword) {
+      return true;
+    }
+
+    // Major US mutual fund families followed by fund strategy keywords (e.g. "FIDELITY BALANCED", "VANGUARD WELLINGTON")
+    const isFundFamily = /^(fidelity|vanguard|t\.?\s*rowe|american funds|dodge\s*&\s*cox|schwab|pimco|franklin|putnam|blackrock|invesco)\b/i.test(cleanName);
+    if (isFundFamily && /\b(balanced|growth|value|income|treasury|bond|equity|index|strategy|portfolio|dividend|select)\b/i.test(cleanName)) {
+      return true;
+    }
+
+    return false;
+  }
+
   // ==========================================================================
   // Dual-Unit Engine: Extract Holding Physical Units
   // ==========================================================================
@@ -264,7 +301,9 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     const isUs = holding.pricingMode === "LIVE_US" || (holding.currency === "USD" && holding.pricingMode !== "LIVE_EQUITY");
     const sym = detectedTicker;
     const usItem = isUs && usMap ? usMap.get(sym) : null;
-    const isUsFund = usItem && usItem.type === "MUTUAL_FUND";
+    const isUsFund = (usItem && usItem.type === "MUTUAL_FUND") ||
+                     holding.assetClass === "Mutual Funds" ||
+                     isUsMutualFund({ symbol: sym, name: holding.name, rawType: meta.type, usItem, defaultAssetClass: holding.assetClass });
     let qty = Number(meta.quantity) || Number(holding.units) || 0;
     if (qty === 0 && isUs && usItem && usItem.closePrice > 0) {
       const usdVal = Number(holding.currentValueUSD) || (holding.currency === "USD" ? Number(holding.currentValue) : 0);
@@ -709,10 +748,19 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
             } else if (h.investedValueUSD != null) {
               enriched.investedValueUSD = Number(h.investedValueUSD);
             }
+            const isFund = (h.assetClass === "Mutual Funds") ||
+              isUsMutualFund({ symbol: sym, name: h.name, rawType: meta.type, usItem, defaultAssetClass: h.assetClass });
+            const unitName = isFund ? "units" : "shares";
             const formattedUnits = qty % 1 === 0
               ? qty.toLocaleString("en-US")
               : qty.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-            physicalUnitsLabel = `${formattedUnits} units`;
+            physicalUnitsLabel = `${formattedUnits} ${unitName}`;
+            if (isFund) {
+              enriched.assetClass = "Mutual Funds";
+              if (!enriched.subCategory || enriched.subCategory === "US Equities") {
+                enriched.subCategory = /balanced|allocation/i.test(h.name) ? "US Balanced Fund" : "US Index / Mutual Fund";
+              }
+            }
             enriched.currency = "USD";
             enriched.fxRate = fxRate;
             enriched.currentValueUSD = Number(curValUSD.toFixed(2));
@@ -1342,6 +1390,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     lookupEquity,
     lookupMf,
     lookupUsByTicker,
+    isUsMutualFund,
     getUsdInr,
     usAssetInfo,
     convertHoldingToGoldGrams,

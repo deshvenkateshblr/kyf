@@ -60,7 +60,11 @@ window.KYF_BROKER_IMPORTER = (() => {
       "total value", "market value ($)", "current value ($)", "value ($)", "ending value"
     ],
     PLEDGED: ["quantity pledged (margin)", "quantity pledged (loan)", "qty pledged (margin)", "qty pledged (loan)", "pledged qty", "quantity pledged", "pledged quantity"],
-    INVESTOR: ["investor name", "holder name", "client name", "investor", "folio holder", "account name"]
+    INVESTOR: ["investor name", "holder name", "client name", "investor", "folio holder", "account name"],
+    TYPE: [
+      "type", "security type", "investment type", "asset class", "asset category",
+      "instrument type", "holding type", "class", "asset type"
+    ]
   };
 
   const EXCLUSIONS = {
@@ -72,8 +76,11 @@ window.KYF_BROKER_IMPORTER = (() => {
 
   // Import sources: includes both Indian and US brokerage statements.
   const IMPORT_SOURCES = [
+    { id: "fidelity", label: "Fidelity Investments (US)", custodian: "Fidelity", defaultAssetClass: "Equities", currency: "USD" },
     { id: "chase", label: "Chase / J.P. Morgan (US)", custodian: "Chase", defaultAssetClass: "Equities", currency: "USD" },
-    { id: "us_broker", label: "US Broker (Schwab, Fidelity, Vanguard, Vested)", custodian: "US Broker", defaultAssetClass: "Equities", currency: "USD" },
+    { id: "vanguard", label: "Vanguard (US)", custodian: "Vanguard", defaultAssetClass: "Equities", currency: "USD" },
+    { id: "schwab", label: "Charles Schwab (US)", custodian: "Schwab", defaultAssetClass: "Equities", currency: "USD" },
+    { id: "us_broker", label: "Other US Broker (Vested, INDmoney, DriveWealth)", custodian: "US Broker", defaultAssetClass: "Equities", currency: "USD" },
     { id: "zerodha_stocks", label: "Zerodha (Stocks)", custodian: "Zerodha", defaultAssetClass: "Equities", currency: "INR" },
     { id: "zerodha_coin", label: "Zerodha Coin (Mutual Funds)", custodian: "Zerodha Coin", defaultAssetClass: "Mutual Funds", currency: "INR" },
     { id: "groww_stocks", label: "Groww (Stocks)", custodian: "Groww", defaultAssetClass: "Equities", currency: "INR" },
@@ -98,11 +105,13 @@ window.KYF_BROKER_IMPORTER = (() => {
     const fn = String(fileName || "").toLowerCase();
     const txt = String(sampleText || "").slice(0, 4096).toLowerCase();
 
+    if (fn.includes("fidelity") || txt.includes("fidelity")) return "fidelity";
+    if (fn.includes("vanguard") || txt.includes("vanguard")) return "vanguard";
+    if (fn.includes("schwab") || txt.includes("schwab")) return "schwab";
     if (fn.includes("chase") || fn.includes("jpmorgan") || fn.includes("jp_morgan") || txt.includes("chase") || txt.includes("jpmorgan") || txt.includes("j.p. morgan")) {
       return "chase";
     }
-    if (fn.includes("schwab") || fn.includes("fidelity") || fn.includes("vanguard") || fn.includes("vested") || fn.includes("drivewealth") ||
-        txt.includes("schwab") || txt.includes("fidelity") || txt.includes("vanguard") || txt.includes("drivewealth")) {
+    if (fn.includes("vested") || fn.includes("drivewealth") || txt.includes("drivewealth")) {
       return "us_broker";
     }
     if (fn.includes("zerodha") || txt.includes("zerodha")) {
@@ -445,7 +454,44 @@ window.KYF_BROKER_IMPORTER = (() => {
     return hasDirect ? "DIRECT" : "REGULAR";
   }
 
-  function resolveMarketInstrument({ isin, symbol, rawName, defaultAssetClass, fileLtp = 0, source = null }) {
+  function isUsMutualFund({ symbol = "", name = "", rawType = "", usItem = null, defaultAssetClass = "" } = {}) {
+    if (usItem && usItem.type === "MUTUAL_FUND") return true;
+    if (defaultAssetClass === "Mutual Funds") return true;
+
+    const typeStr = String(rawType || "").toLowerCase();
+    if (typeStr.includes("mutual fund") || typeStr.includes("open-end") || typeStr.includes("oe fund") || typeStr === "mf") {
+      return true;
+    }
+
+    const cleanSym = String(symbol || "").trim().toUpperCase();
+    const cleanName = String(name || "").trim();
+
+    // If explicitly designated as an ETF in name or type, it is an ETF, not an open-end mutual fund
+    const isExplicitEtf = /\b(etf|etfs|exchange traded fund|trust|etn)\b/i.test(cleanName) ||
+                          typeStr.includes("etf") || (usItem && usItem.type === "ETF");
+    if (isExplicitEtf) return false;
+
+    // Standard US Mutual Fund Ticker: 5 letters ending in 'X' (e.g. FBALX, VFIAX, VTSAX, FXAIX, FBGRX, PRGFX)
+    if (/^[A-Z]{4}X$/i.test(cleanSym)) {
+      return true;
+    }
+
+    // Mutual fund keywords in instrument name
+    const isFundKeyword = /\b(fund|funds|balanced|allocation|lifestyle|lifecycle|target retirement|target date|admiral|investor shares|institutional|instl)\b/i.test(cleanName);
+    if (isFundKeyword) {
+      return true;
+    }
+
+    // Major US mutual fund families followed by fund strategy keywords (e.g. "FIDELITY BALANCED", "VANGUARD WELLINGTON")
+    const isFundFamily = /^(fidelity|vanguard|t\.?\s*rowe|american funds|dodge\s*&\s*cox|schwab|pimco|franklin|putnam|blackrock|invesco)\b/i.test(cleanName);
+    if (isFundFamily && /\b(balanced|growth|value|income|treasury|bond|equity|index|strategy|portfolio|dividend|select)\b/i.test(cleanName)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function resolveMarketInstrument({ isin, symbol, rawName, defaultAssetClass, fileLtp = 0, source = null, rawType = "" }) {
     const engine = typeof window !== "undefined" ? window.KYF_PORTFOLIO_ENGINE : null;
     if (engine && typeof engine.ensureIndexed === "function") {
       engine.ensureIndexed();
@@ -453,9 +499,9 @@ window.KYF_BROKER_IMPORTER = (() => {
 
     const cleanIsin = (isin || "").trim().toUpperCase();
     const cleanSym = (symbol || "").replace(/-(EQ|BE|GB|BZ)$/i, "").trim().toUpperCase();
-    const isUsSource = source && (source.currency === "USD" || source.id === "chase" || source.id === "us_broker");
+    const isUsSource = source && (source.currency === "USD" || source.id === "chase" || source.id === "fidelity" || source.id === "vanguard" || source.id === "schwab" || source.id === "us_broker");
 
-    // 0. US Asset / Chase resolution (when importing US statements or matching a US ticker)
+    // 0. US Asset / US Broker resolution (when importing US statements or matching a US ticker)
     const candidateUsTicker = cleanSym || (rawName ? extractUsTicker(rawName) : null);
     const isIndianStock = cleanSym && engine && typeof engine.lookupEquityBySymbol === "function" && !!engine.lookupEquityBySymbol(cleanSym);
     const usItem = (!isIndianStock || isUsSource) && candidateUsTicker && engine && typeof engine.lookupUsByTicker === "function"
@@ -463,7 +509,10 @@ window.KYF_BROKER_IMPORTER = (() => {
       : null;
 
     if (isUsSource || usItem) {
-      if (cleanSym === "CASH" || /deposit sweep|cash balance|bank sweep|money market/i.test(rawName || "")) {
+      const isCash = cleanSym === "CASH" || /^(spaxx|fdrxx|vmfxx|fcash)$/i.test(cleanSym) ||
+        /deposit sweep|cash balance|bank sweep|money market|cash reserves|settlement fund/i.test(rawName || "") ||
+        /cash|money market/i.test(rawType || "");
+      if (isCash) {
         return {
           assetClass: "Cash & Bank",
           subCategory: "Bank Deposits",
@@ -478,15 +527,36 @@ window.KYF_BROKER_IMPORTER = (() => {
         };
       }
 
-      const isFund = (usItem && usItem.type === "MUTUAL_FUND") || defaultAssetClass === "Mutual Funds";
-      const isEtf = usItem && usItem.type === "ETF";
+      const isFund = isUsMutualFund({
+        symbol: candidateUsTicker,
+        name: rawName,
+        rawType,
+        usItem,
+        defaultAssetClass
+      });
+      const isEtf = (usItem && usItem.type === "ETF") || /\b(etf|etfs|exchange traded fund)\b/i.test(rawName || "") || /etf/i.test(rawType || "");
       const finalName = usItem ? usItem.name : (rawName || cleanSym || "US Holding");
       const ticker = usItem ? usItem.ticker : (cleanSym || candidateUsTicker || "");
       const livePrice = (usItem && usItem.closePrice > 0) ? usItem.closePrice : fileLtp;
 
+      let subCategory = "US Equities";
+      if (isFund) {
+        if (/balanced|allocation|hybrid|lifestyle/i.test(rawName || "")) {
+          subCategory = "US Balanced Fund";
+        } else if (/bond|treasury|income|fixed income/i.test(rawName || "")) {
+          subCategory = "US Bond Fund";
+        } else if (/index|500 index|total market|total stock/i.test(rawName || "")) {
+          subCategory = "US Index Fund";
+        } else {
+          subCategory = "US Index / Mutual Fund";
+        }
+      } else if (isEtf) {
+        subCategory = "US Index ETF";
+      }
+
       return {
         assetClass: isFund ? "Mutual Funds" : "Equities",
-        subCategory: isFund ? "US Index / Mutual Fund" : (isEtf ? "US Index ETF" : "US Equities"),
+        subCategory: subCategory,
         pricingMode: "LIVE_US",
         currency: "USD",
         name: finalName,
@@ -723,6 +793,7 @@ window.KYF_BROKER_IMPORTER = (() => {
     const iName = findColumnIndex(headers, COL_CANDIDATES.NAME);
     const iFolio = findColumnIndex(headers, COL_CANDIDATES.FOLIO);
     const iQty = findColumnIndex(headers, COL_CANDIDATES.QTY);
+    const iType = findColumnIndex(headers, COL_CANDIDATES.TYPE);
     let iAvgPrice = findColumnIndex(headers, COL_CANDIDATES.AVG_PRICE, EXCLUSIONS.AVG_PRICE);
     let iInvested = findColumnIndex(headers, COL_CANDIDATES.INVESTED, EXCLUSIONS.INVESTED);
     let iLtp = findColumnIndex(headers, COL_CANDIDATES.LTP, EXCLUSIONS.LTP);
@@ -789,6 +860,7 @@ window.KYF_BROKER_IMPORTER = (() => {
         fileCurVal = Math.round(qty * fileLtp);
       }
 
+      const rawType = iType !== -1 ? String(row[iType] || "").trim() : "";
       const resolved = resolveMarketInstrument({
         isin,
         symbol: rawSym,
@@ -796,7 +868,8 @@ window.KYF_BROKER_IMPORTER = (() => {
         defaultAssetClass: source.defaultAssetClass,
         // The price the statement itself implies (never the purchase price, which is not a market price)
         fileLtp: fileLtp || (fileCurVal > 0 ? fileCurVal / qty : 0),
-        source
+        source,
+        rawType
       });
 
       const isUs = resolved.currency === "USD" || resolved.pricingMode === "LIVE_US";
@@ -831,6 +904,7 @@ window.KYF_BROKER_IMPORTER = (() => {
         ...resolved.instrumentMeta,
         isin: resolved.instrumentMeta.isin || isin || null,
         ticker: resolved.instrumentMeta?.ticker || (isUs ? (rawSym || rawName) : null),
+        type: rawType || null,
         folio: folio || null,
         avgBuyPrice: avgPrice > 0 ? avgPrice : null,
         price: isUs ? (resolved.livePrice || fileLtp || (curValUSD && qty > 0 ? Number((curValUSD / qty).toFixed(2)) : null)) : (effectivePrice > 0 ? Number(effectivePrice.toFixed(4)) : null),
@@ -838,7 +912,7 @@ window.KYF_BROKER_IMPORTER = (() => {
         currency: isUs ? "USD" : "INR"
       };
 
-      if (resolved.pricingMode === "LIVE_MF") {
+      if (resolved.pricingMode === "LIVE_MF" || (isUs && resolved.assetClass === "Mutual Funds")) {
         meta.units = Number(qty.toFixed(4));
       } else if (resolved.pricingMode === "LIVE_GOLD") {
         if (meta.symbol === "GOLDBEES") meta.units = qty;
@@ -1028,6 +1102,7 @@ window.KYF_BROKER_IMPORTER = (() => {
     findColumnIndex,
     normalizeSchemeName,
     determineMfPlanType,
+    isUsMutualFund,
     resolveMarketInstrument,
     extractHoldingsFromMatrix
   };

@@ -702,7 +702,9 @@ test("sniffSource auto-detects Chase from filename or content", () => {
   assert.strictEqual(importer.sniffSource("Chase_Positions_2026.csv"), "chase");
   assert.strictEqual(importer.sniffSource("JPMorgan_Holdings.csv"), "chase");
   assert.strictEqual(importer.sniffSource("positions.csv", "Account Number,Symbol,Shares,Cost Basis"), "chase");
-  assert.strictEqual(importer.sniffSource("schwab_export.csv"), "us_broker");
+  assert.strictEqual(importer.sniffSource("schwab_export.csv"), "schwab");
+  assert.strictEqual(importer.sniffSource("fidelity_positions.csv"), "fidelity");
+  assert.strictEqual(importer.sniffSource("vested_portfolio.csv"), "us_broker");
 });
 
 test("Detects Chase / J.P. Morgan positions statement headers", () => {
@@ -775,6 +777,84 @@ test("js/portfolio-app.js defines showImportError and hideImportError handlers",
   assert.ok(js.includes("showImportError"), "showImportError function defined");
   assert.ok(js.includes("hideImportError"), "hideImportError function defined");
   assert.ok(js.includes("importErrorBanner: document.getElementById(\"import-error-banner\")"), "importErrorBanner cached in els");
+});
+
+console.log("\n[TEST GROUP 14] US Mutual Fund Detection & Fidelity Statements");
+test("isUsMutualFund reliably detects US mutual funds vs ETFs vs equities", () => {
+  assert.ok(importer.isUsMutualFund, "importer.isUsMutualFund exists");
+  assert.ok(engine.isUsMutualFund, "engine.isUsMutualFund exists");
+
+  // Name keywords without ticker
+  assert.strictEqual(importer.isUsMutualFund({ name: "FIDELITY BALANCED" }), true, "FIDELITY BALANCED is mutual fund");
+  assert.strictEqual(importer.isUsMutualFund({ name: "Fidelity Balanced Fund" }), true, "Fidelity Balanced Fund is mutual fund");
+  assert.strictEqual(importer.isUsMutualFund({ name: "Vanguard Wellington Fund Admiral" }), true, "Vanguard Wellington is mutual fund");
+  assert.strictEqual(importer.isUsMutualFund({ name: "T. Rowe Price Blue Chip Growth" }), true, "T. Rowe Price Growth is mutual fund");
+
+  // 5-letter ticker ending in X
+  assert.strictEqual(importer.isUsMutualFund({ symbol: "FBALX" }), true, "FBALX is mutual fund");
+  assert.strictEqual(importer.isUsMutualFund({ symbol: "VFIAX" }), true, "VFIAX is mutual fund");
+  assert.strictEqual(importer.isUsMutualFund({ symbol: "FXAIX" }), true, "FXAIX is mutual fund");
+
+  // Type column from broker statement
+  assert.strictEqual(importer.isUsMutualFund({ name: "Custom Strategy", rawType: "Mutual Fund" }), true, "Type column Mutual Fund");
+
+  // ETFs must NEVER be classified as mutual funds
+  assert.strictEqual(importer.isUsMutualFund({ name: "Vanguard S&P 500 ETF", symbol: "VOO" }), false, "VOO ETF is NOT mutual fund");
+  assert.strictEqual(importer.isUsMutualFund({ name: "Invesco QQQ Trust ETF", symbol: "QQQM" }), false, "QQQM ETF is NOT mutual fund");
+  assert.strictEqual(importer.isUsMutualFund({ name: "SPDR S&P 500 ETF Trust", symbol: "SPY" }), false, "SPY ETF is NOT mutual fund");
+
+  // Equities must NEVER be classified as mutual funds
+  assert.strictEqual(importer.isUsMutualFund({ name: "Apple Inc.", symbol: "AAPL" }), false, "AAPL is equity");
+  assert.strictEqual(importer.isUsMutualFund({ name: "Tesla Inc", symbol: "TSLA" }), false, "TSLA is equity");
+});
+
+test("Importing Fidelity statement or Chase with FIDELITY BALANCED assigns Mutual Funds asset class", () => {
+  const matrix = [
+    ["Account Number", "Symbol", "Description", "Quantity", "Last Price", "Current Value", "Cost Basis Total"],
+    ["...9876", "", "FIDELITY BALANCED", "150", "32.17", "4825.50", "4500.00"],
+    ["...9876", "VOO", "Vanguard 500 Index ETF", "10", "520.00", "5200.00", "5000.00"],
+    ["...9876", "SPAXX", "Fidelity Government Money Market", "1000", "1.00", "1000.00", "1000.00"]
+  ];
+
+  // Even if user chose "chase" as source
+  const chaseSource = importer.getSource("chase");
+  const holdings = importer.extractHoldingsFromMatrix(matrix, "Vaish", chaseSource);
+  assert.strictEqual(holdings.length, 3, "Extracted 3 holdings");
+
+  const fbal = holdings.find(h => h.name.includes("FIDELITY BALANCED") || h.name.includes("Fidelity Balanced"));
+  assert.ok(fbal, "Found Fidelity Balanced holding");
+  assert.strictEqual(fbal.assetClass, "Mutual Funds", "FIDELITY BALANCED must be classified as Mutual Funds");
+  assert.strictEqual(fbal.subCategory, "US Balanced Fund", "subCategory is US Balanced Fund");
+  assert.strictEqual(fbal.currency, "USD", "Currency is USD");
+  assert.strictEqual(fbal.pricingMode, "LIVE_US", "pricingMode is LIVE_US");
+  assert.strictEqual(fbal.instrumentMeta.units, 150, "Units set on meta");
+
+  const etf = holdings.find(h => (h.instrumentMeta && h.instrumentMeta.ticker === "VOO") || h.name.includes("Vanguard 500"));
+  assert.ok(etf, "Found VOO");
+  assert.strictEqual(etf.assetClass, "Equities", "ETF is classified as Equities");
+  assert.strictEqual(etf.subCategory, "US Index ETF", "subCategory is US Index ETF");
+
+  const cash = holdings.find(h => h.name.includes("SPAXX") || h.assetClass === "Cash & Bank");
+  assert.ok(cash, "Found SPAXX Cash sweep");
+  assert.strictEqual(cash.assetClass, "Cash & Bank", "SPAXX is Cash & Bank");
+
+  // Dual unit engine verifies units vs shares
+  const unitsFbal = engine.computeHoldingPhysicalUnits(fbal);
+  assert.strictEqual(unitsFbal.mfUnits, 150, "Dual unit engine assigns 150 mfUnits");
+  assert.strictEqual(unitsFbal.sharesQty, 0, "Dual unit engine assigns 0 sharesQty for fund");
+
+  const unitsEtf = engine.computeHoldingPhysicalUnits(etf);
+  assert.strictEqual(unitsEtf.sharesQty, 10, "Dual unit engine assigns 10 sharesQty for ETF");
+  assert.strictEqual(unitsEtf.mfUnits, 0, "Dual unit engine assigns 0 mfUnits for ETF");
+});
+
+console.log("\n[TEST GROUP 15] Single-Member Family Scope Selection");
+test("Family scope logic allows selecting a single member without collapsing to ALL", () => {
+  const js = fs.readFileSync(path.join(BASE_DIR, "js/portfolio-app.js"), "utf-8");
+  // Ensure isAll does NOT force collapse when activeMemberScope has 1 member
+  assert.ok(js.includes("const isAll = (activeMemberScope === \"ALL\");"), "isAll strictly checks activeMemberScope === 'ALL'");
+  assert.ok(js.includes("memberList.length > 1 && activeMemberScope.size === memberList.length"), "Only collapses to ALL if memberList.length > 1");
+  assert.ok(js.includes("activeMemberScope = new Set([selectedMember]);"), "Import sets activeMemberScope to selectedMember");
 });
 
 console.log(`\n========================================`);

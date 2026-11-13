@@ -373,8 +373,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    const isAll = activeMemberScope === "ALL" ||
-      (activeMemberScope instanceof Set && activeMemberScope.size === memberList.length);
+    const isAll = (activeMemberScope === "ALL");
 
     let html = `
       <button type="button" class="member-chip ${isAll ? "active" : ""}" data-name="ALL" title="View combined portfolio for all family members">
@@ -414,7 +413,8 @@ document.addEventListener("DOMContentLoaded", async () => {
               }
             } else {
               activeMemberScope.add(name);
-              if (activeMemberScope.size === memberList.length) {
+              // Only collapse to ALL if there are multiple members and all of them are selected
+              if (memberList.length > 1 && activeMemberScope.size === memberList.length) {
                 activeMemberScope = "ALL";
               }
             }
@@ -2589,12 +2589,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    // Preserve active family member scope (do not reset to "ALL")
-    if (activeMemberScope instanceof Set) {
-      if (!activeMemberScope.has(member)) {
-        activeMemberScope = new Set([member]);
-      }
-    }
+    // Set active family member scope to the target member
+    activeMemberScope = new Set([member]);
     selectedPills = "ALL";
     searchQuery = "";
     if (els.searchInput) els.searchInput.value = "";
@@ -3118,6 +3114,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     markDataChanged();
+    activeMemberScope = new Set([selectedMember]);
     closeImportModal();
     renderApp();
 

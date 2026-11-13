@@ -843,6 +843,19 @@ window.KYF_MARKET_US = {
       38.51
     ],
     [
+      "FBALX",
+      "Fidelity Balanced Fund",
+      32.17,
+      "MUTUAL_FUND",
+      "USD",
+      "2026-11-13 08:10:22",
+      "HYBRID",
+      1.85,
+      4.92,
+      7.24,
+      14.35
+    ],
+    [
       "FBGRX",
       "Fidelity Blue Chip Growth Fund",
       271.96,
@@ -3768,6 +3781,19 @@ window.KYF_MARKET_US = {
       "ret3m": 6.92,
       "ret6m": 29.59,
       "ret1y": 38.51
+    },
+    "FBALX": {
+      "ticker": "FBALX",
+      "name": "Fidelity Balanced Fund",
+      "closePrice": 32.17,
+      "type": "MUTUAL_FUND",
+      "currency": "USD",
+      "lastUpdated": "2026-11-13 08:10:22",
+      "category": "HYBRID",
+      "ret1m": 1.85,
+      "ret3m": 4.92,
+      "ret6m": 7.24,
+      "ret1y": 14.35
     },
     "FBGRX": {
       "ticker": "FBGRX",

@@ -1405,7 +1405,9 @@ KNOWN_US_METADATA = {
     "SWISX": ("Schwab International Index Fund", "MUTUAL_FUND"),
     "SWAGX": ("Schwab U.S. Aggregate Bond Index Fund", "MUTUAL_FUND"),
     "FCNTX": ("Fidelity Contrafund", "MUTUAL_FUND"),
+    "FBALX": ("Fidelity Balanced Fund", "MUTUAL_FUND"),
     "VWENX": ("Vanguard Wellington Fund Admiral", "MUTUAL_FUND"),
+    "VBIAX": ("Vanguard Balanced Index Fund Admiral", "MUTUAL_FUND"),
     "FZROX": ("Fidelity ZERO Total Market Index", "MUTUAL_FUND"),
     "FNILX": ("Fidelity ZERO Large Cap Index", "MUTUAL_FUND"),
     "VIGAX": ("Vanguard Growth Index Fund Admiral", "MUTUAL_FUND"),
@@ -1741,7 +1743,7 @@ US_CATEGORY_OVERRIDES = {
     "SLV": "SILVER",
     "VNQ": "REIT",
     "IBIT": "CRYPTO",
-    "VWENX": "HYBRID",
+    "VWENX": "HYBRID", "FBALX": "HYBRID", "VBIAX": "HYBRID",
 }
 
 
