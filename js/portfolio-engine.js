@@ -721,10 +721,11 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
             if (meta.avgBuyPrice != null && meta.avgBuyPrice !== "") {
               enriched.avgBuyPriceUSD = Number(meta.avgBuyPrice);
             }
-            if (qty > 0 && enriched.avgBuyPriceUSD > 0) {
-              enriched.investedValueUSD = Number((qty * enriched.avgBuyPriceUSD).toFixed(2));
-            } else if (h.investedValueUSD != null) {
+            // The cost the person entered or imported wins; average price x quantity is only the fallback
+            if (Number(h.investedValueUSD) > 0) {
               enriched.investedValueUSD = Number(h.investedValueUSD);
+            } else if (qty > 0 && enriched.avgBuyPriceUSD > 0) {
+              enriched.investedValueUSD = Number((qty * enriched.avgBuyPriceUSD).toFixed(2));
             }
           } else {
             livePrice = Number(meta.price) || Number(meta.avgBuyPrice) || 0;
@@ -742,11 +743,11 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
             }
             calculatedValue = Math.round(curValUSD * fxRate);
             priceLabel = sym ? `No live price for ${sym} ($)` : "Manual US ($)";
-            if (meta.avgBuyPrice != null && meta.avgBuyPrice !== "" && qty > 0) {
+            if (Number(h.investedValueUSD) > 0) {
+              enriched.investedValueUSD = Number(h.investedValueUSD);
+            } else if (meta.avgBuyPrice != null && meta.avgBuyPrice !== "" && qty > 0) {
               enriched.avgBuyPriceUSD = Number(meta.avgBuyPrice);
               enriched.investedValueUSD = Number((qty * enriched.avgBuyPriceUSD).toFixed(2));
-            } else if (h.investedValueUSD != null) {
-              enriched.investedValueUSD = Number(h.investedValueUSD);
             }
             const isFund = (h.assetClass === "Mutual Funds") ||
               isUsMutualFund({ symbol: sym, name: h.name, rawType: meta.type, usItem, defaultAssetClass: h.assetClass });

@@ -504,7 +504,7 @@ window.KYF_BROKER_IMPORTER = (() => {
     // 0. US Asset / US Broker resolution (when importing US statements or matching a US ticker)
     const candidateUsTicker = cleanSym || (rawName ? extractUsTicker(rawName) : null);
     const isIndianStock = cleanSym && engine && typeof engine.lookupEquityBySymbol === "function" && !!engine.lookupEquityBySymbol(cleanSym);
-    const usItem = (!isIndianStock || isUsSource) && candidateUsTicker && engine && typeof engine.lookupUsByTicker === "function"
+    const usItem = isUsSource && candidateUsTicker && engine && typeof engine.lookupUsByTicker === "function"
       ? engine.lookupUsByTicker(candidateUsTicker)
       : null;
 
@@ -514,7 +514,7 @@ window.KYF_BROKER_IMPORTER = (() => {
         /cash|money market/i.test(rawType || "");
       if (isCash) {
         return {
-          assetClass: "Cash & Bank",
+          assetClass: "Cash & Liquid",
           subCategory: "Bank Deposits",
           pricingMode: "MANUAL",
           currency: "USD",
@@ -874,7 +874,7 @@ window.KYF_BROKER_IMPORTER = (() => {
 
       const isUs = resolved.currency === "USD" || resolved.pricingMode === "LIVE_US";
       const engine = typeof window !== "undefined" ? window.KYF_PORTFOLIO_ENGINE : null;
-      const fxRate = (engine && typeof engine.getUsdInr === "function") ? engine.getUsdInr().rate : 87.5;
+      const fxRate = (engine && typeof engine.getUsdInr === "function") ? engine.getUsdInr().rate : 0;
 
       let currentValue = 0;
       let investedValueINR = null;

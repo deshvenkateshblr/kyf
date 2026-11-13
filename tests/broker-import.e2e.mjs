@@ -70,14 +70,14 @@ const holdingsCount = (p) => p.evaluate(() => (document.getElementById("kpi-net-
   // a second broker is a separate bucket
   await importFile(p, { name: "u.csv", mimeType: "text/csv", buffer: Buffer.from("Instrument,Qty.,Avg. cost,LTP\r\nRELIANCE,3,1200,1300\r\n") }, null, "upstox");
   ok(await holdingsCount(p) === 2, "csv: the same stock at another broker is kept separately");
-  // no source chosen: nothing is read
+  // no source chosen: the app guesses one from the file name/content and shows the guess in the list
   await p.click("#btn-open-import-modal");
   await p.setInputFiles("#broker-file-input", { name: "h.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
-  await p.waitForTimeout(400);
-  ok(await p.locator("#import-preview-tbody tr").count() === 0 && await p.isDisabled("#btn-confirm-import"), "csv: without a broker choice nothing is previewed");
-  await p.selectOption("#import-source-select", "groww_stocks");
   await p.waitForSelector("#import-preview-tbody tr");
-  ok(await p.locator("#import-preview-tbody tr").count() === 2, "csv: choosing the broker afterwards reads the file");
+  ok(await p.inputValue("#import-source-select") !== "", "csv: a guessed source is filled into the list (changeable)");
+  await p.selectOption("#import-source-select", "groww_stocks");
+  await p.waitForTimeout(500);
+  ok(await p.locator("#import-preview-tbody tr").count() === 2, "csv: changing the broker re-reads the file");
   ok(p.errs.length === 0, "csv: no page errors " + p.errs.join("|"));
   await p.context().close();
 }

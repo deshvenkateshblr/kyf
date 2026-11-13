@@ -749,8 +749,8 @@ test("Imports Chase positions CSV for family member with USD valuation and INR c
   assert.strictEqual(qqqm.currency, "USD");
   assert.strictEqual(qqqm.units, 5);
 
-  const cash = holdings.find(h => h.assetClass === "Cash & Bank");
-  assert.ok(cash, "Found Cash & Bank sweep");
+  const cash = holdings.find(h => h.assetClass === "Cash & Liquid");
+  assert.ok(cash, "Found cash sweep in the app's Cash & Liquid class");
   assert.strictEqual(cash.member, "VAISH");
   assert.strictEqual(cash.currency, "USD");
 });
@@ -834,7 +834,7 @@ test("Importing Fidelity statement or Chase with FIDELITY BALANCED assigns Mutua
   assert.strictEqual(etf.assetClass, "Equities", "ETF is classified as Equities");
   assert.strictEqual(etf.subCategory, "US Index ETF", "subCategory is US Index ETF");
 
-  const cash = holdings.find(h => h.name.includes("SPAXX") || h.assetClass === "Cash & Bank");
+  const cash = holdings.find(h => h.name.includes("SPAXX") || h.assetClass === "Cash & Liquid");
   assert.ok(cash, "Found SPAXX Cash sweep");
   assert.strictEqual(cash.assetClass, "Cash & Bank", "SPAXX is Cash & Bank");
 

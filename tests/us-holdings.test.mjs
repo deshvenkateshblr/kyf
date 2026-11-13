@@ -83,6 +83,27 @@ const val = (h) => E.enrichHoldingsWithLiveMarket([h])[0];
   ok((eng.match(/93\.85/g) || []).length === 1 && !/87\.5/.test(eng), "the only typed rate is the single last-resort constant");
 }
 
+// --- US statement import: the file's cost basis is what the gain is measured against
+{
+  const I = sb.KYF_BROKER_IMPORTER || (vm.runInContext(fs.readFileSync(new URL("../js/portfolio-importer.js", import.meta.url), "utf8"), sb), sb.KYF_BROKER_IMPORTER);
+  const run = (csv, src) => I.extractHoldingsFromMatrix(I.parseCSVToMatrix(csv), "Self", src);
+  const chase = run("Symbol,Description,Quantity,Price,Value,Cost Basis\nVOO,VANGUARD S&P 500 ETF,10,690,6900,6000\nGLD,SPDR GOLD SHARES,5,350,1750,1500\nAGG,ISHARES CORE US AGGREGATE BOND ETF,20,100,2000,2100\nSPAXX,FIDELITY GOVERNMENT CASH RESERVES,1500,1,1500,1500", "chase");
+  const en = E.enrichHoldingsWithLiveMarket(chase);
+  const by = (n) => en.find((x) => new RegExp(n, "i").test(x.name));
+  ok(by("S&P 500").investedValueUSD === 6000 && by("S&P 500").totalReturnPct > 10, "imported cost basis is kept, not replaced by the price column");
+  ok(by("Gold").assetClass === "Commodities & Gold" && by("Aggregate").assetClass === "Fixed Income", "imported gold and bond ETFs land in their own classes");
+  ok(by("CASH RESERVES").assetClass === "Cash & Liquid", "a cash sweep uses the app's cash class");
+  const fid = run("Symbol,Description,Quantity,Last Price,Current Value,Total Cost Basis,Average Cost Basis\nVOO,VANGUARD S&P 500 ETF,10,690,6900,6000,600", "fidelity");
+  ok(E.enrichHoldingsWithLiveMarket(fid)[0].investedValueUSD === 6000, "total cost basis column works");
+  const edited = val({ ...us("VOO", "VOO", 10, 600), investedValueUSD: 7000 });
+  ok(edited.investedValueUSD === 7000, "a cost edited later wins over the average price saved at import");
+  // an Indian broker file never turns into a US holding, even when the symbol also exists in the US list
+  const indian = run("Instrument,Qty.,Avg. cost,LTP\nTEAM,2,50,55\nBIL,10,100,102", "zerodha_stocks");
+  ok(indian.every((h) => h.pricingMode !== "LIVE_US" && h.currency !== "USD"), "Indian source rows are never read as US stocks");
+  const imp = fs.readFileSync(new URL("../js/portfolio-importer.js", import.meta.url), "utf8");
+  ok(!/\b(87\.5|93\.85)\b/.test(imp), "no rate typed into portfolio-importer.js");
+}
+
 // --- unknown ticker
 {
   const r = val(us("Mystery", "ZZZZ", 3, 50));
