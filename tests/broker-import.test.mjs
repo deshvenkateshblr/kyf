@@ -836,7 +836,7 @@ test("Importing Fidelity statement or Chase with FIDELITY BALANCED assigns Mutua
 
   const cash = holdings.find(h => h.name.includes("SPAXX") || h.assetClass === "Cash & Liquid");
   assert.ok(cash, "Found SPAXX Cash sweep");
-  assert.strictEqual(cash.assetClass, "Cash & Bank", "SPAXX is Cash & Bank");
+  assert.strictEqual(cash.assetClass, "Cash & Liquid", "SPAXX is in the app's Cash & Liquid class");
 
   // Dual unit engine verifies units vs shares
   const unitsFbal = engine.computeHoldingPhysicalUnits(fbal);
