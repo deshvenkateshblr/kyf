@@ -363,11 +363,6 @@ em.accent { color: var(--teal); }
 
 /* ---------- What you can do here ---------- */
 .tools { padding: clamp(40px, 5vw, 64px) 0; background: var(--paper); }
-.welcome-back { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; padding: 14px 18px; margin-bottom: 24px; border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: 10px; background: #fff; }
-.welcome-back[hidden] { display: none; }
-.welcome-back p { margin: 0; font-weight: 600; }
-.wb-links { display: flex; gap: 16px; }
-.wb-links a { color: var(--teal); font-weight: 700; text-decoration: none; }
 .start-path { list-style: none; padding: 0; margin: 28px 0 36px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .start-path li { margin: 0; }
 .start-path a { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; text-decoration: none; color: inherit; height: 100%; }

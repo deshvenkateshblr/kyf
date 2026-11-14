@@ -19,7 +19,7 @@ await page.goto(base + "/index.html");
 ok(await page.locator(".tool-card").count() === 6, "6 tool cards");
 for (const h of ["goals.html","cadence.html","portfolio.html","market-performance.html","real-estate-calculator.html"])
   ok(await page.locator(`.tool-card a[href="${h}"]`).count() === 1, "card link " + h);
-ok(await page.locator("#welcomeBack").isHidden(), "welcome hidden for new visitor");
+ok(await page.locator("#welcomeBack").count() === 0, "no Welcome back strip on home");
 ok(await page.locator('.start-path li').count() === 3, "3-step path");
 ok(await page.locator("#tools").isVisible(), "tools section visible");
 for (const w of [360, 390, 768]) {
@@ -39,7 +39,7 @@ const btnBg = await page.evaluate(() => getComputedStyle(document.querySelector(
 ok(btnBg !== "inline", "tool card button styled");
 await page.evaluate(() => { localStorage.setItem("kyf_user_goals", JSON.stringify([{id:"a"},{id:"b"}])); localStorage.setItem("kyf_user_holdings", JSON.stringify([{id:"h"}])); });
 await page.reload();
-ok(/2 goals and 1 holding/.test(await page.locator("#welcomeBack").innerText()), "welcome back counts");
+ok(await page.locator("#welcomeBack").count() === 0, "still no Welcome back strip with saved data");
 await page.goto(base + "/portfolio.html?demo=1");
 await page.waitForTimeout(800);
 ok(await page.evaluate(() => localStorage.getItem("kyf_demo_mode")) === "true", "demo flag set");
@@ -69,10 +69,10 @@ ok(errs.length === 0, "no page errors: " + errs.join("|"));
   ok(/\.kyf$/.test(dl.suggestedFilename()), "Save on home downloads a .kyf file: " + dl.suggestedFilename());
   await p.evaluate(() => { localStorage.clear(); });
   await p.reload();
-  ok(await p.locator("#welcomeBack").isHidden(), "nothing saved, no welcome back");
+  ok(await p.evaluate(() => !localStorage.getItem("kyf_user_goals")), "nothing saved after clearing");
   await p.setInputFiles("#kyfFileInput", file);
-  await p.waitForFunction(() => !document.getElementById("welcomeBack").hidden, null, { timeout: 8000 });
-  ok(/2 goals/.test(await p.locator("#welcomeBack").innerText()), "Open on home restores the data and refreshes Welcome back: " + await p.locator("#welcomeBack").innerText());
+  await p.waitForFunction(() => { try { return JSON.parse(localStorage.getItem("kyf_user_goals") || "[]").length === 2; } catch (e) { return false; } }, null, { timeout: 8000 });
+  ok(true, "Open on home restores the saved goals");
   ok(perrs.length === 0, "home open/save: no page errors " + perrs.join("|"));
   await ctx.close();
 }

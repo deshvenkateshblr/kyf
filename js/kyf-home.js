@@ -12,19 +12,6 @@
     return n;
   }
 
-  function readList(key) {
-    try {
-      var v = JSON.parse(localStorage.getItem(key) || "[]");
-      return Array.isArray(v) ? v : [];
-    } catch (e) { return []; }
-  }
-
-  function demoOn() {
-    try { return localStorage.getItem("kyf_demo_mode") === "true"; } catch (e) { return false; }
-  }
-
-  function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
-
   function renderTools() {
     var host = document.getElementById("toolGroups");
     var cat = window.KYF_FEATURES;
@@ -68,39 +55,14 @@
     });
   }
 
-  function renderWelcomeBack() {
-    var host = document.getElementById("welcomeBack");
-    if (!host || demoOn()) return;
-    var goals = readList("kyf_user_goals").length;
-    var holdings = readList("kyf_user_holdings").length;
-    if (!goals && !holdings) return;
-    var bits = [];
-    if (goals) bits.push(plural(goals, "goal", "goals"));
-    if (holdings) bits.push(plural(holdings, "holding", "holdings"));
-    host.appendChild(el("p", null, "Welcome back. You have " + bits.join(" and ") + " saved in this browser."));
-    var links = el("div", "wb-links");
-    [["Goals", "goals.html"], ["Portfolio", "portfolio.html"], ["Cadence", "cadence.html"]].forEach(function (p) {
-      var a = el("a", null, p[0] + " \u2192");
-      a.href = p[1];
-      links.appendChild(a);
-    });
-    host.appendChild(links);
-    host.hidden = false;
-  }
-
   renderTools();
-  renderWelcomeBack();
 
-  // Opening a .kyf file from the top bar refreshes the "Welcome back" counts
+  // Lets Open (top bar) restore a .kyf file from the home page
   if (window.KYF_VAULT && typeof window.KYF_VAULT.registerPageHook === "function") {
     window.KYF_VAULT.registerPageHook({
       pageName: "home",
       getLocalData: function () { return {}; },
-      onAfterOpen: function () {
-        var host = document.getElementById("welcomeBack");
-        if (host) { host.textContent = ""; host.hidden = true; }
-        renderWelcomeBack();
-      }
+      onAfterOpen: function () {}
     });
   }
 
