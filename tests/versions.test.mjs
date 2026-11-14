@@ -5,7 +5,7 @@ import assert from "assert";
 const current = /KYF_APP_VERSION\s*=\s*"([^"]+)"/.exec(readFileSync("js/kyf-footer.js", "utf8"))[1];
 let n = 0;
 const stale = [];
-for (const f of readdirSync(".").filter(x => x.endsWith(".html") && x !== "index_bkup.html")) {
+for (const f of readdirSync(".").filter(x => x.endsWith(".html"))) {
   for (const m of readFileSync(f, "utf8").matchAll(/\?v=(\d+\.\d+\.\d+)/g)) { n++; if (m[1] !== current) stale.push(`${f}: ?v=${m[1]}`); }
 }
 for (const d of ["js", "css"]) for (const f of readdirSync(d)) {

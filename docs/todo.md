@@ -185,3 +185,7 @@ Below is the complete inventory of all 21 activities defined in `cadence.html`. 
    - All calculation math, search, filtering, and charts execute locally in browser.
    - Market figures read from lightweight, static `.js` bundles (`data/market-pulse.js`, `data/market-equities.js`).
 
+
+## Learn (done in v1.12.0)
+- One vocabulary file (`data/kyf-terms.js`, 72 words, 50 with lessons) replaced the separate dictionary; `learn.html?term=<id>` is the topic page; "Tell me more" and "Learn more" link to it.
+- Still to do: lessons for the 22 short-tip words (SIP, NAV, EMI, ...); YouTube explainer per word, shown in place on the lesson page.

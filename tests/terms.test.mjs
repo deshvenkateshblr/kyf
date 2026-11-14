@@ -7,8 +7,16 @@ const ids = new Set();
 for (const t of terms) {
   assert(!ids.has(t.id), "duplicate id " + t.id); ids.add(t.id); n++;
   assert(t.term && t.tip, "missing text on " + t.id);
-  assert(t.tip.length <= 170, `tip too long (${t.tip.length}) for ${t.id}`);
-  assert((t.exact && t.exact.length) || (t.words && t.words.length), "no match words for " + t.id);
+  const bubble = (t.exact && t.exact.length) || (t.words && t.words.length);
+  assert(t.tip.length <= (bubble ? 170 : 240), `tip too long (${t.tip.length}) for ${t.id}`);
+  assert(Number.isInteger(t.chapter) && t.chapter >= 1 && t.chapter <= 10, "chapter 1-10 needed on " + t.id);
+  if (t.quickCheck) {
+    assert(t.humanFriction && t.plainMeaning && t.contextTemplate, "lesson fields missing on " + t.id);
+    assert(t.quickCheck.options.filter((o) => o.correct).length === 1, "exactly one right answer on " + t.id);
+    assert(t.quickCheck.explanation, "quick check needs an explanation on " + t.id);
+    (t.relatedWords || []).forEach((r) => assert(globalThis.KYF_TERMS.find(r), `${t.id} relates to unknown word ${r}`));
+    assert(!/\{\w+\}/.test(globalThis.KYF_TERMS.renderContext(t.id)), "unfilled placeholder in the example for " + t.id);
+  }
   assert(/[.]$/.test(t.tip), "tip should end with a full stop: " + t.id);
   n += 4;
 }

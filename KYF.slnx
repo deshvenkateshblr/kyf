@@ -5,7 +5,6 @@
   </Folder>
   <Folder Name="/data/">
     <File Path="data/kyf-curriculum.js.js" />
-    <File Path="data/kyf-dictionary.js" />
     <File Path="data/market-corporate-actions.js" />
     <File Path="data/market-equities.js" />
     <File Path="data/market-holidays.js" />
@@ -22,7 +21,6 @@
   </Folder>
   <Folder Name="/js/">
     <File Path="js/db.js" />
-    <File Path="js/home.js" />
     <File Path="js/kyf-footer.js" />
     <File Path="js/kyf-vault.js" />
     <File Path="js/kyf_portfolio_qa_defect_tracker_test_plan.md" />
@@ -35,8 +33,8 @@
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path="cadence.html" />
+    <File Path="learn.html" />
     <File Path="index.html" />
-    <File Path="index_bkup.html" />
     <File Path="market-performance.html" />
     <File Path="portfolio.html" />
   </Folder>

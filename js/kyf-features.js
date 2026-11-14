@@ -69,6 +69,16 @@
         "Add stamp duty and registration to see the true cost"
       ],
       cta: "Check a property price"
+    },
+    {
+      id: "learn", group: "research", icon: "📖", name: "Learn", href: "learn.html", topBar: false,
+      tagline: "Money words in plain language",
+      can: [
+        "Look up a finance word and what it means in plain words",
+        "See it worked out with your own goal and today's rates",
+        "Check what you learned with a one-question quiz"
+      ],
+      cta: "Learn a word"
     }
   ];
 
