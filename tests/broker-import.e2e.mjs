@@ -64,6 +64,7 @@ const holdingsCount = (p) => p.evaluate(() => (document.getElementById("kpi-net-
   await p.setInputFiles("#broker-file-input", { name: "h2.csv", mimeType: "text/csv", buffer: Buffer.from(smaller) });
   await p.waitForSelector("#import-preview-tbody tr");
   const summary = await p.textContent("#import-stats-summary");
+  ok(/account has 2 stocks & ETFs saved/.test(summary) && /Other brokers and family members are not changed/.test(summary), "csv: preview names the broker account and says others are untouched: " + summary);
   ok(/1 updated/.test(summary) && /1 no longer held/.test(summary), "csv: preview says what will be removed: " + summary);
   await p.click("#btn-confirm-import"); await p.waitForTimeout(600);
   ok(await holdingsCount(p) === 1, "csv: the holding missing from the new file is gone");
@@ -80,6 +81,7 @@ const holdingsCount = (p) => p.evaluate(() => (document.getElementById("kpi-net-
   await p.selectOption("#import-source-select", "groww_stocks");
   await p.waitForTimeout(500);
   ok(await p.locator("#import-preview-tbody tr").count() === 2 && !(await p.isDisabled("#btn-confirm-import")), "csv: choosing the broker enables the import");
+  ok(/^(Add|Update) .+'s .+ holdings \(\d+\)$/.test((await p.textContent("#btn-confirm-import")).trim()), "csv: button names the person's broker account");
   await p.click("#btn-cancel-import");
   // a broker that is not in the list
   await p.click("#btn-open-import-modal");

@@ -986,6 +986,10 @@ window.KYF_BROKER_IMPORTER = (() => {
   // A bucket = one family member + one import source. It is always overwritten by the latest import:
   // what the file lists is what is held now; anything the bucket had that the file no longer lists was sold.
   // Matched holdings keep their id and goal allocations. Manual holdings are never touched.
+  function holdingKind(h) {
+    return (h && (h.assetClass === "Mutual Funds" || h.pricingMode === "LIVE_MF")) ? "mf" : "listed";
+  }
+
   function replaceBucket(existingHoldings, incomingHoldings, memberArg, sourceArg) {
     const source = getSource(sourceArg);
     if (!source) throw new Error("Choose where this file came from.");
@@ -1001,8 +1005,12 @@ window.KYF_BROKER_IMPORTER = (() => {
     const legacy = (h) => inMember(h) && !h.importSource && String(h.id || "").startsWith("hold_imp_") && !!h.custodian
       && normalizeCustodian(h.custodian) === normalizeCustodian(source.custodian);
 
-    const bucket = existing.filter(inBucket);
-    const legacyPool = existing.filter(legacy);
+    // Brokers often send stocks and mutual funds as separate files: a file only replaces
+    // the kind of holding it contains, so the other kind in the same account is kept.
+    const incomingKinds = new Set((incomingHoldings || []).map(holdingKind));
+    const inScope = (h) => incomingKinds.has(holdingKind(h));
+    const bucket = existing.filter((h) => inBucket(h) && inScope(h));
+    const legacyPool = existing.filter((h) => legacy(h) && inScope(h));
     const claimed = new Set();
     const added = [], updated = [], removed = [];
     const incoming = incomingHoldings || [];
@@ -1037,12 +1045,22 @@ window.KYF_BROKER_IMPORTER = (() => {
   // What would importing do? Used for the preview before anything is saved.
   function previewBucket(existingHoldings, incomingHoldings, memberArg, sourceArg) {
     const r = replaceBucket(existingHoldings, incomingHoldings, memberArg, sourceArg);
-    const bucketSize = (existingHoldings || []).filter((h) =>
-      (h.member || "Self").toLowerCase().trim() === (memberArg || "Self").toLowerCase().trim() &&
-      h.importSource === getSource(sourceArg).id).length;
+    const sid = getSource(sourceArg).id;
+    const mk = (memberArg || "Self").toLowerCase().trim();
+    const account = (existingHoldings || []).filter((h) =>
+      (h.member || "Self").toLowerCase().trim() === mk && h.importSource === sid);
+    const kinds = new Set((incomingHoldings || []).map(holdingKind));
+    const inScope = account.filter((h) => kinds.has(holdingKind(h)));
+    const keptOther = account.filter((h) => !kinds.has(holdingKind(h)));
+    const bucketSize = inScope.length;
+    const onlyKind = kinds.size === 1 ? [...kinds][0] : "";
     return {
       ...r,
       bucketSize,
+      accountSize: account.length,
+      firstImport: account.length === 0,
+      keptOtherCount: keptOther.length,
+      replacedKind: onlyKind, // "mf", "listed" or "" when the file has both
       removedWithGoals: r.removed.filter((h) => Array.isArray(h.allocations) && h.allocations.length > 0),
       muchSmaller: bucketSize >= 4 && (r.updatedCount + r.addedCount) < bucketSize / 2
     };

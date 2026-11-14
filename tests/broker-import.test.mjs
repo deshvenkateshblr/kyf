@@ -237,6 +237,7 @@ test("Upsert adds new holding and updates existing holding matching ISIN", () =>
       name: "360 ONE WAM LIMITED",
       member: "Self",
       custodian: "Zerodha",
+      importSource: "zerodha_stocks",
       assetClass: "Equities",
       subCategory: "Nifty 500 Equities",
       pricingMode: "LIVE_EQUITY",
@@ -295,7 +296,7 @@ test("Upsert adds new holding and updates existing holding matching ISIN", () =>
   assert.equal(updated360.allocations[0].goalId, "goal_retire");
 });
 
-test("Upsert matches hand-entered holding without ISIN by symbol and enriches it", () => {
+test("A hand-entered holding is never overwritten by an import (it stays, the import is added)", () => {
   const existing = [
     {
       id: "hold_hand_1",
@@ -331,13 +332,12 @@ test("Upsert matches hand-entered holding without ISIN by symbol and enriches it
   ];
 
   const { holdings: updated, addedCount, updatedCount } = importer.replaceBucket(existing, incoming, "Self", "zerodha_stocks");
-  assert.equal(addedCount, 0);
-  assert.equal(updatedCount, 1);
-  assert.equal(updated.length, 1);
-  assert.equal(updated[0].id, "hold_hand_1", "ID preserved");
-  assert.equal(updated[0].units, 15, "Units updated");
-  assert.equal(updated[0].instrumentMeta.isin, "INE466L01038", "ISIN enriched into existing holding");
-  assert.equal(updated[0].allocations[0].goalId, "goal_car", "Goal allocation preserved");
+  assert.equal(addedCount, 1);
+  assert.equal(updatedCount, 0);
+  assert.equal(updated.length, 2);
+  const hand = updated.find((h) => h.id === "hold_hand_1");
+  assert.equal(hand.units, 5, "hand-entered holding untouched");
+  assert.equal(hand.allocations[0].goalId, "goal_car", "Goal allocation preserved");
 });
 
 console.log("\n[TEST GROUP 7] Explicit Member Assignment (No Auto-Guessing)");

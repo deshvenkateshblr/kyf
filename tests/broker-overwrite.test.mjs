@@ -112,7 +112,7 @@ const others = (list, member, src) => list.filter((h) => !inBucket(h, member, sr
   const again = put(d.holdings, parse(kite([["INFY", 3, 1, 1]]), "custom_dhan"), "Self", "custom_dhan");
   ok(again.removedCount === 1 && again.addedCount === 1 && again.holdings.length === d.holdings.length, "the second import replaces just that broker's list");
   const mf = I.registerCustomSource({ label: "Dhan", kind: "mf" });
-  ok(mf.id === "custom_dhan", "a name is one broker; it is not split by type");
+  ok(mf.id === "custom_dhan", "a name is one broker account; type is handled when replacing");
   const us = I.registerCustomSource({ label: "Moomoo", kind: "stocks", currency: "USD" });
   ok(us.currency === "USD" && parse("Symbol,Description,Quantity,Price,Value,Cost Basis\nVOO,VANGUARD S&P 500 ETF,1,690,690,600", "custom_moomoo")[0].currency === "USD", "a US broker added by the person reads in dollars");
   let threw = 0; try { I.registerCustomSource({ label: "  " }); } catch (e) { threw++; } try { I.registerCustomSource({ label: "!!!" }); } catch (e) { threw++; }
@@ -127,6 +127,23 @@ const others = (list, member, src) => list.filter((h) => !inBucket(h, member, sr
   let threw = false; try { put(input, preview, "Self", ""); } catch (e) { threw = true; }
   ok(threw, "importing without choosing a broker is refused");
   ok(JSON.stringify(input) === JSON.stringify(before), "and the portfolio is unchanged");
+}
+
+// ---- 8. stocks and mutual funds arrive as separate files for one broker account
+{
+  const mfHold = (n, code) => ({ id: "x" + code, name: n, member: "Self", assetClass: "Mutual Funds", pricingMode: "LIVE_MF", units: 10, currentValue: 1000, instrumentMeta: { schemeCode: code }, allocations: [] });
+  const stock = (sym) => parse(kite([[sym, 1, 1, 1]]), "zerodha_stocks")[0];
+  let acct = put([], [stock("RELIANCE"), stock("INFY")], "Self", "zerodha_stocks").holdings;
+  const mfIn = [{ ...mfHold("Parag Parikh Flexi Cap", "122639"), id: undefined }];
+  const withMf = put(acct, mfIn, "Self", "zerodha_stocks");
+  const pv0 = I.previewBucket(acct, mfIn, "Self", "zerodha_stocks");
+  ok(withMf.removedCount === 0 && withMf.holdings.length === acct.length + 1, "a mutual fund file does not remove the same account's stocks");
+  ok(pv0.firstImport === false && pv0.replacedKind === "mf" && pv0.keptOtherCount === 2 && pv0.bucketSize === 0, "preview says the stocks are kept");
+  const again = put(withMf.holdings, [stock("TCS")], "Self", "zerodha_stocks");
+  ok(again.removedCount === 2 && again.addedCount === 1 && again.holdings.some((h) => h.assetClass === "Mutual Funds"), "a new stocks file replaces only the stocks and keeps the mutual funds");
+  const both = put(withMf.holdings, [stock("TCS"), ...mfIn], "Self", "zerodha_stocks");
+  ok(both.removedCount === 2 && both.holdings.filter((h) => h.assetClass === "Mutual Funds").length === 1, "a file with both kinds replaces both");
+  ok(I.previewBucket([], [stock("ITC")], "Self", "zerodha_stocks").firstImport === true, "preview knows it is a first import");
 }
 
 console.log(`broker-overwrite: ${passed} passed, ${failed} failed`);

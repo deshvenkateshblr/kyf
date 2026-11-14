@@ -182,18 +182,18 @@ const by = (list, re) => list.find((h) => re.test(h.name));
   const upstox = put(more.holdings, parse("Instrument,Qty.,Avg. cost,LTP\nITC,5,400,420", "Self", "upstox"), "Self", "upstox");
   ok(upstox.addedCount === 1 && upstox.removedCount === 0 && upstox.holdings.length === 3, "same stock at another broker sits in its own bucket");
   const fromEmpty = put(more.holdings, []);
-  ok(fromEmpty.removedCount === 2, "replaceBucket itself removes; the UI never offers an empty import");
+  ok(fromEmpty.removedCount === 0 && fromEmpty.holdings.length === more.holdings.length, "an empty file removes nothing (there is no kind to replace)");
 
   // manual and legacy holdings
   const manual = { id: "m1", name: "Flat", member: "Self", custodian: "", assetClass: "Real Estate", allocations: [] };
-  const legacy = { id: "l1", name: "ITC LIMITED", member: "Self", custodian: "Zerodha", assetClass: "Equities", instrumentMeta: { symbol: "ITC" }, allocations: [{ goalId: "g2", percent: 100 }] };
+  const legacy = { id: "hold_imp_l1", name: "ITC LIMITED", member: "Self", custodian: "Zerodha", assetClass: "Equities", instrumentMeta: { symbol: "ITC" }, allocations: [{ goalId: "g2", percent: 100 }] };
   const adopt = put([manual, legacy], kite(100, 400));
   ok(adopt.holdings.some((h) => h.id === "m1"), "manual holdings are never touched");
-  const adoptedItc = adopt.holdings.find((h) => h.id === "l1");
+  const adoptedItc = adopt.holdings.find((h) => h.id === "hold_imp_l1");
   ok(adoptedItc && adoptedItc.importSource === "zerodha_stocks" && adoptedItc.allocations[0].goalId === "g2", "an older unsourced import is adopted, keeping its goal allocation");
   ok(adopt.holdings.length === 3, "adoption does not duplicate");
   const legacyOther = put([manual, legacy], kite(100, 400), "Self", "upstox");
-  ok(legacyOther.holdings.some((h) => h.id === "l1" && !h.importSource), "legacy Zerodha holdings are not adopted by another broker");
+  ok(legacyOther.holdings.some((h) => h.id === "hold_imp_l1" && !h.importSource), "legacy Zerodha holdings are not adopted by another broker");
 
   // preview warnings
   const big = put([], parse("Instrument,Qty.,Avg. cost,LTP\n" + ["ITC", "INFY", "TCS", "RELIANCE", "HDFCBANK"].map((s) => `${s},1,100,100`).join("\n")));

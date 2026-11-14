@@ -2682,12 +2682,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     let impactHTML = "";
     if (sourceId) {
       const pv = window.KYF_BROKER_IMPORTER.previewBucket(rawHoldings, pendingImportHoldings, selectedMember, sourceId);
-      impactHTML = `<span>${pv.addedCount} new · ${pv.updatedCount} updated · <strong>${pv.removedCount} no longer held</strong></span>`;
+      const acct = `${escapeHTML(selectedMember)}'s ${escapeHTML(sourceLabel(sourceId))} account`;
+      const kindWord = pv.replacedKind === "mf" ? "mutual funds" : "stocks & ETFs";
+      const otherWord = pv.replacedKind === "mf" ? "stocks & ETFs" : "mutual funds";
+      if (pv.firstImport) {
+        impactHTML = `<span>First import for ${acct}: <strong>${pv.addedCount} holdings</strong> will be added.</span>`;
+      } else {
+        impactHTML = `<span>${acct} has ${pv.bucketSize} ${pv.replacedKind ? kindWord : "holdings"} saved. This file replaces them: ${pv.addedCount} new · ${pv.updatedCount} updated · <strong>${pv.removedCount} no longer held</strong>.</span>`;
+      }
+      if (pv.replacedKind && pv.keptOtherCount) {
+        impactHTML += `<span>Its ${pv.keptOtherCount} ${otherWord} (from another file) are kept.</span>`;
+      }
+      impactHTML += `<span>Other brokers and family members are not changed.</span>`;
       if (pv.removedWithGoals.length) {
         impactHTML += `<span class="import-warn">${pv.removedWithGoals.length} of the removed ${pv.removedWithGoals.length === 1 ? "holding was" : "holdings were"} set aside for goals: ${escapeHTML(pv.removedWithGoals.map(h => h.name).slice(0, 3).join(", "))}${pv.removedWithGoals.length > 3 ? "…" : ""}</span>`;
       }
       if (pv.muchSmaller) {
-        impactHTML += `<span class="import-warn">This file has far fewer holdings than the ${pv.bucketSize} saved for this broker. Check it is the full statement.</span>`;
+        impactHTML += `<span class="import-warn">This file has far fewer holdings than the ${pv.bucketSize} saved for this account. Check it is the full statement.</span>`;
       }
     }
     if (els.importStatsSummary) {
@@ -2703,9 +2714,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.btnConfirmImport) {
       els.btnConfirmImport.disabled = !sourceId;
       els.btnConfirmImport.textContent = sourceId
-        ? `Replace ${selectedMember}'s list with these ${count}`
+        ? (window.KYF_BROKER_IMPORTER.previewBucket(rawHoldings, pendingImportHoldings, selectedMember, sourceId).firstImport
+            ? `Add ${selectedMember}'s ${sourceLabel(sourceId)} holdings (${count})`
+            : `Update ${selectedMember}'s ${sourceLabel(sourceId)} holdings (${count})`)
         : "Choose the broker above to continue";
     }
+  }
+
+  function sourceLabel(id) {
+    const src = window.KYF_BROKER_IMPORTER.getSource(id);
+    return src ? src.label : "broker";
   }
 
   function showImportError(title, detail) {
@@ -3155,7 +3173,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderApp();
 
     const brokerStr = pendingImportBrokers[0] || "Broker";
-    showToast(`✓ ${brokerStr} for ${selectedMember}: ${addedCount} new, ${updatedCount} updated, ${removedCount} removed.`, "success");
+    showToast(`✓ ${sourceLabel(sourceId)} · ${selectedMember} updated: ${addedCount} new, ${updatedCount} updated, ${removedCount} removed.`, "success");
   }
 
   // ==========================================================================
