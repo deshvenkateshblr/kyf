@@ -41,10 +41,10 @@
       "name": "US Stocks, ETFs & Funds",
       "tag": "US Equities",
       "status": "HEALTHY",
-      "asOf": "2026-11-14",
+      "asOf": "2026-11-13",
       "count": 225,
       "fxRateUsdInr": 94.29,
-      "details": "225 instruments (VOOG, QQQM, TAN, AAPL, etc.) \u2022 USD/INR: \u20b994.29",
+      "details": "225 instruments \u2022 US market close (New York time) \u2022 USD/INR: \u20b994.29",
       "source": "GitHub us_bhavcopy & Yahoo Finance",
       "error": null
     },

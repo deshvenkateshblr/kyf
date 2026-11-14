@@ -38,6 +38,7 @@ jobs:
       - name: Run Automated Verification Tests
         run: |
           node tests/broker-import.test.mjs
+          node tests/us-holdings.test.mjs
 
       - name: Commit and Push Updated Market Data
         run: |
