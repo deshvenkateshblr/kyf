@@ -27,6 +27,7 @@ async function page(vp = { width: 1200, height: 800 }) {
   await p.goto(base + "/learn.html");
   await p.waitForSelector(".learn-word");
   ok(await p.locator(".learn-chapter").count() === 10, "index: ten chapters");
+  ok(await p.locator(".learn-word.is-full").count() === 72, "index: every word is a full lesson");
   ok(await p.locator(".learn-word").count() === 72, "index: every word is listed once");
   ok(/Test Your Present Money Reflexes/.test(await p.locator(".learn-chapter h2").first().innerText()), "index: chapter names come from the curriculum");
   ok(p.errs.length === 0, "index: no page errors " + p.errs.join("|"));
@@ -69,13 +70,13 @@ async function page(vp = { width: 1200, height: 800 }) {
   await p.close();
 }
 
-// ---- a short word, an unknown word, prev/next ----
+// ---- a SIP lesson, an unknown word, prev/next ----
 {
   const p = await page({ width: 390, height: 844 });
   await p.goto(base + "/learn.html?term=sip");
   await p.waitForSelector("h1");
-  ok(await p.locator(".learn-soon").count() === 1 && await p.locator(".learn-option").count() === 0, "short word: says a fuller lesson is coming");
-  ok(await p.locator(".learn-pager .is-next").count() === 1, "short word: has a next word");
+  ok(await p.locator(".learn-option").count() === 2 || await p.locator(".learn-option").count() === 3, "SIP now has a full lesson with a quick check");
+  ok(await p.locator(".learn-pager .is-next").count() === 1, "lesson: has a next word");
   ok(await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) <= 0, "phone: no sideways scroll");
   await p.goto(base + "/learn.html?term=nope");
   await p.waitForSelector("h1");

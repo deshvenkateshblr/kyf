@@ -188,4 +188,4 @@ Below is the complete inventory of all 21 activities defined in `cadence.html`. 
 
 ## Learn (done in v1.12.0)
 - One vocabulary file (`data/kyf-terms.js`, 72 words, 50 with lessons) replaced the separate dictionary; `learn.html?term=<id>` is the topic page; "Tell me more" and "Learn more" link to it.
-- Still to do: lessons for the 22 short-tip words (SIP, NAV, EMI, ...); YouTube explainer per word, shown in place on the lesson page.
+- All 72 words now have full lessons (v1.12.1). Still to do: YouTube explainer per word, shown in place on the lesson page.

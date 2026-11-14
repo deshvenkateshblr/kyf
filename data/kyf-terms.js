@@ -33,7 +33,36 @@ window.KYF_TERMS = {
         "SIP",
         "SIPs"
       ],
-      "tip": "Systematic Investment Plan: a fixed amount invested into a fund on a set date each month."
+      "tip": "Systematic Investment Plan: a fixed amount invested into a fund on a set date each month.",
+      "pronunciation": "S · I · P",
+      "partOfSpeech": "noun",
+      "rootFamily": "Investing Habits",
+      "humanFriction": "Waiting for the 'right time' to invest a big amount, and then never starting.",
+      "plainMeaning": "A Systematic Investment Plan is a way of investing, not a product: the same amount goes into a fund on the same date every month, whatever the market is doing.",
+      "contextTemplate": "₹{sipMonthly} on the same date every month buys more units when prices are low and fewer when they are high. You never have to guess the 'right time'.",
+      "relatedWords": [
+        "rupee_cost_averaging",
+        "step_up",
+        "compounding"
+      ],
+      "quickCheck": {
+        "question": "What is a SIP?",
+        "options": [
+          {
+            "text": "A habit of investing a fixed amount on a fixed date, every month.",
+            "correct": true
+          },
+          {
+            "text": "A special mutual fund that guarantees returns.",
+            "correct": false
+          },
+          {
+            "text": "A fixed deposit with monthly interest.",
+            "correct": false
+          }
+        ],
+        "explanation": "A SIP is only the method of investing. The fund you pick decides the risk and the return, and a SIP guarantees neither."
+      }
     },
     {
       "id": "step_up",
@@ -43,7 +72,36 @@ window.KYF_TERMS = {
         "step-up",
         "step up SIP"
       ],
-      "tip": "Raising your SIP by a set amount or percentage each year as your income grows."
+      "tip": "Raising your SIP by a set amount or percentage each year as your income grows.",
+      "pronunciation": "/stɛp ʌp/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Investing Habits",
+      "humanFriction": "Starting a SIP at a comfortable amount and leaving it unchanged for fifteen years while your salary grows.",
+      "plainMeaning": "Raising your SIP by a fixed amount or percentage every year, so your investing keeps pace with your income.",
+      "contextTemplate": "A SIP of ₹{sipMonthly} that rises 10% every year ends up far larger than one that stays flat, and you feel the rise only a little each year.",
+      "relatedWords": [
+        "sip",
+        "lifestyle_creep",
+        "pay_yourself_first"
+      ],
+      "quickCheck": {
+        "question": "Why does a yearly step-up matter?",
+        "options": [
+          {
+            "text": "Your income grows, so a flat SIP slowly becomes a smaller share of it.",
+            "correct": true
+          },
+          {
+            "text": "It lets you skip months when the market is high.",
+            "correct": false
+          },
+          {
+            "text": "It makes the fund's return higher.",
+            "correct": false
+          }
+        ],
+        "explanation": "A step-up does not change the fund's return. It changes how much you put in, so the same goal needs less starting effort."
+      }
     },
     {
       "id": "nav",
@@ -52,7 +110,36 @@ window.KYF_TERMS = {
       "exact": [
         "NAV"
       ],
-      "tip": "Net Asset Value: the price of one unit of a mutual fund today. A low NAV does not mean the fund is cheap."
+      "tip": "Net Asset Value: the price of one unit of a mutual fund today. A low NAV does not mean the fund is cheap.",
+      "pronunciation": "/næv/ · N · A · V",
+      "partOfSpeech": "noun",
+      "rootFamily": "Mutual Fund Basics",
+      "humanFriction": "Choosing a fund because its NAV is ₹15 and 'cheap' over one at ₹150 and 'expensive'.",
+      "plainMeaning": "Net Asset Value is the price of one unit of a mutual fund today. It tells you the unit price, not whether the fund is good or cheap.",
+      "contextTemplate": "₹10,000 buys 1,000 units at a NAV of ₹10, or 100 units at a NAV of ₹100. If both funds grow 10%, both are worth ₹11,000. The NAV only changes the number of units.",
+      "relatedWords": [
+        "expense_ratio",
+        "direct_regular",
+        "folio"
+      ],
+      "quickCheck": {
+        "question": "Fund A has a NAV of ₹20 and Fund B has a NAV of ₹200. Both earn 10% this year. Which one made you more money on ₹10,000?",
+        "options": [
+          {
+            "text": "Neither. Both grow your ₹10,000 by 10%.",
+            "correct": true
+          },
+          {
+            "text": "Fund A, because it is cheaper.",
+            "correct": false
+          },
+          {
+            "text": "Fund B, because the NAV is higher.",
+            "correct": false
+          }
+        ],
+        "explanation": "Growth depends on the return, not the NAV. A lower NAV just means you hold more units."
+      }
     },
     {
       "id": "cagr",
@@ -61,7 +148,36 @@ window.KYF_TERMS = {
       "exact": [
         "CAGR"
       ],
-      "tip": "Compound Annual Growth Rate: the steady yearly rate that would turn the starting amount into the ending amount. It smooths out the ups and downs."
+      "tip": "Compound Annual Growth Rate: the steady yearly rate that would turn the starting amount into the ending amount. It smooths out the ups and downs.",
+      "pronunciation": "/ˈkeɪ.ɡɑːr/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Measuring Returns",
+      "humanFriction": "Adding up yearly returns and dividing by the years, which overstates what you really earned.",
+      "plainMeaning": "Compound Annual Growth Rate is the single steady yearly rate that would turn your starting amount into your ending amount.",
+      "contextTemplate": "₹1,00,000 that becomes ₹1,50,000 in 3 years did not grow 16.7% a year (50 ÷ 3). The steady rate is about 14.5% a year, because each year's growth sits on a larger base.",
+      "relatedWords": [
+        "cagr_vs_xirr",
+        "xirr",
+        "rolling_returns"
+      ],
+      "quickCheck": {
+        "question": "A fund doubles in 5 years. Is the CAGR 20% a year?",
+        "options": [
+          {
+            "text": "No. It is about 14.9%, because growth compounds.",
+            "correct": true
+          },
+          {
+            "text": "Yes, 100% ÷ 5 years.",
+            "correct": false
+          },
+          {
+            "text": "No. It is 10% a year.",
+            "correct": false
+          }
+        ],
+        "explanation": "Doubling in 5 years needs about 14.9% a year. Dividing 100% by 5 ignores compounding, so it overstates the rate."
+      }
     },
     {
       "id": "xirr",
@@ -70,7 +186,36 @@ window.KYF_TERMS = {
       "exact": [
         "XIRR"
       ],
-      "tip": "Your true yearly return when money went in on different dates, such as monthly SIPs."
+      "tip": "Your true yearly return when money went in on different dates, such as monthly SIPs.",
+      "pronunciation": "/ˈɛks.aɪ.ɑːr.ɑːr/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Measuring Returns",
+      "humanFriction": "Judging a SIP by CAGR, even though each instalment was invested for a different length of time.",
+      "plainMeaning": "XIRR is your true yearly return when money went in on different dates, as in monthly SIPs. It gives each rupee credit for exactly the time it was invested.",
+      "contextTemplate": "With a SIP of ₹{sipMonthly}, the first instalment has worked for years and the last for a few days. XIRR accounts for each instalment's own date, which a simple CAGR cannot do.",
+      "relatedWords": [
+        "cagr",
+        "cagr_vs_xirr",
+        "sip"
+      ],
+      "quickCheck": {
+        "question": "Which return measure suits a monthly SIP?",
+        "options": [
+          {
+            "text": "XIRR, because money went in on many dates.",
+            "correct": true
+          },
+          {
+            "text": "CAGR, because it is simpler.",
+            "correct": false
+          },
+          {
+            "text": "The sum of the monthly returns.",
+            "correct": false
+          }
+        ],
+        "explanation": "CAGR assumes one amount invested on one date. A SIP has many dates, so XIRR is the fair measure."
+      }
     },
     {
       "id": "expense_ratio",
@@ -79,7 +224,36 @@ window.KYF_TERMS = {
       "words": [
         "expense ratio"
       ],
-      "tip": "The yearly fee a fund charges, as a percentage of your money. It is taken out of the NAV, so you never see a bill."
+      "tip": "The yearly fee a fund charges, as a percentage of your money. It is taken out of the NAV, so you never see a bill.",
+      "pronunciation": "/ɪkˈspɛns ˈreɪ.ʃoʊ/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Costs & Fees",
+      "humanFriction": "Ignoring a fee you never see on a bill, because it is taken out of the fund's price every day.",
+      "plainMeaning": "The yearly fee a fund charges, as a percentage of your money. It is taken out of the NAV, so there is no bill to notice.",
+      "contextTemplate": "A 1.5% expense ratio on ₹10,00,000 is about ₹15,000 a year, paid quietly from your returns. Over many years the gap against a 0.5% fund adds up to a large sum.",
+      "relatedWords": [
+        "expense_ratio_drag",
+        "direct_regular",
+        "nav"
+      ],
+      "quickCheck": {
+        "question": "How do you pay a fund's expense ratio?",
+        "options": [
+          {
+            "text": "It is taken out of the fund's NAV, so your returns are lower.",
+            "correct": true
+          },
+          {
+            "text": "You get a yearly bill.",
+            "correct": false
+          },
+          {
+            "text": "It is deducted from your bank account each month.",
+            "correct": false
+          }
+        ],
+        "explanation": "You never see a bill. The fee lowers the NAV every day, which is why it is easy to overlook."
+      }
     },
     {
       "id": "direct_regular",
@@ -89,7 +263,36 @@ window.KYF_TERMS = {
         "direct plan",
         "regular plan"
       ],
-      "tip": "Same fund, same investments. A Regular plan pays the distributor a commission out of your returns; a Direct plan does not, so its NAV grows faster."
+      "tip": "Same fund, same investments. A Regular plan pays the distributor a commission out of your returns; a Direct plan does not, so its NAV grows faster.",
+      "pronunciation": "/dəˈrɛkt ænd ˈrɛɡ.jə.lər/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Costs & Fees",
+      "humanFriction": "Buying the Regular plan because an agent set it up, without knowing a cheaper version of the same fund exists.",
+      "plainMeaning": "The same fund holds the same investments in both plans. A Regular plan pays a distributor a commission out of your returns; a Direct plan does not, so its NAV grows faster.",
+      "contextTemplate": "If a Regular plan costs 1% more each year than the Direct one, that is about ₹10,000 a year on ₹10,00,000, and the loss compounds. KYF shows both NAVs of the same fund side by side.",
+      "relatedWords": [
+        "expense_ratio",
+        "expense_ratio_drag",
+        "nav"
+      ],
+      "quickCheck": {
+        "question": "What is the difference between the Direct and Regular plan of the same fund?",
+        "options": [
+          {
+            "text": "The Regular plan pays a commission out of your returns.",
+            "correct": true
+          },
+          {
+            "text": "Direct holds riskier stocks.",
+            "correct": false
+          },
+          {
+            "text": "Regular has a guaranteed return.",
+            "correct": false
+          }
+        ],
+        "explanation": "The investments are identical. The only difference is the commission built into the Regular plan's cost."
+      }
     },
     {
       "id": "folio",
@@ -98,7 +301,35 @@ window.KYF_TERMS = {
       "words": [
         "folio"
       ],
-      "tip": "The account number a fund company gives you to keep track of your units with that company."
+      "tip": "The account number a fund company gives you to keep track of your units with that company.",
+      "pronunciation": "/ˈfoʊ.li.oʊ/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Mutual Fund Basics",
+      "humanFriction": "Losing track of old accounts, so units sit forgotten with a fund company.",
+      "plainMeaning": "A folio is the account number a fund company gives you to track your units with that company. Several schemes can sit under one folio.",
+      "contextTemplate": "Three schemes from the same fund company can sit under one folio, while another company gives you a second folio. Your full portfolio is the sum of all your folios.",
+      "relatedWords": [
+        "nav",
+        "direct_regular"
+      ],
+      "quickCheck": {
+        "question": "What does a folio number identify?",
+        "options": [
+          {
+            "text": "Your account with one fund company.",
+            "correct": true
+          },
+          {
+            "text": "A single mutual fund scheme for all investors.",
+            "correct": false
+          },
+          {
+            "text": "Your demat account.",
+            "correct": false
+          }
+        ],
+        "explanation": "A folio is your account with one fund company. It can hold more than one scheme."
+      }
     },
     {
       "id": "benchmark",
@@ -107,7 +338,36 @@ window.KYF_TERMS = {
       "words": [
         "benchmark"
       ],
-      "tip": "The index a fund or portfolio is measured against, such as the Nifty 50. Beating it is called outperforming."
+      "tip": "The index a fund or portfolio is measured against, such as the Nifty 50. Beating it is called outperforming.",
+      "pronunciation": "/ˈbɛntʃ.mɑːrk/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Measuring Returns",
+      "humanFriction": "Feeling happy about a 10% return without checking that the market gave 14% over the same period.",
+      "plainMeaning": "The index a fund or portfolio is measured against, such as the Nifty 50. Beating it is called outperforming; trailing it is underperforming.",
+      "contextTemplate": "The Nifty 50 has grown about {niftyCagr}% a year over ten years. A large-cap fund that earned 10% a year over the same time trailed its benchmark, even though 10% sounds good.",
+      "relatedWords": [
+        "benchmark_alpha",
+        "cagr",
+        "rolling_returns"
+      ],
+      "quickCheck": {
+        "question": "Your fund earned 10% while its benchmark earned 14%. How did it do?",
+        "options": [
+          {
+            "text": "It underperformed, even though 10% sounds good.",
+            "correct": true
+          },
+          {
+            "text": "It did well because 10% is positive.",
+            "correct": false
+          },
+          {
+            "text": "It matched the benchmark.",
+            "correct": false
+          }
+        ],
+        "explanation": "A return only means something against what the market gave in the same period."
+      }
     },
     {
       "id": "liquid_fund",
@@ -117,7 +377,36 @@ window.KYF_TERMS = {
         "liquid fund",
         "liquid funds"
       ],
-      "tip": "A mutual fund that holds very short-term debt. Often used to park money you may need soon."
+      "tip": "A mutual fund that holds very short-term debt. Often used to park money you may need soon.",
+      "pronunciation": "/ˈlɪk.wɪd fʌnd/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Asset Containers",
+      "humanFriction": "Treating a liquid fund as exactly the same as a savings account, with a guaranteed return.",
+      "plainMeaning": "A mutual fund that holds very short-term debt. People use it to park money they may need soon. It is low in risk, but the return is not guaranteed.",
+      "contextTemplate": "Money you may need within a year, such as for {goalName}, can wait in a liquid fund rather than sit idle. Its value can still move a little.",
+      "relatedWords": [
+        "emergency_fund",
+        "cash_equivalents",
+        "fd"
+      ],
+      "quickCheck": {
+        "question": "Is the return on a liquid fund guaranteed?",
+        "options": [
+          {
+            "text": "No. It is low risk, but not guaranteed.",
+            "correct": true
+          },
+          {
+            "text": "Yes, like a bank deposit.",
+            "correct": false
+          },
+          {
+            "text": "Yes, the government guarantees it.",
+            "correct": false
+          }
+        ],
+        "explanation": "A liquid fund holds short-term debt, so its value rarely falls much, but it is not guaranteed the way a bank's stated deposit rate is."
+      }
     },
     {
       "id": "inflation",
@@ -160,7 +449,36 @@ window.KYF_TERMS = {
       "exact": [
         "CPI"
       ],
-      "tip": "Consumer Price Index: the official measure of how much everyday prices have risen. KYF uses it to inflate costs like a car or a home."
+      "tip": "Consumer Price Index: the official measure of how much everyday prices have risen. KYF uses it to inflate costs like a car or a home.",
+      "pronunciation": "/ˌsiː.piː.ˈaɪ/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Time & Value",
+      "humanFriction": "Assuming the official inflation figure is the rate at which your own costs rise.",
+      "plainMeaning": "The Consumer Price Index is the official measure of how much everyday prices have risen. KYF uses it to inflate costs like a car or a home.",
+      "contextTemplate": "At {inflation}% CPI, ₹{goalCost} of spending today needs about ₹{goalFutureCost} in {goalYears} years. School fees and medical bills often rise faster than CPI.",
+      "relatedWords": [
+        "inflation",
+        "purchasing_power",
+        "real_return"
+      ],
+      "quickCheck": {
+        "question": "Is your own inflation always the same as the CPI figure?",
+        "options": [
+          {
+            "text": "No. School fees or medical costs can rise faster.",
+            "correct": true
+          },
+          {
+            "text": "Yes, CPI is everyone's inflation.",
+            "correct": false
+          },
+          {
+            "text": "Yes, if you live in a metro.",
+            "correct": false
+          }
+        ],
+        "explanation": "CPI is an average across a basket of goods. Your own basket may differ, and some costs rise faster than the average."
+      }
     },
     {
       "id": "real_return",
@@ -169,7 +487,36 @@ window.KYF_TERMS = {
       "words": [
         "real return"
       ],
-      "tip": "Your return after taking out inflation. Growth of 7% with 5% inflation is only about 2% in real terms."
+      "tip": "Your return after taking out inflation. Growth of 7% with 5% inflation is only about 2% in real terms.",
+      "pronunciation": "/riːl rɪˈtɜːrn/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Time & Value",
+      "humanFriction": "Celebrating a 7% return while prices rose 6%.",
+      "plainMeaning": "Your return after taking out inflation. 7% growth with 5% inflation is only about 2% in real terms.",
+      "contextTemplate": "A fixed deposit paying {fdRate}% before tax, with inflation at {inflation}%, leaves a real return of about {realFdReturn}% before tax, and less after tax.",
+      "relatedWords": [
+        "nominal_vs_real",
+        "inflation",
+        "money_illusion"
+      ],
+      "quickCheck": {
+        "question": "A deposit earns 6% and inflation is 5%. Your real return is about:",
+        "options": [
+          {
+            "text": "1%.",
+            "correct": true
+          },
+          {
+            "text": "6%.",
+            "correct": false
+          },
+          {
+            "text": "11%.",
+            "correct": false
+          }
+        ],
+        "explanation": "Real return is roughly the return minus inflation: 6% − 5% = about 1%."
+      }
     },
     {
       "id": "corpus",
@@ -178,7 +525,36 @@ window.KYF_TERMS = {
       "words": [
         "corpus"
       ],
-      "tip": "The lump sum you need to have built by a date so that it can fund a goal, such as retirement."
+      "tip": "The lump sum you need to have built by a date so that it can fund a goal, such as retirement.",
+      "pronunciation": "/ˈkɔːr.pəs/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Goals & Retirement",
+      "humanFriction": "Saving 'as much as possible' without knowing the total you are aiming for.",
+      "plainMeaning": "The lump sum you need to have built by a date so that it can fund a goal, such as retirement.",
+      "contextTemplate": "For {goalName}, the corpus you need in {goalYears} years is about ₹{goalFutureCost}, not today's ₹{goalCost}, because prices rise in the meantime.",
+      "relatedWords": [
+        "fi_corpus",
+        "safe_withdrawal_rate",
+        "inflation"
+      ],
+      "quickCheck": {
+        "question": "What is a corpus?",
+        "options": [
+          {
+            "text": "The total sum you need to have by a target date.",
+            "correct": true
+          },
+          {
+            "text": "The monthly amount you save.",
+            "correct": false
+          },
+          {
+            "text": "The interest your savings earn.",
+            "correct": false
+          }
+        ],
+        "explanation": "The corpus is the finish line. The monthly amount is what gets you there."
+      }
     },
     {
       "id": "annuity",
@@ -187,7 +563,36 @@ window.KYF_TERMS = {
       "words": [
         "annuity"
       ],
-      "tip": "A series of equal payments over time, like a monthly pension. Retirement planning uses it to work out the corpus you need."
+      "tip": "A series of equal payments over time, like a monthly pension. Retirement planning uses it to work out the corpus you need.",
+      "pronunciation": "/əˈnuː.ɪ.ti/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Goals & Retirement",
+      "humanFriction": "Thinking an annuity is a type of insurance sales pitch, rather than a shape of cash flow.",
+      "plainMeaning": "A series of equal payments over time, like a monthly pension. Retirement planning uses the idea to work out the corpus you need.",
+      "contextTemplate": "Receiving a fixed amount every month for twenty years is an annuity. To pay it, you need a corpus large enough that it, plus its growth, lasts all twenty years.",
+      "relatedWords": [
+        "corpus",
+        "swp_systematic_withdrawal",
+        "safe_withdrawal_rate"
+      ],
+      "quickCheck": {
+        "question": "What makes a payment stream an annuity?",
+        "options": [
+          {
+            "text": "Equal payments at regular intervals over a period.",
+            "correct": true
+          },
+          {
+            "text": "A single large payout at the end.",
+            "correct": false
+          },
+          {
+            "text": "Payments that rise with the market.",
+            "correct": false
+          }
+        ],
+        "explanation": "An annuity is a regular, equal payment, such as a pension."
+      }
     },
     {
       "id": "emergency_fund",
@@ -197,7 +602,36 @@ window.KYF_TERMS = {
         "emergency fund",
         "peace buffer"
       ],
-      "tip": "Money kept in safe, easy-to-reach places to cover living costs if your income stops, usually several months of expenses."
+      "tip": "Money kept in safe, easy-to-reach places to cover living costs if your income stops, usually several months of expenses.",
+      "pronunciation": "/ɪˈmɜːr.dʒən.si fʌnd/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Safety Net",
+      "humanFriction": "Putting every spare rupee into investments, and then selling them at a loss when a surprise bill arrives.",
+      "plainMeaning": "Money kept in safe, easy-to-reach places to cover living costs if your income stops, usually several months of expenses.",
+      "contextTemplate": "If your costs are ₹50,000 a month, six months of cover is ₹3,00,000, kept in a savings account or a liquid fund, not in stocks.",
+      "relatedWords": [
+        "liquid_fund",
+        "net_cash_flow",
+        "pay_yourself_first"
+      ],
+      "quickCheck": {
+        "question": "Where should an emergency fund be kept?",
+        "options": [
+          {
+            "text": "Somewhere safe and quick to reach.",
+            "correct": true
+          },
+          {
+            "text": "In small-cap stocks for higher returns.",
+            "correct": false
+          },
+          {
+            "text": "In a house you can sell later.",
+            "correct": false
+          }
+        ],
+        "explanation": "It must be there when you need it. Safety and quick access matter more than return."
+      }
     },
     {
       "id": "term_insurance",
@@ -208,7 +642,35 @@ window.KYF_TERMS = {
         "term cover",
         "term life"
       ],
-      "tip": "Pure life cover: it pays your family a lump sum if you die within the term, and nothing if you outlive it. It has no savings element."
+      "tip": "Pure life cover: it pays your family a lump sum if you die within the term, and nothing if you outlive it. It has no savings element.",
+      "pronunciation": "/tɜːrm ɪnˈʃʊr.əns/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Safety Net",
+      "humanFriction": "Skipping term cover because 'nothing comes back if I live', and buying a costlier policy that mixes insurance and investing.",
+      "plainMeaning": "Pure life cover: it pays your family a lump sum if you die within the term, and nothing if you outlive it. It has no savings part.",
+      "contextTemplate": "Because term cover has no savings part, its premium is far lower than a policy that also invests. The money you save can go into a fund you choose.",
+      "relatedWords": [
+        "endowment_trap",
+        "hedging_risk_transfer"
+      ],
+      "quickCheck": {
+        "question": "What does term insurance pay if you outlive the term?",
+        "options": [
+          {
+            "text": "Nothing. It is pure cover.",
+            "correct": true
+          },
+          {
+            "text": "Your premiums back, with interest.",
+            "correct": false
+          },
+          {
+            "text": "Half the sum assured.",
+            "correct": false
+          }
+        ],
+        "explanation": "Term insurance is the cheapest way to cover a risk because nothing is paid out if the risk does not happen."
+      }
     },
     {
       "id": "emi",
@@ -218,7 +680,36 @@ window.KYF_TERMS = {
         "EMI",
         "EMIs"
       ],
-      "tip": "Equated Monthly Instalment: the fixed monthly payment on a loan, part interest and part repayment of the amount borrowed."
+      "tip": "Equated Monthly Instalment: the fixed monthly payment on a loan, part interest and part repayment of the amount borrowed.",
+      "pronunciation": "/ˈiː.ɛm.aɪ/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Borrowing",
+      "humanFriction": "Judging a loan by whether the monthly instalment fits the budget, and never looking at the total interest.",
+      "plainMeaning": "Equated Monthly Instalment: the fixed monthly payment on a loan, part interest and part repayment of the amount borrowed.",
+      "contextTemplate": "A ₹10,00,000 loan for 5 years at 10% (a sample rate) has an EMI of about ₹21,247. You repay about ₹12,74,820 in all, so ₹2,74,820 goes to interest.",
+      "relatedWords": [
+        "amortizing",
+        "apr_annual_percentage_rate",
+        "effective_apr"
+      ],
+      "quickCheck": {
+        "question": "A longer loan has a smaller EMI. What is the catch?",
+        "options": [
+          {
+            "text": "You pay more total interest.",
+            "correct": true
+          },
+          {
+            "text": "The bank raises the rate.",
+            "correct": false
+          },
+          {
+            "text": "There is none.",
+            "correct": false
+          }
+        ],
+        "explanation": "A smaller EMI comes from stretching repayment over more months, so interest runs for longer."
+      }
     },
     {
       "id": "rebalancing",
@@ -263,7 +754,34 @@ window.KYF_TERMS = {
         "carpet area",
         "carpet rate"
       ],
-      "tip": "The usable floor area inside the walls of a flat. Builders often quote price on the larger super built-up area, which includes shared spaces."
+      "tip": "The usable floor area inside the walls of a flat. Builders often quote price on the larger super built-up area, which includes shared spaces.",
+      "pronunciation": "/ˈkɑːr.pɪt ˈɛr.i.ə/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Real Estate",
+      "humanFriction": "Comparing flats by the builder's price per square foot, which is quoted on a larger area than you can actually use.",
+      "plainMeaning": "The usable floor area inside the walls of a flat. Builders often quote price on the larger super built-up area, which includes shared spaces such as lobbies and lifts.",
+      "contextTemplate": "A flat priced at ₹80,00,000 on 1,000 sq ft super built-up looks like ₹8,000 per sq ft. If the carpet area is only 700 sq ft, you pay about ₹11,429 for each sq ft you can use.",
+      "relatedWords": [
+        "real_estate_hard_assets"
+      ],
+      "quickCheck": {
+        "question": "Which area is the space you can actually use inside the flat?",
+        "options": [
+          {
+            "text": "Carpet area.",
+            "correct": true
+          },
+          {
+            "text": "Super built-up area.",
+            "correct": false
+          },
+          {
+            "text": "Plot area.",
+            "correct": false
+          }
+        ],
+        "explanation": "Carpet area is the floor inside the walls. Super built-up adds the share of common areas."
+      }
     },
     {
       "id": "fd",
@@ -276,7 +794,36 @@ window.KYF_TERMS = {
       "words": [
         "fixed deposit"
       ],
-      "tip": "A bank deposit for a fixed time at a fixed rate. Safe, but the interest is taxable and may not keep up with inflation."
+      "tip": "A bank deposit for a fixed time at a fixed rate. Safe, but the interest is taxable and may not keep up with inflation.",
+      "pronunciation": "/ɛf diː/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Asset Containers",
+      "humanFriction": "Treating 'safe' as 'best', and ignoring that tax and inflation eat into the interest.",
+      "plainMeaning": "A bank deposit for a fixed time at a fixed rate. Safe, but the interest is taxable and may not keep up with inflation.",
+      "contextTemplate": "₹{principal} in an FD at {fdRate}% grows quickly on paper. After tax the rate is closer to {postTaxFdRate}%, and with inflation at {inflation}% your buying power barely rises.",
+      "relatedWords": [
+        "real_return",
+        "cash_equivalents",
+        "fixed_income_debt"
+      ],
+      "quickCheck": {
+        "question": "Why can an FD fail to grow your buying power?",
+        "options": [
+          {
+            "text": "Tax and inflation can use up most of the interest.",
+            "correct": true
+          },
+          {
+            "text": "Banks can change the rate during the term.",
+            "correct": false
+          },
+          {
+            "text": "The principal can fall.",
+            "correct": false
+          }
+        ],
+        "explanation": "The rate is fixed and the principal is safe, but what you can buy with the money depends on inflation and tax."
+      }
     },
     {
       "id": "ppf",
@@ -285,7 +832,36 @@ window.KYF_TERMS = {
       "exact": [
         "PPF"
       ],
-      "tip": "Public Provident Fund: a government-backed long-term savings scheme with a 15-year lock-in and tax-free interest."
+      "tip": "Public Provident Fund: a government-backed long-term savings scheme with a 15-year lock-in and tax-free interest.",
+      "pronunciation": "/piː piː ɛf/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Asset Containers",
+      "humanFriction": "Treating PPF as money you can reach any time, when it is locked for years.",
+      "plainMeaning": "Public Provident Fund: a government-backed long-term savings scheme with a 15-year lock-in. The interest is tax-free and the government sets the rate.",
+      "contextTemplate": "Money for {goalName} in {goalYears} years fits PPF only if the lock-in leaves it reachable by then. Early withdrawals are limited.",
+      "relatedWords": [
+        "epf",
+        "fixed_income_debt",
+        "time_horizon"
+      ],
+      "quickCheck": {
+        "question": "What is the main trade-off with PPF?",
+        "options": [
+          {
+            "text": "Safety and tax-free interest, against a long lock-in.",
+            "correct": true
+          },
+          {
+            "text": "High returns, against high risk.",
+            "correct": false
+          },
+          {
+            "text": "Quick access, against a low rate.",
+            "correct": false
+          }
+        ],
+        "explanation": "PPF is safe and tax-friendly, but the money is tied up for 15 years."
+      }
     },
     {
       "id": "epf",
@@ -294,7 +870,36 @@ window.KYF_TERMS = {
       "exact": [
         "EPF"
       ],
-      "tip": "Employees' Provident Fund: retirement savings that you and your employer add to each month, earning a government-set rate."
+      "tip": "Employees' Provident Fund: retirement savings that you and your employer add to each month, earning a government-set rate.",
+      "pronunciation": "/iː piː ɛf/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Asset Containers",
+      "humanFriction": "Withdrawing the whole balance on every job change, and resetting years of retirement saving.",
+      "plainMeaning": "Employees' Provident Fund: retirement savings that you and your employer add to each month. It earns a government-set rate.",
+      "contextTemplate": "Your EPF balance is already a large part of your retirement savings, yet it never shows up in an investment app. Add it to your portfolio to see the whole picture.",
+      "relatedWords": [
+        "ppf",
+        "corpus",
+        "fixed_income_debt"
+      ],
+      "quickCheck": {
+        "question": "What happens to your retirement savings if you withdraw the EPF at every job change?",
+        "options": [
+          {
+            "text": "The savings, and their compounding, start again from zero.",
+            "correct": true
+          },
+          {
+            "text": "Nothing, it carries on.",
+            "correct": false
+          },
+          {
+            "text": "It earns a higher rate.",
+            "correct": false
+          }
+        ],
+        "explanation": "Each withdrawal breaks the compounding, so it is better to transfer the account and keep it growing."
+      }
     },
     {
       "id": "sgb",
@@ -304,7 +909,35 @@ window.KYF_TERMS = {
         "SGB",
         "SGBs"
       ],
-      "tip": "A government bond priced in grams of gold. You earn the gold price movement plus a small yearly interest."
+      "tip": "A government bond priced in grams of gold. You earn the gold price movement plus a small yearly interest.",
+      "pronunciation": "/ɛs dʒiː biː/",
+      "partOfSpeech": "noun",
+      "rootFamily": "Asset Containers",
+      "humanFriction": "Buying gold in a form that earns nothing while it sits in a locker.",
+      "plainMeaning": "A Sovereign Gold Bond is a government bond priced in grams of gold. You earn the gold price movement plus a small yearly interest.",
+      "contextTemplate": "With 24K gold near ₹{gold24k} a gram, a bond for 10 grams tracks that price and also pays interest, which physical gold does not.",
+      "relatedWords": [
+        "commodities_gold",
+        "fixed_income_debt"
+      ],
+      "quickCheck": {
+        "question": "What does an SGB pay that physical gold does not?",
+        "options": [
+          {
+            "text": "A small yearly interest, on top of the gold price.",
+            "correct": true
+          },
+          {
+            "text": "A guaranteed profit.",
+            "correct": false
+          },
+          {
+            "text": "A free making charge.",
+            "correct": false
+          }
+        ],
+        "explanation": "The bond follows the gold price and adds interest. The gold price itself can still fall."
+      }
     },
     {
       "id": "purchasing_power",
@@ -1814,7 +2447,8 @@ window.KYF_TERMS = {
       inflation: 5.4,
       gold24k: "13,800",
       niftyCagr: 13.4,
-      sipMonthly: "10,000"
+      sipMonthly: "10,000",
+      realFdReturn: 1.3
     };
     const merged = { ...defaults, ...vars };
     return entry.contextTemplate.replace(/\{(\w+)\}/g, (_, k) =>

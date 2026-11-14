@@ -66,6 +66,8 @@
     var macro = pulse.macro || {};
     if (macro.cpiInflation) vars.inflation = macro.cpiInflation;
     if (macro.sbiFd1Yr) vars.fdRate = macro.sbiFd1Yr;
+    var cpi = vars.inflation || 5.4, fd = vars.fdRate || 6.8;
+    vars.realFdReturn = (((1 + fd / 100) / (1 + cpi / 100) - 1) * 100).toFixed(1);
     var nifty = pulse.indices && pulse.indices.NIFTY50;
     if (nifty && nifty.cagr10y) vars.niftyCagr = nifty.cagr10y;
     var gold = pulse.preciousMetals && pulse.preciousMetals.gold24kPerGram;
