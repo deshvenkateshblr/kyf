@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Lean Broker & Mutual Fund CSV/XLSX Importer (`js/portfolio-importer.js`)
- * Version: v1.11.1
+ * Version: v1.11.2
  * Pure Vanilla ES6+ | Zero-Server, Client-Side Only | O(1) ISIN Lookup via KYF_PORTFOLIO_ENGINE
  * Supports: Zerodha (Kite, Console, Coin), Groww (Stocks, MF), HDFC Sec, SBI Sec, ICICI Direct,
  * Angel One, Upstox, Kotak Sec, Kuvera, and CAMS / KFintech / MFCentral Consolidated Statements.
@@ -448,41 +448,10 @@ window.KYF_BROKER_IMPORTER = (() => {
     return hasDirect ? "DIRECT" : "REGULAR";
   }
 
-  function isUsMutualFund({ symbol = "", name = "", rawType = "", usItem = null, defaultAssetClass = "" } = {}) {
-    if (usItem && usItem.type === "MUTUAL_FUND") return true;
-    if (defaultAssetClass === "Mutual Funds") return true;
-
-    const typeStr = String(rawType || "").toLowerCase();
-    if (typeStr.includes("mutual fund") || typeStr.includes("open-end") || typeStr.includes("oe fund") || typeStr === "mf") {
-      return true;
-    }
-
-    const cleanSym = String(symbol || "").trim().toUpperCase();
-    const cleanName = String(name || "").trim();
-
-    // If explicitly designated as an ETF in name or type, it is an ETF, not an open-end mutual fund
-    const isExplicitEtf = /\b(etf|etfs|exchange traded fund|trust|etn)\b/i.test(cleanName) ||
-                          typeStr.includes("etf") || (usItem && usItem.type === "ETF");
-    if (isExplicitEtf) return false;
-
-    // Standard US Mutual Fund Ticker: 5 letters ending in 'X' (e.g. FBALX, VFIAX, VTSAX, FXAIX, FBGRX, PRGFX)
-    if (/^[A-Z]{4}X$/i.test(cleanSym)) {
-      return true;
-    }
-
-    // Mutual fund keywords in instrument name
-    const isFundKeyword = /\b(fund|funds|balanced|allocation|lifestyle|lifecycle|target retirement|target date|admiral|investor shares|institutional|instl)\b/i.test(cleanName);
-    if (isFundKeyword) {
-      return true;
-    }
-
-    // Major US mutual fund families followed by fund strategy keywords (e.g. "FIDELITY BALANCED", "VANGUARD WELLINGTON")
-    const isFundFamily = /^(fidelity|vanguard|t\.?\s*rowe|american funds|dodge\s*&\s*cox|schwab|pimco|franklin|putnam|blackrock|invesco)\b/i.test(cleanName);
-    if (isFundFamily && /\b(balanced|growth|value|income|treasury|bond|equity|index|strategy|portfolio|dividend|select)\b/i.test(cleanName)) {
-      return true;
-    }
-
-    return false;
+  // One definition lives in the engine; the importer just asks it.
+  function isUsMutualFund(args) {
+    const engine = typeof window !== "undefined" ? window.KYF_PORTFOLIO_ENGINE : null;
+    return !!(engine && engine.isUsMutualFund && engine.isUsMutualFund(args));
   }
 
   function resolveMarketInstrument({ isin, symbol, rawName, defaultAssetClass, fileLtp = 0, source = null, rawType = "" }) {
@@ -983,13 +952,14 @@ window.KYF_BROKER_IMPORTER = (() => {
     return !!aName && aName === bName;
   }
 
-  // A bucket = one family member + one import source. It is always overwritten by the latest import:
-  // what the file lists is what is held now; anything the bucket had that the file no longer lists was sold.
-  // Matched holdings keep their id and goal allocations. Manual holdings are never touched.
   function holdingKind(h) {
     return (h && (h.assetClass === "Mutual Funds" || h.pricingMode === "LIVE_MF")) ? "mf" : "listed";
   }
 
+  // A bucket = one family member + one import source. It is always overwritten by the latest import:
+  // what the file lists is what is held now; anything the bucket had that the file no longer lists was sold.
+  // Matched holdings keep their id and goal allocations. Manual holdings are never touched.
+  // A file only replaces the kinds it contains (stocks vs mutual funds), see holdingKind.
   function replaceBucket(existingHoldings, incomingHoldings, memberArg, sourceArg) {
     const source = getSource(sourceArg);
     if (!source) throw new Error("Choose where this file came from.");

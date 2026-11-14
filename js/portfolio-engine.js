@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Live Market Valuation & Aggregation Engine (`js/portfolio-engine.js`)
- * Version: v1.11.1
+ * Version: v1.11.2
  * Pure Vanilla ES6+ | O(1) Indexing, Live Valuation, Multi-Horizon Returns (1M, 3M, 6M, 1Y),
  * Goal Envelopes, Macro Inflation Compounding, Virtual Lot Splitting,
  * Dual-Unit Commodity & Real Estate Engine (Gold Grams + RESIDEX Sq.Ft + INR) & Divergence Detection
@@ -995,12 +995,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
 
       // 2. Multi-Select Pill Filter in Active View
       if (selectedPills && selectedPills !== "ALL" && selectedPills.size > 0) {
-        let itemKey = "";
-        if (activeDimension === "goal") {
-          itemKey = h.goalId || h.goal || "goal_unallocated";
-        } else {
-          itemKey = h[activeDimension] || "Other / Unassigned";
-        }
+        const itemKey = dimensionValue(h, activeDimension);
 
         if (!selectedPills.has(itemKey)) {
           return false;
@@ -1078,6 +1073,26 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     });
   }
 
+  // Same stock / fund / ETF => same key, wherever and by whomever it is held
+  function instrumentKey(h) {
+    const m = (h && h.instrumentMeta) || {};
+    const usd = (h && (h.currency === "USD" || h.pricingMode === "LIVE_US")) ? "us:" : "";
+    const code = m.amfiCode || m.schemeCode;
+    if (code) return "mf:" + String(code).trim();
+    const sym = String(m.symbol || m.ticker || "").trim().toUpperCase();
+    if (sym) return usd + "sym:" + sym;
+    const isin = String(m.isin || "").trim().toUpperCase();
+    if (isin) return "isin:" + isin;
+    return "name:" + String((h && h.name) || "").trim().toLowerCase();
+  }
+
+  // What a holding is grouped / filtered by in the active view lens
+  function dimensionValue(h, dimensionKey) {
+    if (dimensionKey === "goal") return h.goalId || h.goal || "goal_unallocated";
+    if (dimensionKey === "instrument") return instrumentKey(h);
+    return h[dimensionKey] || "Other / Unassigned";
+  }
+
   // ==========================================================================
   // 1-Level Pivot Reducer (GroupBy with Dual-Unit Rollups & Divergence Detection)
   // ==========================================================================
@@ -1131,6 +1146,9 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
         groupKey = h.goalId || h.goal || "goal_unallocated";
         groupLabel = h.goalName ? `${h.goalIcon || "🎯"} ${h.goalName}` : "🌱 General Wealth / Unallocated";
         goalMeta = h.goalMeta || null;
+      } else if (dimensionKey === "instrument") {
+        groupKey = instrumentKey(h);
+        groupLabel = h.name || groupKey;
       } else {
         groupKey = h[dimensionKey] || "Other / Unassigned";
         groupLabel = groupKey;
@@ -1392,6 +1410,8 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     lookupMf,
     lookupUsByTicker,
     isUsMutualFund,
+    instrumentKey,
+    dimensionValue,
     getUsdInr,
     usAssetInfo,
     convertHoldingToGoldGrams,

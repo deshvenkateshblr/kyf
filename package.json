@@ -5,7 +5,7 @@
   "description": "Know Your Finance (KYF)",
   "type": "module",
   "scripts": {
-    "test": "node tests/vault.test.mjs && node tests/liabilities.test.mjs && node tests/qa-regressions.test.mjs && node tests/holdings-workflow.test.mjs && node tests/goals.test.mjs && node tests/features.test.mjs && node tests/versions.test.mjs && node tests/terms.test.mjs && node tests/accuracy.test.mjs && node tests/broker-import-deep.test.mjs && node tests/broker-import.test.mjs && node tests/us-holdings.test.mjs && node tests/broker-overwrite.test.mjs",
+    "test": "node tests/vault.test.mjs && node tests/liabilities.test.mjs && node tests/qa-regressions.test.mjs && node tests/holdings-workflow.test.mjs && node tests/goals.test.mjs && node tests/features.test.mjs && node tests/versions.test.mjs && node tests/terms.test.mjs && node tests/accuracy.test.mjs && node tests/broker-import-deep.test.mjs && node tests/broker-import.test.mjs && node tests/us-holdings.test.mjs && node tests/broker-overwrite.test.mjs && node tests/instrument-key.test.mjs",
     "sync-data": "py admin/sync_market_data.py",
     "sync-data:force-nhb": "py admin/sync_market_data.py --force-nhb",
     "sync-and-push": "py admin/sync_market_data.py --commit-push",

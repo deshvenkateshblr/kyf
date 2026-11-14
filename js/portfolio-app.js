@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.11.1
+ * Version: v1.11.2
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -438,6 +438,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================================================
   function renderPillStrip(scopedHoldings) {
     if (!els.pillStrip) return;
+    // One pill per stock would be noise: this lens relies on search instead
+    els.pillStrip.parentElement && (els.pillStrip.parentElement.hidden = activeDimension === "instrument");
+    if (activeDimension === "instrument") return;
 
     let entities = [];
 
@@ -1480,55 +1483,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    // 4. US Equities, ETFs & Mutual Funds from window.KYF_MARKET_US & Popular Catalog
-    const popularEtfCatalog = [
-      ["VOO", "Vanguard S&P 500 ETF", 698.35, "ETF"],
-      ["VOOG", "Vanguard S&P 500 Growth ETF", 80.67, "ETF"],
-      ["VOOV", "Vanguard S&P 500 Value ETF", 234.35, "ETF"],
-      ["VUG", "Vanguard Growth ETF", 85.22, "ETF"],
-      ["VTI", "Vanguard Total Stock Market ETF", 374.25, "ETF"],
-      ["QQQ", "Invesco QQQ Trust (Nasdaq-100)", 690.38, "ETF"],
-      ["QQQM", "Invesco NASDAQ 100 ETF", 284.23, "ETF"],
-      ["SPY", "SPDR S&P 500 ETF Trust", 759.81, "ETF"],
-      ["IVV", "iShares Core S&P 500 ETF", 763.08, "ETF"],
-      ["SCHD", "Schwab U.S. Dividend Equity ETF", 36.02, "ETF"],
-      ["VYM", "Vanguard High Dividend Yield ETF", 164.99, "ETF"],
-      ["VIG", "Vanguard Dividend Appreciation ETF", 228.40, "ETF"],
-      ["IWM", "iShares Russell 2000 ETF", 283.09, "ETF"],
-      ["DIA", "SPDR Dow Jones Industrial Average ETF", 524.44, "ETF"],
-      ["VT", "Vanguard Total World Stock ETF", 156.71, "ETF"],
-      ["VXUS", "Vanguard Total International Stock ETF", 83.44, "ETF"],
-      ["VEA", "Vanguard FTSE Developed Markets ETF", 57.80, "ETF"],
-      ["VWO", "Vanguard FTSE Emerging Markets ETF", 49.30, "ETF"],
-      ["INDA", "iShares MSCI India ETF", 51.59, "ETF"],
-      ["TAN", "Invesco Solar ETF", 43.95, "ETF"],
-      ["ICLN", "iShares Global Clean Energy ETF", 16.28, "ETF"],
-      ["QCLN", "First Trust NASDAQ Clean Edge Green Energy ETF", 45.82, "ETF"],
-      ["URA", "Global X Uranium ETF", 33.64, "ETF"],
-      ["SMH", "VanEck Semiconductor ETF", 506.96, "ETF"],
-      ["SOXX", "iShares Semiconductor ETF", 155.40, "ETF"],
-      ["XLK", "Technology Select Sector SPDR Fund", 174.36, "ETF"],
-      ["XLF", "Financial Select Sector SPDR Fund", 58.63, "ETF"],
-      ["XLE", "Energy Select Sector SPDR Fund", 63.37, "ETF"],
-      ["XLV", "Health Care Select Sector SPDR Fund", 188.95, "ETF"],
-      ["VNQ", "Vanguard Real Estate ETF", 97.02, "ETF"],
-      ["ARKK", "ARK Innovation ETF", 78.47, "ETF"],
-      ["CIBR", "First Trust NASDAQ Cybersecurity ETF", 96.25, "ETF"],
-      ["BOTZ", "Global X Robotics & Artificial Intelligence ETF", 32.23, "ETF"],
-      ["IGV", "iShares Expanded Tech-Software Sector ETF", 98.60, "ETF"],
-      ["IBIT", "iShares Bitcoin Trust ETF", 58.40, "ETF"],
-      ["JEPI", "JPMorgan Equity Premium Income ETF", 58.21, "ETF"],
-      ["JEPQ", "JPMorgan Nasdaq Equity Premium Income ETF", 56.93, "ETF"],
-      ["BND", "Vanguard Total Bond Market ETF", 71.10, "ETF"],
-      ["AGG", "iShares Core U.S. Aggregate Bond ETF", 95.84, "ETF"],
-      ["TLT", "iShares 20+ Year Treasury Bond ETF", 80.92, "ETF"],
-      ["HYG", "iShares iBoxx $ High Yield Corporate Bond ETF", 79.15, "ETF"],
-      ["GLD", "SPDR Gold Shares", 365.17, "ETF"],
-      ["IAU", "iShares Gold Trust", 52.40, "ETF"],
-      ["SLV", "iShares Silver Trust", 46.65, "ETF"],
-      ["GDX", "VanEck Gold Miners ETF", 41.20, "ETF"],
-    ];
-
+    // 4. US Equities, ETFs & Mutual Funds from window.KYF_MARKET_US
     const usCandidates = [];
     const seenUsTickers = new Set();
 
@@ -1539,13 +1494,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         usCandidates.push(inst);
       }
     }
-    for (const [t, nm, p, typ] of popularEtfCatalog) {
-      if (!seenUsTickers.has(t)) {
-        seenUsTickers.add(t);
-        usCandidates.push([t, nm, p, typ, "USD", ""]);
-      }
-    }
-
     if (usCandidates.length > 0) {
       const fxRate = window.KYF_PORTFOLIO_ENGINE.getUsdInr().rate;
       for (const inst of usCandidates) {
@@ -2845,6 +2793,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     els.dataStatusModal.setAttribute("aria-hidden", "true");
   }
 
+  // The date the US prices are for (the trading day), not the day the file was fetched
+  function usCloseDate() {
+    const us = window.KYF_MARKET_US;
+    return us ? ((us.horizons && us.horizons.latest) || us.asOf || "") : "";
+  }
+
+  // Healthy when the close is recent; a long weekend or holiday can leave up to ~4 days
+  function usFeedStatus() {
+    const d = usCloseDate();
+    if (!d) return "UNKNOWN";
+    const ageDays = (Date.now() - new Date(d + "T00:00:00Z").getTime()) / 86400000;
+    return ageDays > 5 ? "WARNING" : "HEALTHY";
+  }
+
   function renderDataStatusModal() {
     const statusData = window.KYF_MARKET_STATUS || null;
 
@@ -2870,10 +2832,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       usMarket: {
         name: "US Stocks, ETFs & Funds",
         tag: "US Equities",
-        status: (window.KYF_MARKET_US && window.KYF_MARKET_US.asOf) ? "HEALTHY" : "UNKNOWN",
-        asOf: (window.KYF_MARKET_US && window.KYF_MARKET_US.asOf) || "Unknown",
+        status: usFeedStatus(),
+        asOf: usCloseDate() || "Unknown",
         count: (window.KYF_MARKET_US && window.KYF_MARKET_US.instruments) ? Object.keys(window.KYF_MARKET_US.instruments).length : 0,
-        details: `USD/INR Rate: ₹${window.KYF_PORTFOLIO_ENGINE.getUsdInr().rate}` + (window.KYF_PORTFOLIO_ENGINE.getUsdInr().source === "fallback" ? " (assumed: live rate missing)" : ""),
+        details: `US market close (New York time) · USD/INR ₹${window.KYF_PORTFOLIO_ENGINE.getUsdInr().rate}` + (window.KYF_PORTFOLIO_ENGINE.getUsdInr().source === "fallback" ? " (assumed: live rate missing)" : ""),
         source: "GitHub us_bhavcopy & Yahoo Finance"
       },
       bullion: {

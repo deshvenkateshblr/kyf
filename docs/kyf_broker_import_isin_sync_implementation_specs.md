@@ -151,3 +151,11 @@ Create a lean vanilla ES6 module `window.KYF_BROKER_IMPORTER` (~250 lines) with 
 
 - The unit is the person's **broker account** (member + source). Preview and button say so: "Add Priya's Chase holdings (n)" on a first import, "Update Priya's Zerodha holdings (n)" afterwards, with "Other brokers and family members are not changed."
 - Brokers often send stocks and mutual funds as separate files. A file replaces only the **kinds it contains** (mutual funds vs. stocks/ETFs/bonds/gold); the other kind in the same account is kept and the preview says so. A file with both kinds replaces both. An empty file removes nothing.
+
+## Addendum 4: US data and consolidation clean-up (v1.11.2)
+
+- Feeds Health shows the US trading day (`horizons.latest`), labelled New York time, and turns to a warning when it is more than 5 days old. `admin/sync_market_data.py` writes the same into `data/market-status.js`.
+- The hard-coded popular-ETF list (with stale prices) is gone; search reads only `KYF_MARKET_US`.
+- `isUsMutualFund` lives only in the engine; the importer delegates to it.
+- New view lens **By Holding** groups the same stock or fund held at several brokers or by several people (`KYF_PORTFOLIO_ENGINE.instrumentKey`: fund code, then symbol (US kept apart), then ISIN, then name). Totals are unchanged by the lens.
+- A second account at one broker is added as its own broker name ("Zerodha Joint"), so its file never replaces the first account's list.

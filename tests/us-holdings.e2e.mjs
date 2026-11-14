@@ -88,6 +88,14 @@ try {
   await page.evaluate(() => { document.getElementById("holding-more-details").open = true; });
   check((await page.inputValue("#input-holding-purchasefx")) === "", "clearing the rate when bought sticks");
   await page.click("#btn-cancel-holding");
+  // Feeds Health shows the US trading day, not the day the file was fetched
+  await page.click("#portfolio-top-asof");
+  await page.waitForSelector("#feed-status-grid .feed-status-card");
+  const usCard = (await page.locator(".feed-status-card", { hasText: "US Stocks" }).first().innerText());
+  const usData = await page.evaluate(() => window.KYF_MARKET_US.horizons.latest);
+  const [yy, mm, dd] = usData.split("-");
+  check(usCard.includes(`${dd} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+mm - 1]} ${yy}`), "Feeds Health shows the US close date", usCard);
+  check(/New York time/.test(usCard), "Feeds Health says the US date is New York time", usCard);
   check(errors.length === 0, "no page errors " + errors.join("|"));
 } catch (e) {
   failed++; console.log("  ✗ test crashed: " + e.message);

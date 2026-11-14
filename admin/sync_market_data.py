@@ -2051,16 +2051,25 @@ def build_market_status_js(horizons: dict):
             m_asof = re.search(r'"asOf":\s*"([^"]+)"', us_txt)
             m_fx = re.search(r'"fxRateUsdInr":\s*([0-9\.]+)', us_txt)
             us_cnt = len(re.findall(r'\[\s*"[A-Z0-9\.-]+"', us_txt))
-            us_asof = m_asof.group(1) if m_asof else datetime.date.today().isoformat()
+            # Show the trading day the prices are for (US close), not the day the file was fetched
+            m_latest = re.search(r'"latest":\s*"([^"]+)"', us_txt)
+            us_asof = (m_latest.group(1) if m_latest else (m_asof.group(1) if m_asof else datetime.date.today().isoformat()))
+            try:
+                us_age = (datetime.date.today() - datetime.date.fromisoformat(us_asof)).days
+            except ValueError:
+                us_age = 0
+            us_status = "WARNING" if us_age > 5 else "HEALTHY"
+            if us_status == "WARNING":
+                overall_status = "WARNING"
             fx_rate = float(m_fx.group(1)) if m_fx else 93.85
             feeds["usMarket"] = {
                 "name": "US Stocks, ETFs & Funds",
                 "tag": "US Equities",
-                "status": "HEALTHY",
+                "status": us_status,
                 "asOf": us_asof,
                 "count": us_cnt,
                 "fxRateUsdInr": fx_rate,
-                "details": f"{us_cnt} instruments (VOOG, QQQM, TAN, AAPL, etc.) • USD/INR: ₹{fx_rate:.2f}",
+                "details": f"{us_cnt} instruments • US market close (New York time) • USD/INR: ₹{fx_rate:.2f}",
                 "source": "GitHub us_bhavcopy & Yahoo Finance",
                 "horizons": ["1M", "3M", "6M", "1Y"],
                 "error": None

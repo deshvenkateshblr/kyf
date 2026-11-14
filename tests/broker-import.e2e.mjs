@@ -167,6 +167,27 @@ if (XLSX) {
   await p.context().close();
 }
 
+// ---------- one stock at two brokers: "By Holding" adds it up ----------
+{
+  const p = await freshPage();
+  const csv = (q) => `Instrument,Qty.,Avg. cost,LTP\r\nRELIANCE,${q},1200,1300\r\nITC,10,400,420\r\n`;
+  await importFile(p, { name: "z.csv", mimeType: "text/csv", buffer: Buffer.from(csv(10)) }, "", "zerodha_stocks");
+  await importFile(p, { name: "u.csv", mimeType: "text/csv", buffer: Buffer.from(csv(4)) }, "", "upstox");
+  ok(await holdingsCount(p) === 4, "by holding: four rows across two brokers");
+  await p.click('.view-tab-btn[data-dimension="instrument"]');
+  await p.waitForTimeout(300);
+  const groups = await p.locator(".tree-group").count();
+  ok(groups === 2, `by holding: Reliance and ITC each appear once, got ${groups}`);
+  const rel = (await p.locator(".tree-group", { hasText: /reliance/i }).first().locator(".tree-group-count").textContent()).trim();
+  ok(rel === "2", `by holding: Reliance group holds the two broker rows, got ${rel}`);
+  ok(await p.locator("#view-pill-strip").isHidden(), "by holding: no pill strip (search is used instead)");
+  await p.click('.view-tab-btn[data-dimension="custodian"]');
+  await p.waitForTimeout(300);
+  ok(await p.locator("#view-pill-strip").isVisible(), "pill strip returns on the other lenses");
+  ok(p.errs.length === 0, "by holding: no page errors " + p.errs.join("|"));
+  await p.context().close();
+}
+
 await b.close(); srv.close();
 console.log(`broker import e2e: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

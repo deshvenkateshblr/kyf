@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Data & Vault Lifecycle (`js/portfolio-data.js`)
- * Version: v1.11.1
+ * Version: v1.11.2
  * Unified with KYF App-Level .kyf Vault Format (cadence + portfolio + goals)
  */
 

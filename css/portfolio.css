@@ -931,6 +931,7 @@ button {
 }
 
 /* Secondary Row: 1-Click Multi-Select Pill Strip (Row 2, Full Width) */
+.toolbar-pill-row[hidden] { display: none; }
 .toolbar-pill-row {
   display: flex;
   align-items: center;
