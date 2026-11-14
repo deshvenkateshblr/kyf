@@ -733,7 +733,7 @@ test("Imports Chase positions CSV for family member with USD valuation and INR c
   assert.strictEqual(voog.currency, "USD", "Currency is USD");
   assert.strictEqual(voog.pricingMode, "LIVE_US", "PricingMode is LIVE_US");
   assert.strictEqual(voog.units, 10, "10 shares");
-  assert.strictEqual(voog.currentValueUSD, 804.3, "USD current value $804.30");
+  assert.ok(Math.abs(voog.currentValueUSD / 10 - 80.43) < 3, `USD value is 10 shares at about the file or live price: ${voog.currentValueUSD}`);
   assert.strictEqual(voog.investedValueUSD, 750, "USD cost basis $750");
   assert.ok(voog.currentValue > 70000, `INR value converted: ${voog.currentValue}`);
   assert.ok(voog.investedValue > 65000, `INR invested converted: ${voog.investedValue}`);
