@@ -516,8 +516,8 @@ footer {
 
 .idea-chips { margin-top: 18px; max-width: 900px; }
 .idea-details > summary { cursor: pointer; font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--teal-deep); text-transform: uppercase; letter-spacing: .06em; padding: 4px 0; }
-.idea-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
-.idea-group-label { font-family: var(--mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; min-width: 130px; }
+.idea-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.idea-group-label { font-family: var(--mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; flex: 0 0 100%; }
 .idea-chip {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
   border: 1px solid var(--line); background: var(--panel); font: inherit; font-size: 13.5px; color: var(--ink); cursor: pointer;
