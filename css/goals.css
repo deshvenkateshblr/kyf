@@ -252,16 +252,16 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 100; letter-spacing: -0.015
 }
 .card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .tag-cat {
-  font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
   padding: 3px 8px; border-radius: 4px; font-weight: 600;
   background: var(--teal-soft); color: var(--teal-deep);
 }
 .tag-horizon {
-  font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
   background: var(--paper); padding: 3px 8px; border-radius: 4px; font-weight: 600;
 }
 .tag-priority {
-  font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
   padding: 2px 7px; border-radius: 4px; font-weight: 700;
 }
 .tag-priority.essential { background: var(--rose-soft); color: var(--rose); }
@@ -295,7 +295,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 100; letter-spacing: -0.015
 .math-item { display: flex; flex-direction: column; }
 .math-item.full-width { grid-column: span 2; }
 .math-lbl {
-  font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
   letter-spacing: .06em; color: var(--muted); line-height: 1.2;
 }
 .math-val {
@@ -367,8 +367,11 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 100; letter-spacing: -0.015
 .empty-state p { color: var(--muted); margin: 0 0 12px; }
 
 /* ---------- Goal drawer (shell styles live in css/kyf-drawer.css) ---------- */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 16px; align-items: end; }
 .form-group { margin-bottom: 14px; }
+/* Inside a grid the grid gap spaces the rows; a label that wraps must not push its input out of line */
+.form-grid > .form-group { margin-bottom: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+.form-grid > .form-group > label { margin-bottom: 6px; }
 .form-group.full { grid-column: span 2; }
 @media (max-width: 520px) {
   .form-grid { grid-template-columns: 1fr; }
@@ -396,8 +399,9 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 100; letter-spacing: -0.015
   gap: 10px;
   text-align: center;
 }
-.prev-item .prev-lbl {
-  font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+.prev-item { display: flex; flex-direction: column; align-items: center; }
+.prev-item .prev-lbl { display: inline-flex; align-items: center; gap: 6px; min-height: 20px;
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
   letter-spacing: .06em; color: var(--teal-deep);
 }
 .prev-item .prev-val {
@@ -433,7 +437,9 @@ footer {
   .edu-callout { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .form-group.full { grid-column: span 1; }
-  .modal-preview-box { grid-template-columns: 1fr; gap: 8px; }
+  .modal-preview-box { grid-template-columns: 1fr; gap: 10px; }
+  .modal-preview-box .prev-item { flex-direction: row; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .modal-preview-box .prev-item .prev-val { margin-top: 0; }
   .nav-links a { display: none; }
   .nav-links .nav-btn { display: inline-flex; padding: 6px 12px; font-size: 11px; }
   .controls-bar { top: 60px; }
@@ -570,7 +576,7 @@ footer {
 }
 
 /* ---------- Drawer: help, more options ---------- */
-.help-toggle { margin: 4px 0 10px; padding: 0; border: 0; background: none; color: var(--teal-deep); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; text-decoration: underline; }
+.help-toggle { margin: 12px 0 12px; padding: 0; border: 0; background: none; color: var(--teal-deep); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; text-decoration: underline; }
 .help-panel { background: var(--teal-soft); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
 .help-intro { margin: 0 0 8px; font-weight: 600; font-size: 13.5px; }
 .help-list { margin: 0 0 8px; padding-left: 18px; font-size: 13.5px; color: var(--ink-soft); }

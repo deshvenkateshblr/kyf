@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.12.4
+ * Version: v1.12.5
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -275,7 +275,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const dotClass = overallStatus === "HEALTHY" ? "online" : (overallStatus === "WARNING" ? "warning" : "error");
 
     if (els.pulseAsOf) {
-      els.pulseAsOf.innerHTML = `<span class="status-indicator-dot ${dotClass}"></span><span>Market As of: <strong>${formattedAsOf}</strong> <span style="font-size:10px;opacity:0.8;margin-left:4px;">📊 Feeds Health</span></span>`;
+      els.pulseAsOf.innerHTML = `<span class="status-indicator-dot ${dotClass}"></span><span>Market As of: <strong>${formattedAsOf}</strong> <span style="font-size:11px;opacity:0.8;margin-left:4px;">📊 Feeds Health</span></span>`;
       els.pulseAsOf.setAttribute("title", "Click to inspect Market Data Health, As-Of Dates and sync sources");
     }
     if (els.portfolioTopAsOf) {

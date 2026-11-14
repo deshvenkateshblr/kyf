@@ -83,3 +83,9 @@ body.has-kyf-footer {
   .kyf-footer { justify-content: center; padding: 6px 12px; gap: 6px 12px; }
   .kyf-footer-label { display: none; }
 }
+
+/* Phone: the bar sits at the end of the page instead of covering content */
+@media (max-width: 600px) {
+  .kyf-footer { position: static; }
+  body.has-kyf-footer { padding-bottom: 0; }
+}

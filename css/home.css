@@ -252,13 +252,13 @@ section { padding: clamp(56px, 8vw, 104px) 0; }
 .step.end .pin { background: var(--teal); border-color: var(--teal); color: #fff; box-shadow: 0 0 0 6px var(--teal-soft); }
 .step h3 { font-size: 19px; margin-bottom: 6px; }
 .step p { font-size: 13.5px; color: var(--ink-soft); margin: 0; }
-.step small { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+.step small { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
 
 /* Outputs */
 .outputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .out { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px; transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
 .out:hover { border-color: var(--teal); transform: translateY(-3px); box-shadow: 0 14px 30px -18px rgba(24,38,32,.5); }
-.out .tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--teal); background: var(--teal-soft); display: inline-block; padding: 4px 10px; border-radius: 999px; margin-bottom: 14px; }
+.out .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--teal); background: var(--teal-soft); display: inline-block; padding: 4px 10px; border-radius: 999px; margin-bottom: 14px; }
 .out h3 { font-size: 20px; margin-bottom: 8px; }
 .out p { margin: 0; font-size: 14.5px; color: var(--ink-soft); }
 .out.feature { grid-column: span 2; background: var(--ink); color: #fff; border-color: var(--ink); display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; align-items: center; }
@@ -269,7 +269,7 @@ section { padding: clamp(56px, 8vw, 104px) 0; }
   background: #fff; color: var(--ink); border-radius: 6px; padding: 16px 18px; font-size: 12px;
   transform: rotate(2.2deg); box-shadow: 0 18px 30px -14px rgba(0,0,0,.6);
 }
-.sheet b { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--teal); margin-bottom: 8px; }
+.sheet b { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--teal); margin-bottom: 8px; }
 .sheet div { display: flex; gap: 8px; padding: 6px 0; border-top: 1px dashed var(--line); line-height: 1.35; }
 .sheet div::before { content: "₹"; font-family: var(--mono); color: var(--amber); font-weight: 700; }
 

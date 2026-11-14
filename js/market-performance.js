@@ -551,7 +551,7 @@
                   <strong>🗓️ ${escapeHtml(qName)}</strong>
                   <div>${escapeHtml(cityName)}: <b style="color:#8fe0cd;">${formatNumber(cVal, 2)}</b></div>
                   <div>National 50-City: <b style="color:#f3bc85;">${formatNumber(nVal, 2)}</b></div>
-                  <div style="margin-top:3px; border-top:1px dashed rgba(255,255,255,.2); padding-top:3px; font-size:10.5px;">
+                  <div style="margin-top:3px; border-top:1px dashed rgba(255,255,255,.2); padding-top:3px; font-size:11px;">
                     Spread: <b style="color:${Number(spread) >= 0 ? '#34d399' : '#f87171'}">${spreadSign}${spread} pts</b> vs National
                   </div>
                 `;
@@ -814,7 +814,7 @@
               <td class="name-col">
                 <div class="stock-symbol" style="display:flex; align-items:center; gap:6px;">
                   <span>${escapeHtml(c.name)}</span>
-                  ${isActive ? '<span style="font-size:10px; background:var(--teal); color:#fff; padding:1px 6px; border-radius:4px;">ACTIVE</span>' : ''}
+                  ${isActive ? '<span style="font-size:11px; background:var(--teal); color:#fff; padding:1px 6px; border-radius:4px;">ACTIVE</span>' : ''}
                 </div>
                 <div class="stock-name">${escapeHtml(c.state)}</div>
               </td>
@@ -1035,12 +1035,12 @@
           const targetRet = s[sortColIdx];
 
           const ca = caMap.get(symbol);
-          const caBadge = ca ? `<span style="display:inline-block; font-family:var(--mono); font-size:10px; font-weight:700; color:var(--teal); background:var(--teal-soft); padding:1px 5px; border-radius:3px; margin-left:6px;" title="${escapeHtml(ca[3])}">⚡ ${ca[5]}</span>` : '';
+          const caBadge = ca ? `<span style="display:inline-block; font-family:var(--mono); font-size:11px; font-weight:700; color:var(--teal); background:var(--teal-soft); padding:1px 5px; border-radius:3px; margin-left:6px;" title="${escapeHtml(ca[3])}">⚡ ${ca[5]}</span>` : '';
 
           const isN500 = s[7] === 1;
           const n500Badge = isN500 
-            ? `<span style="display:inline-block; font-family:var(--mono); font-size:9.5px; font-weight:700; color:var(--teal); background:var(--teal-soft); border:1px solid rgba(31,122,108,.3); padding:1px 5px; border-radius:3px; margin-left:6px;" title="Nifty 500 Constituent">NIFTY 500</span>`
-            : `<span style="display:inline-block; font-family:var(--mono); font-size:9.5px; font-weight:600; color:var(--muted); background:var(--panel); border:1px solid var(--line); padding:1px 5px; border-radius:3px; margin-left:6px;">ALL TRADED</span>`;
+            ? `<span style="display:inline-block; font-family:var(--mono); font-size:11px; font-weight:700; color:var(--teal); background:var(--teal-soft); border:1px solid rgba(31,122,108,.3); padding:1px 5px; border-radius:3px; margin-left:6px;" title="Nifty 500 Constituent">NIFTY 500</span>`
+            : `<span style="display:inline-block; font-family:var(--mono); font-size:11px; font-weight:600; color:var(--muted); background:var(--panel); border:1px solid var(--line); padding:1px 5px; border-radius:3px; margin-left:6px;">ALL TRADED</span>`;
 
           let disambigNote = '';
           if (symbol === 'DCMSRIND') {

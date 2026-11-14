@@ -241,7 +241,7 @@
       display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px;
     }
     .index-category {
-      font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em;
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
       color: var(--teal); background: var(--teal-soft); padding: 3px 8px; border-radius: 4px; font-weight: 700;
     }
     .index-card h3 {
@@ -274,7 +274,7 @@
       font-family: var(--mono); font-size: 11px;
     }
     .stat-item { display: flex; flex-direction: column; }
-    .stat-lbl { color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-size: 10px; }
+    .stat-lbl { color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-size: 11px; }
     .stat-val { font-size: 13px; font-weight: 700; color: var(--ink); margin-top: 2px; }
 
     .cagr-anchor {
@@ -319,7 +319,7 @@
     .rate-box:hover {
       transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,.04);
     }
-    .rate-box .r-lbl { font-size: 10.5px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+    .rate-box .r-lbl { font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .04em; }
     .rate-box .r-val { font-family: var(--mono); font-size: 19px; font-weight: 700; color: var(--ink); margin-top: 4px; }
     .rate-box.benchmark { border-color: var(--amber); background: var(--amber-soft); }
     .rate-box.benchmark .r-lbl { color: #82470e; font-weight: 700; }
@@ -678,7 +678,7 @@
       border-color: rgba(201,122,43,.35);
     }
     .re-stat-box .re-lbl {
-      font-size: 10.5px;
+      font-size: 11px;
       color: var(--muted);
       font-family: var(--mono);
       text-transform: uppercase;
@@ -818,7 +818,7 @@
     }
     .re-hero-stat-lbl {
       font-family: var(--mono);
-      font-size: 10px;
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: .05em;
       color: var(--muted);
@@ -973,7 +973,7 @@
     .re-sort-arrow {
       display: inline-block;
       margin-left: 3px;
-      font-size: 10px;
+      font-size: 11px;
       vertical-align: middle;
       color: var(--teal);
     }
@@ -1084,7 +1084,7 @@
       }
 
       /* Compact As-Of Badge */
-      .as-of-badge { padding: 4px 8px; font-size: 10.5px; flex-shrink: 0; }
+      .as-of-badge { padding: 4px 8px; font-size: 11px; flex-shrink: 0; }
       .as-of-prefix { display: none; }
       .as-of-mobile-icon { display: inline; }
 
@@ -1105,7 +1105,7 @@
 
     @media (max-width: 600px) {
       /* Macro & Metals cards */
-      .section-share-btn { padding: 2px 7px; font-size: 10px; margin-left: 6px; }
+      .section-share-btn { padding: 2px 7px; font-size: 11px; margin-left: 6px; }
       .share-modal-box { padding: 16px; }
       .share-actions-row { gap: 6px; }
       .share-action-btn { padding: 7px 10px; font-size: 11px; }
@@ -1126,20 +1126,20 @@
       .re-tier-pills-row { flex-direction: column; align-items: flex-start; }
       .re-toolbar { flex-direction: column; align-items: stretch; }
       .re-view-pills { width: 100%; display: flex; }
-      .re-view-pill { flex: 1; text-align: center; font-size: 10.5px; padding: 6px 8px; }
+      .re-view-pill { flex: 1; text-align: center; font-size: 11px; padding: 6px 8px; }
       .re-chart-wrap { padding: 14px 12px; }
       .re-chart-title { font-size: 13px; }
-      .re-chart-legend { font-size: 10px; gap: 8px; }
+      .re-chart-legend { font-size: 11px; gap: 8px; }
 
       /* Mobile Table sizing */
       table.data-table { font-size: 12.5px; }
-      table.data-table th { font-size: 10px; letter-spacing: .02em; }
+      table.data-table th { font-size: 11px; letter-spacing: .02em; }
       table.data-table th, table.data-table td { padding: 8px 6px; }
       .rank-cell { width: 28px; padding-left: 4px; padding-right: 2px; font-size: 11.5px; }
       .fund-title { font-size: 12px; }
-      .fund-cat { font-size: 10px; }
+      .fund-cat { font-size: 11px; }
       .stock-symbol { font-size: 12px; }
-      .stock-name { font-size: 10.5px; }
+      .stock-name { font-size: 11px; }
       .price-col, .price-cell { width: 72px; font-size: 12px; }
       .ret-col, .ret-cell { width: 72px; font-size: 12px; }
       .ret-badge { font-size: 11px; padding: 2px 5px; }
@@ -1147,10 +1147,10 @@
 
     /* Small Mobile Devices (<=480px) */
     @media (max-width: 480px) {
-      .sec-nav-link { padding: 3px 6px; font-size: 10.5px; }
+      .sec-nav-link { padding: 3px 6px; font-size: 11px; }
       .section-jump-links { gap: 2px; }
-      .as-of-badge { padding: 3px 6px; font-size: 10px; }
-      .horizon-pill { padding: 3px 8px; font-size: 10.5px; }
+      .as-of-badge { padding: 3px 6px; font-size: 11px; }
+      .horizon-pill { padding: 3px 8px; font-size: 11px; }
     }
 
     /* ========================================================
@@ -1181,7 +1181,7 @@
     }
     .re-collapse-btn .re-collapse-icon {
       display: inline-block;
-      font-size: 9px;
+      font-size: 11px;
       line-height: 1;
       transition: transform .18s ease;
     }
