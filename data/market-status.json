@@ -1,6 +1,6 @@
 {
-  "generatedAtUTC": "2026-11-14 02:31:15 UTC",
-  "lastSyncedIST": "14 Nov 2026, 08:01 AM IST",
+  "generatedAtUTC": "2026-11-14 06:54:31 UTC",
+  "lastSyncedIST": "14 Nov 2026, 12:24 PM IST",
   "overallStatus": "HEALTHY",
   "totalFeeds": 6,
   "healthyFeeds": 6,
@@ -46,12 +46,6 @@
       "fxRateUsdInr": 94.29,
       "details": "225 instruments (VOOG, QQQM, TAN, AAPL, etc.) \u2022 USD/INR: \u20b994.29",
       "source": "GitHub us_bhavcopy & Yahoo Finance",
-      "horizons": [
-        "1M",
-        "3M",
-        "6M",
-        "1Y"
-      ],
       "error": null
     },
     "bullion": {
