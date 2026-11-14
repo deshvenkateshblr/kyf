@@ -44,3 +44,9 @@
 * **"?" bubble terms also have:** `exact` / `words` (spellings matched in page text).
 * **Lesson terms also have:** `pronunciation`, `partOfSpeech`, `rootFamily`, `humanFriction`, `plainMeaning`, `contextTemplate` (filled with the person's first goal and today's rates), `relatedWords`, `quickCheck { question, options[{text, correct}], explanation }`.
 * **Order matters:** Money Word walks `terms` in order (the original "?" words first, then lessons by chapter); the Learn page orders by chapter.
+
+## NHB RESIDEX (real estate) refresh
+- NHB publishes the housing price index quarterly. The daily cloud sync skips it (`--skip-nhb`), because the scraper needs Microsoft Edge.
+- Refresh it by hand, about once a quarter, on a machine with Edge: `node admin/sync_nhb_residex.mjs --force-nhb` (from the admin repo), then commit `data/market-realestate.js` and `data/nhb_residex_kyf.json`.
+- Feeds Health shows the latest quarter and the days since the last refresh, and turns to a warning after 90 days (the top status dot follows). The browser console also prints the refresh command.
+- The market data sync lives in the admin repo (`sync_market_data.py`, `pulse_config.json`, `sync_nhb_residex.mjs`); this repo only holds the generated `data/` files.

@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.12.1
+ * Version: v1.12.2
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -265,7 +265,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const macro = pulse.macro || {};
     const metals = pulse.preciousMetals || {};
     const indices = pulse.indices || {};
-    const statusObj = window.KYF_MARKET_STATUS || null;
+    const statusObj = marketStatus();
     const rawAsOf = (statusObj && statusObj.feeds && statusObj.feeds.equities && statusObj.feeds.equities.asOf) ||
                     (window.KYF_MARKET_EQUITIES && window.KYF_MARKET_EQUITIES.asOf) ||
                     (window.KYF_MARKET_MF && window.KYF_MARKET_MF.asOf) ||
@@ -2793,6 +2793,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     els.dataStatusModal.setAttribute("aria-hidden", "true");
   }
 
+  // NHB RESIDEX is a quarterly index refreshed by hand (the daily cloud sync skips it).
+  // Warn once the data has not been refreshed for a full quarter.
+  const NHB_REFRESH_DAYS = 90;
+
+  function realEstateFreshness() {
+    const r = window.KYF_RESIDEX;
+    const synced = r && r.metadata && r.metadata.last_synced_utc ? new Date(r.metadata.last_synced_utc) : null;
+    if (!synced || isNaN(synced.getTime())) return null;
+    const summary = r.national_composite_50_cities && r.national_composite_50_cities.summary;
+    const days = Math.max(0, Math.floor((Date.now() - synced.getTime()) / 86400000));
+    return { days, quarter: (summary && summary.latest_quarter) || "", stale: days > NHB_REFRESH_DAYS };
+  }
+
+  // The market status file, with the real-estate feed judged on how old its last refresh is
+  function marketStatus() {
+    const base = window.KYF_MARKET_STATUS || null;
+    const f = realEstateFreshness();
+    if (!base || !base.feeds || !base.feeds.realEstate || !f) return base;
+    if (f.stale) console.warn("NHB RESIDEX data is " + f.days + " days old. Refresh it: node admin/sync_nhb_residex.mjs --force-nhb");
+    const re = Object.assign({}, base.feeds.realEstate, {
+      asOf: f.quarter || base.feeds.realEstate.asOf,
+      details: "Latest quarter " + (f.quarter || "unknown") + " · refreshed " + f.days + " days ago" + (f.stale ? " · refresh due" : ""),
+      status: f.stale ? "WARNING" : base.feeds.realEstate.status
+    });
+    return Object.assign({}, base, {
+      overallStatus: (f.stale && (base.overallStatus || "HEALTHY") === "HEALTHY") ? "WARNING" : base.overallStatus,
+      feeds: Object.assign({}, base.feeds, { realEstate: re })
+    });
+  }
+
   // The date the US prices are for (the trading day), not the day the file was fetched
   function usCloseDate() {
     const us = window.KYF_MARKET_US;
@@ -2808,7 +2838,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function renderDataStatusModal() {
-    const statusData = window.KYF_MARKET_STATUS || null;
+    const statusData = marketStatus();
 
     const fallbackFeeds = {
       equities: {

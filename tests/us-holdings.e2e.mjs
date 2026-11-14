@@ -96,7 +96,28 @@ try {
   const [yy, mm, dd] = usData.split("-");
   check(usCard.includes(`${dd} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+mm - 1]} ${yy}`), "Feeds Health shows the US close date", usCard);
   check(/New York time/.test(usCard), "Feeds Health says the US date is New York time", usCard);
-  check(errors.length === 0, "no page errors " + errors.join("|"));
+  // Real-estate (NHB) data is refreshed by hand: it is healthy when recent and warns after a quarter
+  const reCard = async () => (await page.locator(".feed-status-card", { hasText: "NHB RESIDEX" }).first().innerText());
+  const freshCard = await reCard();
+  check(/Healthy/i.test(freshCard) && /refreshed \d+ days ago/.test(freshCard), "NHB feed is healthy when recently refreshed", freshCard);
+  await page.evaluate(() => { window.KYF_RESIDEX.metadata.last_synced_utc = new Date(Date.now() - 200 * 86400000).toISOString(); });
+  await page.evaluate(() => { document.getElementById("data-status-modal").style.display = "none"; });
+  await page.click("#portfolio-top-asof");
+  await page.waitForSelector("#feed-status-grid .feed-status-card");
+  const staleCard = await reCard();
+  check(/Warning/i.test(staleCard) && /refresh due/.test(staleCard), "NHB feed warns after a quarter without a refresh", staleCard);
+  // A page that loads year-old real-estate data shows the warning on the top dot too
+  const old = await context.newPage();
+  await old.route("**/data/market-realestate.js*", async (route) => {
+    const res = await route.fetch();
+    const body = (await res.text()).replace(/"last_synced_utc": "[^"]+"/, `"last_synced_utc": "${new Date(Date.now() - 200 * 86400000).toISOString()}"`);
+    await route.fulfill({ response: res, body });
+  });
+  await old.goto(base);
+  await old.waitForSelector("#top-status-dot.warning", { timeout: 8000 }).catch(() => {});
+  check(await old.locator("#top-status-dot.warning").count() === 1, "the top status dot turns to a warning");
+  await old.close();
+  check(errors.filter((e) => !/NHB RESIDEX/.test(e)).length === 0, "no page errors " + errors.join("|"));
 } catch (e) {
   failed++; console.log("  ✗ test crashed: " + e.message);
 }

@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Lean Broker & Mutual Fund CSV/XLSX Importer (`js/portfolio-importer.js`)
- * Version: v1.12.1
+ * Version: v1.12.2
  * Pure Vanilla ES6+ | Zero-Server, Client-Side Only | O(1) ISIN Lookup via KYF_PORTFOLIO_ENGINE
  * Supports: Zerodha (Kite, Console, Coin), Groww (Stocks, MF), HDFC Sec, SBI Sec, ICICI Direct,
  * Angel One, Upstox, Kotak Sec, Kuvera, and CAMS / KFintech / MFCentral Consolidated Statements.
