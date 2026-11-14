@@ -797,10 +797,11 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
           } else {
             livePrice = purity === "22K" ? precious.gold22kPerGram : precious.gold24kPerGram;
             calculatedValue = grams * livePrice;
-            ret1m = precious.goldRet1m;
-            ret3m = precious.goldRet3m;
-            ret6m = precious.goldRet6m;
-            ret1y = precious.goldRet1y;
+            const goldStock = equityMap ? equityMap.get("GOLDBEES") : null;
+            ret1m = precious.goldRet1m != null ? precious.goldRet1m : (goldStock ? goldStock.ret1m : null);
+            ret3m = precious.goldRet3m != null ? precious.goldRet3m : (goldStock ? goldStock.ret3m : null);
+            ret6m = precious.goldRet6m != null ? precious.goldRet6m : (goldStock ? goldStock.ret6m : null);
+            ret1y = precious.goldRet1y != null ? precious.goldRet1y : (goldStock ? goldStock.ret1y : null);
             priceLabel = `₹${livePrice.toLocaleString("en-IN")}/g (${purity})`;
             physicalUnitsLabel = `${grams.toLocaleString("en-IN")}g (${purity})`;
           }

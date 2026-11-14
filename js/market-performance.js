@@ -149,20 +149,20 @@
 
         // Resolve Gold return for active selectedHorizon (with fallback to GOLDBEES in equities)
         let goldRet = pm["goldRet" + selectedHorizon];
-        if (goldRet === undefined && equitiesData.stocks) {
+        if (goldRet == null && equitiesData.stocks) {
           const goldSym = pm.goldBenchmarkSymbol || "GOLDBEES";
           const goldStock = equitiesData.stocks.find(s => s[0] === goldSym || s[0] === "GOLDBEES");
-          if (goldStock && goldStock[eqCol] !== undefined) {
+          if (goldStock && goldStock[eqCol] != null) {
             goldRet = goldStock[eqCol];
           }
         }
 
         // Resolve Silver return for active selectedHorizon (with fallback to SILVERBEES in equities)
         let silverRet = pm["silverRet" + selectedHorizon];
-        if (silverRet === undefined && equitiesData.stocks) {
+        if (silverRet == null && equitiesData.stocks) {
           const silverSym = pm.silverBenchmarkSymbol || "SILVERBEES";
           const silverStock = equitiesData.stocks.find(s => s[0] === silverSym || s[0] === "SILVERBEES");
-          if (silverStock && silverStock[eqCol] !== undefined) {
+          if (silverStock && silverStock[eqCol] != null) {
             silverRet = silverStock[eqCol];
           }
         }
@@ -1166,9 +1166,9 @@
       function getActiveGoldRet() {
         const pm = pulseData.preciousMetals || {};
         let r = pm["goldRet" + selectedHorizon];
-        if (r === undefined && equitiesData.stocks) {
+        if (r == null && equitiesData.stocks) {
           const s = equitiesData.stocks.find(st => st[0] === (pm.goldBenchmarkSymbol || "GOLDBEES"));
-          if (s) r = s[getHorizonMeta(selectedHorizon).eqCol];
+          if (s && s[getHorizonMeta(selectedHorizon).eqCol] != null) r = s[getHorizonMeta(selectedHorizon).eqCol];
         }
         return Number(r || 0);
       }
@@ -1176,9 +1176,9 @@
       function getActiveSilverRet() {
         const pm = pulseData.preciousMetals || {};
         let r = pm["silverRet" + selectedHorizon];
-        if (r === undefined && equitiesData.stocks) {
+        if (r == null && equitiesData.stocks) {
           const s = equitiesData.stocks.find(st => st[0] === (pm.silverBenchmarkSymbol || "SILVERBEES"));
-          if (s) r = s[getHorizonMeta(selectedHorizon).eqCol];
+          if (s && s[getHorizonMeta(selectedHorizon).eqCol] != null) r = s[getHorizonMeta(selectedHorizon).eqCol];
         }
         return Number(r || 0);
       }

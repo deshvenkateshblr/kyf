@@ -1,8 +1,8 @@
 # Vividnova Vault Core & KYF Vault Architecture Specification (`vault.md`)
 
 > **Location:** `js/kyf-vault.js`  
-> **Status:** ✅ Production Ready (v2.0.0)  
-> **Test Suite:** `tests/vault.test.mjs` (46/46 Passing)  
+> **Status:** ✅ Production Ready (v3.0.0)  
+> **Test Suite:** `tests/vault.test.mjs` (53/53 Passing)  
 > **Scope:** Unified multi-page on-device persistence for Know Your Finance (KYF) and reusable generic storage engine for all Vividnova web applications.
 
 ---
@@ -22,7 +22,7 @@ If a user configured their portfolio and goals, then navigated to `cadence.html`
 ### The Solution
 A unified, two-tier architecture implemented in a single shared file: [`js/kyf-vault.js`](file:///C:/Venkatesh/KYF/js/kyf-vault.js):
 1. **Tier 1 — `VividVault` (Generic Engine):** An application-agnostic, zero-dependency client-side file save/open and vault management engine ready to be dropped into **any** Vividnova app (*Canvas*, *WordPower*, *Calculators*, etc.).
-2. **Tier 2 — `KYF_VAULT` (KYF Specialization):** A concrete instance tailored for Know Your Finance that unifies all four financial domains (Cadence, Portfolio Holdings, Portfolio Goals, and Life Goals) across IndexedDB and `localStorage` with non-destructive passthrough guarantees.
+2. **Tier 2 — `KYF_VAULT` (KYF Specialization):** A concrete instance tailored for Know Your Finance that unifies all core financial domains (Cadence Roadmap, Portfolio Holdings, Unified Life & Portfolio Goals with `SAVE` vs `COVER` kinds, and First-Class Family Members) across IndexedDB and `localStorage` with non-destructive passthrough guarantees.
 
 ---
 
@@ -41,14 +41,15 @@ A unified, two-tier architecture implemented in a single shared file: [`js/kyf-v
                                     │ configures & registers sections
 ┌───────────────────────────────────▼────────────────────────────────────┐
 │  Tier 2: KYF_VAULT (Know Your Finance Specialization)                  │
-│  - App metadata: "Know Your Finance", .kyf, "kyf-vault", v2.0.0       │
-│  - Section 1: "cadence"        -> localStorage: kyf_cadence_v3         │
-│  - Section 2: "portfolio"      -> IndexedDB: KYF_PORTFOLIO_DB.holdings │
-│  - Section 3: "portfolioGoals" -> IndexedDB: KYF_PORTFOLIO_DB.goals    │
-│  - Section 4: "goals"          -> localStorage: kyf_goals_v1           │
-│  - Section 5: "members"        -> IndexedDB: KYF_PORTFOLIO_DB.members  │
-│  - Extra passthrough data      -> localStorage: _kyf_vault_extra       │
-│  - Payload normalizer supporting legacy bare-arrays & v1 exports       │
+│  - App metadata: "Know Your Finance", .kyf, "kyf-vault", v3.0.0       │
+│  - Section 1: "cadence"   -> localStorage: kyf_cadence_v3              │
+│  - Section 2: "portfolio" -> IndexedDB: KYF_PORTFOLIO_DB.holdings      │
+│  - Section 3: "goals"     -> IndexedDB: KYF_PORTFOLIO_DB.goals         │
+│                              (Unified schema: SAVE & COVER; absorbs    │
+│                               retired kyf_goals_v1 via mergeGoalLists) │
+│  - Section 4: "members"   -> IndexedDB: KYF_PORTFOLIO_DB.members       │
+│  - Extra passthrough data -> localStorage: _kyf_vault_extra            │
+│  - Payload normalizer supporting legacy bare-arrays, v1/v2 files       │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ loaded by every page
 ┌───────────────────────────────────▼────────────────────────────────────┐
@@ -65,32 +66,32 @@ A unified, two-tier architecture implemented in a single shared file: [`js/kyf-v
 
 ## 3. Data Schema & Vault Envelope Specification
 
-### Canonical `.kyf` Envelope (`v2.0.0`)
+### Canonical `.kyf` Envelope (`v3.0.0`)
 All `.kyf` vault files follow this standard structured JSON format:
 
 ```json
 {
   "app": "Know Your Finance",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "fileType": "kyf-vault",
   "encrypted": false,
-  "savedAt": "2026-11-09T06:00:00.000Z",
+  "savedAt": "2026-11-13T12:00:00.000Z",
   "data": {
     "cadence": [
       {
-        "id": "goal-home",
-        "title": "Home Purchase Down Payment",
-        "section": "goals",
-        "category": "Milestone",
+        "id": "cad_tax",
+        "title": "Advance Tax Q4 Due",
+        "section": "tax",
+        "category": "Quarterly",
         "status": "active",
-        "dueDate": "2026-12-31"
+        "dueDate": "2026-12-15"
       }
     ],
     "portfolio": [
       {
         "id": "hold_eq_sbin",
         "name": "State Bank of India",
-        "member": "Rajesh",
+        "member": "Self",
         "custodian": "Zerodha",
         "assetClass": "Equities",
         "pricingMode": "LIVE_EQUITY",
@@ -99,25 +100,47 @@ All `.kyf` vault files follow this standard structured JSON format:
         "allocations": [{ "goalId": "goal_retirement", "percentage": 70 }]
       }
     ],
-    "portfolioGoals": [
+    "goals": [
       {
         "id": "goal_retirement",
         "name": "Financial Independence / Retirement",
         "icon": "🌴",
+        "category": "retirement",
+        "kind": "SAVE",
+        "priority": "ESSENTIAL",
+        "status": "ACTIVE",
         "targetYear": 2038,
         "baseTargetINR": 35000000,
         "inflationCategory": "CPI",
-        "priority": "HIGH"
-      }
-    ],
-    "goals": [
+        "inflationRate": null,
+        "expectedReturn": 12.0,
+        "manualSavedINR": 0,
+        "ownerId": "mem_self",
+        "notes": "Work-optional target corpus",
+        "templateId": "work_optional",
+        "createdAt": "2026-11-09T06:00:00.000Z"
+      },
       {
-        "id": "goal-retire",
-        "title": "Financial Freedom & Retirement Corpus",
-        "category": "retirement",
-        "presentValue": 25000000,
-        "inflationRate": 6.0,
-        "expectedReturn": 12.0
+        "id": "goal_term_life",
+        "name": "Term Life Protection Cover",
+        "icon": "👨‍👩‍👧",
+        "category": "other",
+        "kind": "COVER",
+        "priority": "ESSENTIAL",
+        "status": "ACTIVE",
+        "targetYear": 0,
+        "baseTargetINR": 0,
+        "coverNeededINR": 25000000,
+        "coverInPlaceINR": 10000000,
+        "annualPremiumINR": 18500,
+        "inflationCategory": "CPI",
+        "inflationRate": null,
+        "expectedReturn": null,
+        "manualSavedINR": 0,
+        "ownerId": "mem_self",
+        "notes": "10-15x income replacement cover",
+        "templateId": "term_life",
+        "createdAt": "2026-11-09T06:00:00.000Z"
       }
     ],
     "members": [
@@ -125,7 +148,7 @@ All `.kyf` vault files follow this standard structured JSON format:
       { "id": "mem_spouse", "name": "Spouse", "role": "Spouse", "avatar": "👩" },
       { "id": "mem_aarav", "name": "Aarav", "role": "Child", "avatar": "👦" }
     ],
-    "marketReviewDate": "2026-11-09T06:00:00.000Z"
+    "marketReviewDate": "2026-11-13T12:00:00.000Z"
   }
 }
 ```
@@ -136,10 +159,26 @@ All `.kyf` vault files follow this standard structured JSON format:
 | :--- | :--- | :--- | :--- |
 | **`cadence`** | Active page `activities` | `localStorage["kyf_cadence_v3"]` | `kyf_cadence_v2`, `kyf_cadence_v1` |
 | **`portfolio`** | Active page `rawHoldings` | IndexedDB `KYF_PORTFOLIO_DB` (`holdings`) | `localStorage["kyf_user_holdings"]` |
-| **`portfolioGoals`** | Active page `rawGoals` | IndexedDB `KYF_PORTFOLIO_DB` (`goals`) | `localStorage["kyf_user_goals"]` |
-| **`goals`** | Active page `goals` | `localStorage["kyf_goals_v1"]` | — |
+| **`goals`** (Unified) | Active page `rawGoals` / `goals` | IndexedDB `KYF_PORTFOLIO_DB` (`goals`) | `localStorage["kyf_user_goals"]` (absorbs legacy `kyf_goals_v1`) |
 | **`members`** | Active page `rawMembers` | IndexedDB `KYF_PORTFOLIO_DB` (`members`) | `localStorage["kyf_user_members"]` |
 | **Extra Data** | Page-specific state / future extensions | `localStorage["_kyf_vault_extra"]` | In-memory passthrough |
+
+---
+
+### Unified Goals Specification: `SAVE` vs `COVER`
+
+In v3.0.0, life planner goals and portfolio envelopes are unified into a single model defined in `js/kyf-goals.js` (`window.KYF_GOALS`) and stored under `data.goals[]`. Each goal declares its architectural `kind`:
+
+| Dimension | `kind: "SAVE"` (Default / Corpus Accumulation) | `kind: "COVER"` (Risk Protection Shield) |
+| :--- | :--- | :--- |
+| **Primary Intent** | Wealth creation / corpus accumulation by a target year (Retirement, Child Education, Home Down Payment, Emergency Buffer). | Risk protection / insurance adequacy today (Term Life, Health Insurance / Super Top-Up, Personal Accident & Disability). |
+| **Target Timing** | `targetYear` (e.g. `2032`, `2038`). | `targetYear: 0` (ongoing risk shield; no expiration milestone). |
+| **Target Sizing** | `baseTargetINR` (target cost in today's rupee values). | `coverNeededINR` (statutory / calculated risk cover requirement). |
+| **In-Force Sizing** | Derived from Portfolio virtual allocations (`allocations: [{ goalId, percentage }]`) + `manualSavedINR`. | `coverInPlaceINR` (sum assured across all active in-force insurance policies). |
+| **Annual Premium** | N/A (monthly SIP / investment required). | `annualPremiumINR` (annual premium outlay paid for policies in force). |
+| **Inflation Category**| `CPI`, `EDUCATION`, `MEDICAL`, or `CUSTOM` (`inflationRate`). | Defaults to `CPI` / `MEDICAL`; no compounding applied. |
+| **Expected Return** | `expectedReturn` (% p.a. or derived from time horizon). | `expectedReturn: null` (protection policies carry no investment return). |
+| **Portfolio Funding**| **Funded from Holdings:** virtual percentage slices of stocks, mutual funds, gold, etc. fund this goal. | **NEVER Funded from Holdings:** risk shields cannot be liquidated or funded by portfolio lots. Any allocation to a `COVER` goal falls back to Unallocated. |
 
 ---
 
@@ -151,21 +190,26 @@ The core innovation that prevents data loss across pages is **non-destructive ro
    - The vault queries the active page hook (`hook.getLocalData()`) for any unsaved in-memory state.
    - For every registered section *not* modified by the current page, the vault reads the latest persisted state from IndexedDB or `localStorage`.
    - The vault merges all extra/unrecognized keys from `localStorage["_kyf_vault_extra"]`.
-   - Result: Saving from `cadence.html` reads portfolio from IndexedDB and goals from `localStorage`, outputting a 100% complete `.kyf` file.
+   - Result: Saving from `cadence.html` reads portfolio from IndexedDB and unified goals from `localStorage`/IndexedDB, outputting a 100% complete `.kyf` file.
 
 2. **On Open on ANY Page:**
    - The normalizer inspects the incoming file.
-   - Registered sections (`cadence`, `portfolio`, `portfolioGoals`, `goals`) are written to their respective IndexedDB and `localStorage` stores.
+   - Registered sections (`cadence`, `portfolio`, `goals`, `members`) are written to their respective IndexedDB and `localStorage` stores.
    - Any unknown/future keys (e.g. `budget`, `customTags`, `marketReviewDate`) are saved into `_kyf_vault_extra`.
    - Active page hook (`hook.onAfterOpen()`) is called so the currently visible page updates its UI immediately without a page reload.
 
-3. **Intelligent Legacy Normalization:**
+3. **Intelligent Legacy Normalization & Automatic Upgrades:**
+   - **Unified Goals Migration:**
+     - v1 and v2 files carrying separate `portfolioGoals` (from portfolio) and `goals` (from planner) are seamlessly unified by `unifyGoals()` / `KYF_GOALS.mergeGoalLists()` into a single `data.goals` array.
+     - The retired planner store (`localStorage["kyf_goals_v1"]`) is absorbed on first read/write and deleted from `localStorage`.
+     - Legacy fields mapped: `presentValue` ➔ `baseTargetINR`, `currentSavings` ➔ `manualSavedINR`, `years` ➔ `targetYear = currentYear + years`, `priority: "COMPLETED"` ➔ `status: "ACHIEVED"`.
+   - **Cadence Migration:**
+     - Older files carrying generic starter milestone cards in Cadence are safely pruned via `KYF_GOALS.migrateCadence()`, delegating all milestones cleanly to the Goals module.
    - **Bare arrays:** Detected by inspecting first element:
      - `recurrence` / `cadenceCategory` ➔ parsed as `cadence`.
      - `assetClass` / `instrumentMeta` ➔ parsed as `portfolio`.
-     - `presentValue` / `inflationRate` ➔ parsed as planner `goals`.
-     - `targetYear` / `baseTargetINR` ➔ parsed as `portfolioGoals`.
-   - **Old `v1.x` Files:** Disambiguates `data.goals` between Portfolio Envelopes (`targetYear`) and Life Planner Goals (`presentValue`).
+     - `presentValue` / `inflationRate` / `targetYear` / `baseTargetINR` ➔ normalized as unified `goals`.
+     - `avatar` / `role` / `member` ➔ parsed as `members`.
 
 ---
 
@@ -175,7 +219,7 @@ The core innovation that prevents data loss across pages is **non-destructive ro
 
 Every KYF HTML page includes the script:
 ```html
-<script src="js/kyf-vault.js?v=1.4.8"></script>
+<script src="js/kyf-vault.js?v=1.11.1"></script>
 ```
 
 #### Basic Page (View-Only / Calculator):
@@ -289,7 +333,7 @@ When password protection is enabled, the outer `.kyf` envelope structure becomes
 ```json
 {
   "app": "Know Your Finance",
-  "version": "2.1.0",
+  "version": "3.1.0",
   "fileType": "kyf-vault",
   "encrypted": true,
   "savedAt": "2026-11-09T08:00:00.000Z",
@@ -310,7 +354,7 @@ When password protection is enabled, the outer `.kyf` envelope structure becomes
 }
 ```
 
-The decrypted `ciphertext` produces the standard `data: { cadence, portfolio, portfolioGoals, goals, ... }` payload.
+The decrypted `ciphertext` produces the standard `data: { cadence, portfolio, goals, members, ... }` payload.
 
 ---
 

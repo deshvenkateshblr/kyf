@@ -233,7 +233,7 @@ console.log("\n[TEST GROUP 6] Smart Upsert & Goal Envelope Preservation");
 test("Upsert adds new holding and updates existing holding matching ISIN", () => {
   const existing = [
     {
-      id: "hold_orig_1",
+      id: "hold_imp_orig_1",
       name: "360 ONE WAM LIMITED",
       member: "Self",
       custodian: "Zerodha",
@@ -289,7 +289,7 @@ test("Upsert adds new holding and updates existing holding matching ISIN", () =>
 
   const updated360 = updated.find(h => h.instrumentMeta.isin === "INE466L01038");
   assert.ok(updated360);
-  assert.equal(updated360.id, "hold_orig_1", "Original ID was preserved");
+  assert.equal(updated360.id, "hold_imp_orig_1", "Original ID was preserved");
   assert.equal(updated360.units, 25, "Units updated to 25");
   assert.equal(updated360.investedValue, 27000, "Invested value updated to 27,000");
   assert.equal(updated360.allocations.length, 1, "Goal allocations PRESERVED");

@@ -292,7 +292,33 @@ document.addEventListener("DOMContentLoaded", async () => {
       const niftyRetSign = niftyRetVal >= 0 ? "+" : "";
       const niftyFormatted = Number(niftyRetVal).toFixed(1);
 
-      const goldRetVal = metals.goldRet1y != null ? metals.goldRet1y : (metals.goldRet1m || 0);
+      let goldRetVal = metals.goldRet1y;
+      let goldHorizon = "1Y";
+
+      // If goldRet1y is null/undefined, try resolving 1Y return from GOLDBEES in KYF_MARKET_EQUITIES
+      if (goldRetVal == null && window.KYF_MARKET_EQUITIES && Array.isArray(window.KYF_MARKET_EQUITIES.stocks)) {
+        const goldSym = metals.goldBenchmarkSymbol || "GOLDBEES";
+        const eqData = window.KYF_MARKET_EQUITIES;
+        const colIdx = eqData.columns ? eqData.columns.indexOf("ret1y") : 6;
+        const eqCol = colIdx >= 0 ? colIdx : 6;
+        const goldStock = eqData.stocks.find(s => s[0] === goldSym || s[0] === "GOLDBEES");
+        if (goldStock && goldStock[eqCol] != null) {
+          goldRetVal = goldStock[eqCol];
+          goldHorizon = "1Y";
+        }
+      }
+
+      // If 1Y is still not available, fall back to 1M return and label accurately as 1M
+      if (goldRetVal == null) {
+        if (metals.goldRet1m != null) {
+          goldRetVal = metals.goldRet1m;
+          goldHorizon = "1M";
+        } else {
+          goldRetVal = 0;
+          goldHorizon = "1Y";
+        }
+      }
+
       const goldRetSign = goldRetVal >= 0 ? "+" : "";
       const goldFormatted = Number(goldRetVal).toFixed(1);
 
@@ -308,7 +334,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <span class="ticker-sep">&bull;</span>
         <span class="ticker-item">
           <strong>Gold 24K:</strong> ₹${metals.gold24kPerGram ? Number(metals.gold24kPerGram).toLocaleString("en-IN") : "13,800"}/g
-          <span class="ticker-badge ${goldRetVal >= 0 ? "positive" : "negative"}">${goldRetSign}${goldFormatted}% 1Y</span>
+          <span class="ticker-badge ${goldRetVal >= 0 ? "positive" : "negative"}">${goldRetSign}${goldFormatted}% ${goldHorizon}</span>
         </span>
         <span class="ticker-sep">&bull;</span>
         <span class="ticker-item">

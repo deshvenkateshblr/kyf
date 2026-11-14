@@ -87,4 +87,19 @@ const slices = E.expandGoalSlices([{ id: "h", name: "FD", assetClass: "Fixed Inc
   { id: "save1", name: "Home", baseTargetINR: 1000000, targetYear: 2032, inflationCategory: "CPI" }
 ]);
 ok(slices.slices.length === 1 && slices.slices[0].goalId !== "cover1", `money tagged to a cover goal falls to Unallocated, not into it (${slices.slices[0].goalId})`);
+
+console.log("KYF-QA-010  Gold 1Y return fallback when goldRet1y is null");
+const ctxGold = { window: {}, console };
+ctxGold.window.KYF_MARKET_PULSE = { asOf: "2026-11-08", preciousMetals: { gold24kPerGram: 14280, gold22kPerGram: 13090, goldRet1y: null } };
+ctxGold.window.KYF_MARKET_EQUITIES = {
+  columns: ["symbol", "companyName", "closePrice", "ret1m", "ret3m", "ret6m", "ret1y", "isN500", "isin"],
+  stocks: [["GOLDBEES", "NIP IND ETF GOLD BEES", 112.71, -7.04, -10.87, -9.55, 11.64, 0, "INF204KB17I5"]]
+};
+ctxGold.window.KYF_MARKET_MF = { schemes: [] };
+vm.createContext(ctxGold);
+vm.runInContext(readFileSync("js/portfolio-engine.js", "utf8"), ctxGold);
+const EGold = ctxGold.window.KYF_PORTFOLIO_ENGINE;
+const enrichedGold = EGold.enrichHoldingsWithLiveMarket([{ id: "g_fallback", name: "Gold bar", assetClass: "Commodities & Gold", pricingMode: "LIVE_GOLD", instrumentMeta: { grams: 10, purity: "24K" } }], "1y")[0];
+ok(enrichedGold.ret1y === 11.64, `physical gold with null goldRet1y falls back to GOLDBEES 1Y return (got ${enrichedGold.ret1y}%)`);
+
 console.log(`\n${passed} passed`);
