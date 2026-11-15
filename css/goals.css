@@ -367,10 +367,12 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 100; letter-spacing: -0.015
 .empty-state p { color: var(--muted); margin: 0 0 12px; }
 
 /* ---------- Goal drawer (shell styles live in css/kyf-drawer.css) ---------- */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 16px; align-items: end; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; align-items: start; }
 .form-group { margin-bottom: 14px; }
 /* Inside a grid the grid gap spaces the rows; a label that wraps must not push its input out of line */
-.form-grid > .form-group { margin-bottom: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+.form-grid > .form-group { margin-bottom: 16px; display: grid; grid-template-rows: subgrid; grid-row: span 3; row-gap: 0; }
+.form-grid > .form-group[hidden] { display: none; }
+.form-grid > .form-group > .field-hint { grid-row: 3; }
 .form-grid > .form-group > label { margin-bottom: 6px; }
 .form-group.full { grid-column: span 2; }
 @media (max-width: 520px) {
