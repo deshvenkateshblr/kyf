@@ -95,6 +95,13 @@
     }
   }
 
+  // Your plan strip: recomputed from what is on screen, so it moves the moment something is saved
+  function refreshJourney() {
+    const J = window.KYF_JOURNEY, host = document.getElementById("journeyStrip");
+    if (!J || !host) return;
+    J.render(host, J.compute(goals, holdings), { compact: true, current: "goals" });
+  }
+
   async function persistGoals() {
     try {
       await vault.sections.get("goals").write(goals);
@@ -123,11 +130,6 @@
     return m ? m.name : "";
   }
 
-  function checklistState(g) {
-    const p = G.taskProgress(cadence, g.id);
-    if (p.total) return p;
-    return { total: G.checklistFor(g).length, done: 0 };
-  }
 
   // -------------------------------------------------------------------------
   // Discovery: ask box + idea chips
@@ -223,8 +225,28 @@
       case "cover_gap": return { cls: "warn", text: `Cover gap ${formatINR(c.coverGap, true)}` };
       case "funded": return { cls: "ok", text: "✔ Fully funded by growth" };
       case "due": return { cls: "warn", text: `Due now — ${formatINR(c.gap, true)} short` };
-      default: return { cls: "sip", text: `Needs ${formatINR(c.sip)} / month` };
+      default: return { cls: "sip", text: `${formatINR(c.sip)} a month gets you there` };
     }
+  }
+
+  // "Your steps": money first (derived, never asked), then the goal's own checklist from Cadence
+  function stepsHtml(g, c) {
+    if (g.kind === "COVER") return "";
+    const tasks = cadence.filter((a) => a.goalId === g.id);
+    const list = tasks.length ? tasks : G.checklistFor(g);
+    const open = list.filter((a) => a.status !== "done");
+    const funded = (c.saved || 0) > 0;
+    const total = list.length + 1;
+    const done = (list.length - open.length) + (funded ? 1 : 0);
+    const pct = Math.round((done / total) * 100);
+    const items = [`<li class="${funded ? "is-done" : ""}"><span aria-hidden="true">${funded ? "✓" : "○"}</span> Set money aside for this${funded ? "" : ` <a href="${holdings.length ? "portfolio.html?assign=1" : "portfolio.html"}">${holdings.length ? "Give it money" : "Add what you own"} &rarr;</a>`}</li>`]
+      .concat(open.slice(0, 2).map((a) => `<li><span aria-hidden="true">○</span> ${escapeHtml(a.title)}</li>`));
+    return `<div class="goal-steps">
+        <div class="gs-head"><strong>Your steps</strong><span>${done} of ${total} done</span></div>
+        <span class="row-bar"><span class="row-bar-fill" style="width:${pct}%"></span></span>
+        <ul class="gs-list">${items.join("")}</ul>
+        <a class="checklist-link" href="cadence.html?goal=${encodeURIComponent(g.id)}">See all steps &rarr;</a>
+      </div>`;
   }
 
   function rowHtml(g, c) {
@@ -232,12 +254,11 @@
     const cat = G.CATEGORIES[g.category] || G.CATEGORIES.other;
     const owner = ownerName(g);
     const st = unanswered ? { cls: "needs", text: "Tell us what you already have" } : statusLine(g, c);
-    const list = checklistState(g);
     const horizonClass = g.kind === "COVER" ? "kind-cover" : (c.years <= 3 ? "horizon-short" : (c.years <= 7 ? "horizon-medium" : "horizon-long"));
     const savedParts = [];
     if (c.portfolioSaved) savedParts.push(`${formatINR(c.portfolioSaved, true)} in Portfolio`);
     if (g.manualSavedINR) savedParts.push(`${formatINR(g.manualSavedINR, true)} set aside`);
-    const savedNote = savedParts.length ? savedParts.join(" + ") : "Nothing tagged yet";
+    const savedNote = savedParts.length ? savedParts.join(" + ") : "Give a holding to this goal and the bar starts to fill";
     const infl = g.inflationCategory === "CUSTOM" ? "your rate" : g.inflationCategory.toLowerCase();
     const isOpen = expanded.has(g.id) ? " open" : "";
 
@@ -274,13 +295,13 @@
             <span class="row-sub">${escapeHtml(isCover ? "Protection" : cat.label)}${isCover ? "" : ` &middot; ${g.targetYear ? (c.years === 0 ? "due now" : g.targetYear) : "no date"}`}${owner ? ` &middot; 👤 ${escapeHtml(owner)}` : ""}</span>
           </span>
           <span class="row-status row-status--${st.cls}">${escapeHtml(st.text)}</span>
-          <span class="row-bar" aria-hidden="true"><span class="row-bar-fill" style="width:${c.hasAmount ? c.fundedPct : 0}%"></span></span>
+          <span class="row-progress" title="${c.hasAmount ? c.fundedPct : 0}% of the way there"><span class="row-bar" aria-hidden="true"><span class="row-bar-fill" style="width:${c.hasAmount ? c.fundedPct : 0}%"></span></span><small>${c.hasAmount ? c.fundedPct : 0}%</small></span>
           <span class="row-chevron" aria-hidden="true">▾</span>
         </summary>
         <div class="goal-row-body">
           ${detail}
+          ${stepsHtml(g, c)}
           <div class="card-footer">
-            <a class="checklist-link" href="cadence.html?goal=${encodeURIComponent(g.id)}">☑ ${list.done}/${list.total} steps</a>
             <div class="card-btns">
               ${c.hasAmount ? "" : `<button class="icon-btn primary-soft" data-action="number">➕ Add a number</button>`}
               ${unanswered ? `<button class="icon-btn primary-soft" data-action="funding">➕ What I already have</button>` : ""}
@@ -305,7 +326,12 @@
     $("metricTotalCount").textContent = open.length;
     $("metricTotalFV").textContent = formatINR(totalFuture, true);
     $("metricTotalSIP").textContent = formatINR(afford.totalSip, true);
-    $("metricFundedPct").textContent = (totalFuture > 0 ? Math.round((totalSavedFV / totalFuture) * 100) : 0) + "%";
+    const fundedPct = totalFuture > 0 ? Math.round((totalSavedFV / totalFuture) * 100) : 0;
+    $("metricFundedPct").textContent = fundedPct + "%";
+    $("pulseBar").style.width = fundedPct + "%";
+    $("planPulse").textContent = open.length === 1
+      ? (fundedPct > 0 ? `One goal, ${fundedPct}% of the way there. Every rupee you give it moves the bar.` : "One goal named. That is the hardest part done. Give it some money and watch the bar move.")
+      : (fundedPct > 0 ? `${open.length} goals, together ${fundedPct}% of the way there. Keep going, one goal at a time.` : `${open.length} goals named. Give each one some money and watch the bars move.`);
 
     const note = $("needsNumberNote");
     note.hidden = unpriced === 0;
@@ -340,6 +366,7 @@
   }
 
   function render() {
+    refreshJourney();
     renderIdeaChips();
     const has = goals.length > 0;
     $("planSection").hidden = !has;
@@ -381,7 +408,7 @@
     document.querySelectorAll('#goalForm [data-kind="save"]').forEach((el) => { el.hidden = cover; });
     document.querySelectorAll('#goalForm [data-kind="cover"]').forEach((el) => { el.hidden = !cover; });
     $("goalYearInput").required = !cover;
-    $("goalOwnerLabel").textContent = cover ? "Who is covered?" : "Whose goal?";
+    $("goalOwnerGroup").hidden = !cover;
     $("helpToggleBtn").textContent = cover ? "Not sure how much cover? Help me work it out" : "Not sure of the number? Help me work it out";
     if (cover) $("customInflationGroup").hidden = true;
   }
@@ -404,7 +431,6 @@
     $("goalInflationInput").value = g.inflationCategory || "CPI";
     $("goalCustomRateInput").value = g.inflationRate != null ? g.inflationRate : 6;
     $("goalReturnInput").value = g.expectedReturn != null ? g.expectedReturn : "";
-    $("goalDescInput").value = g.notes || "";
     $("moreOptions").open = false;
     goNextAfterSave = false;
     initFunding(g);
@@ -434,14 +460,14 @@
       icon: existing ? existing.icon : (currentIdea ? currentIdea.icon : (G.CATEGORIES[$("goalCategoryInput").value] || {}).icon),
       priority: $("goalPriorityInput").value,
       status: existing ? existing.status : "ACTIVE",
-      ownerId: $("goalOwnerInput").value,
+      ownerId: $("goalOwnerGroup").hidden ? (existing ? existing.ownerId : "") : $("goalOwnerInput").value,
       targetYear: year,
       baseTargetINR: Number($("goalPvInput").value) || 0,
       manualSavedINR: Number($("goalSavedInput").value) || 0,
       inflationCategory: $("goalInflationInput").value,
       inflationRate: Number($("goalCustomRateInput").value),
       expectedReturn: ret === "" ? null : Number(ret),
-      notes: $("goalDescInput").value.trim(),
+      notes: existing ? existing.notes : "",
       templateId: $("goalTemplateId").value,
       retirement: retirementForGoal(),
       kind: $("goalKind").value,
@@ -813,6 +839,8 @@
       render();
     }));
 
+    const newBtn = $("newGoalBtn");
+    if (newBtn) newBtn.addEventListener("click", () => { window.scrollTo({ top: 0, behavior: "smooth" }); $("askInput").focus(); });
     $("surplusInput").addEventListener("input", (e) => {
       const v = Number(e.target.value);
       settings = Object.assign({}, settings, { monthlySurplusINR: v > 0 ? v : 0 });

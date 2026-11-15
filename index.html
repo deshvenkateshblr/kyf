@@ -7,7 +7,8 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>KYF — Know Your Finance</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/home.css?v=1.15.0">
+  <link rel="stylesheet" href="css/home.css?v=1.16.0">
+  <link rel="stylesheet" href="css/journey.css?v=1.16.0">
 </head>
 <body>
 
@@ -27,7 +28,7 @@
             <a href="#trust">Privacy &amp; Limits</a>
           </div>
         </div>
-        <a class="btn btn-nav" href="goals.html">Start &rarr;</a>
+        <a class="btn btn-nav" id="navStart" href="portfolio.html">Start &rarr;</a>
       </nav>
     </div>
   </header>
@@ -43,7 +44,7 @@
           </h1>
           <p class="lede">Welcome to your personal, privacy-first financial field guide and pocket-calculator app that empowers you to do exactly that.</p>
           <div class="cta-row">
-            <a class="btn" href="goals.html" aria-label="Start Life Goals Planner">Start with Goals &rarr;</a>
+            <a class="btn" id="heroStart" href="portfolio.html" aria-label="Start building your plan">Build your plan &rarr;</a>
             <a class="btn secondary" href="#tools">See what&rsquo;s inside</a>
           </div>
           <p class="micro"><span>No sign-up</span><span>Runs in your browser</span><span>Free</span></p>
@@ -143,11 +144,13 @@
           <p>Start anywhere. What you enter in one tool is available in the others.</p>
         </div>
 
-        <ol class="start-path reveal" aria-label="A good first path">
-          <li><a href="goals.html"><span class="sp-num">1</span><span class="sp-text"><strong>Name what matters</strong><small>Add a goal: home, college, retirement</small></span></a></li>
-          <li><a href="portfolio.html"><span class="sp-num">2</span><span class="sp-text"><strong>Add what you own</strong><small>Search a fund, stock or gold, or import from your broker</small></span></a></li>
-          <li><a href="cadence.html"><span class="sp-num">3</span><span class="sp-text"><strong>Make it a habit</strong><small>Tick off the steps and yearly chores</small></span></a></li>
-        </ol>
+        <div id="journeyStrip" class="reveal">
+          <ol class="start-path" aria-label="Your plan in three steps">
+            <li><a href="portfolio.html"><span class="sp-num">1</span><span class="sp-text"><strong>Build your portfolio</strong><small>Add what you own, or import it from your broker</small></span></a></li>
+            <li><a href="goals.html"><span class="sp-num">2</span><span class="sp-text"><strong>Name your goals</strong><small>Home, college, retirement: what are you saving for?</small></span></a></li>
+            <li><a href="portfolio.html?assign=1"><span class="sp-num">3</span><span class="sp-text"><strong>Give money a job</strong><small>Match each holding to the goal it serves</small></span></a></li>
+          </ol>
+        </div>
 
         <div id="toolGroups" class="tool-groups"></div>
         <noscript>
@@ -300,13 +303,14 @@
   </footer>
 
 
-  <script src="js/kyf-goals.js?v=1.15.0"></script>
-  <script src="js/kyf-vault.js?v=1.15.0"></script>
-  <script src="data/kyf-terms.js?v=1.15.0"></script>
-  <script src="js/kyf-footer.js?v=1.15.0"></script>
-  <script src="js/kyf-features.js?v=1.15.0"></script>
-  <script src="js/kyf-nav.js?v=1.15.0"></script>
-  <script src="js/kyf-home.js?v=1.15.0"></script>
-  <script src="js/kyf-money-word.js?v=1.15.0"></script>
+  <script src="js/kyf-goals.js?v=1.16.0"></script>
+  <script src="js/kyf-vault.js?v=1.16.0"></script>
+  <script src="data/kyf-terms.js?v=1.16.0"></script>
+  <script src="js/kyf-journey.js?v=1.16.0"></script>
+  <script src="js/kyf-footer.js?v=1.16.0"></script>
+  <script src="js/kyf-features.js?v=1.16.0"></script>
+  <script src="js/kyf-nav.js?v=1.16.0"></script>
+  <script src="js/kyf-home.js?v=1.16.0"></script>
+  <script src="js/kyf-money-word.js?v=1.16.0"></script>
 </body>
 </html>

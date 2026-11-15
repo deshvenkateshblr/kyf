@@ -20,7 +20,10 @@ ok(await page.locator(".tool-card").count() === 6, "6 tool cards");
 for (const h of ["goals.html","cadence.html","portfolio.html","market-performance.html","real-estate-calculator.html"])
   ok(await page.locator(`.tool-card a[href="${h}"]`).count() === 1, "card link " + h);
 ok(await page.locator("#welcomeBack").count() === 0, "no Welcome back strip on home");
-ok(await page.locator('.start-path li').count() === 3, "3-step path");
+await page.waitForSelector('.jr-step');
+ok(await page.locator('.jr-step').count() === 3, "3-step plan strip");
+ok((await page.locator('.jr-step strong').allTextContents()).join('|') === 'Build your portfolio|Name your goals|Give money a job', 'steps run portfolio, goals, assign');
+ok((await page.locator('#heroStart').getAttribute('href')) === 'portfolio.html', 'a new visitor is sent to step 1');
 ok(await page.locator("#tools").isVisible(), "tools section visible");
 for (const w of [360, 390, 768]) {
   await page.setViewportSize({ width: w, height: 800 });
@@ -29,11 +32,11 @@ for (const w of [360, 390, 768]) {
 }
 await page.setViewportSize({ width: 390, height: 800 });
 const styled = await page.evaluate(() => {
-  const li = document.querySelector(".start-path");
+  const li = document.querySelector(".jr-steps");
   const card = document.querySelector(".tool-card");
   return { listStyle: getComputedStyle(li).listStyleType, cardBorder: getComputedStyle(card).borderTopWidth, cardRadius: getComputedStyle(card).borderTopLeftRadius };
 });
-ok(styled.listStyle === "none", "start path has no default bullets/numbers");
+ok(styled.listStyle === "none", "plan steps have no default bullets/numbers");
 ok(styled.cardBorder !== "0px" && styled.cardRadius !== "0px", "tool cards are styled");
 const btnBg = await page.evaluate(() => getComputedStyle(document.querySelector(".tool-card .btn")).display);
 ok(btnBg !== "inline", "tool card button styled");

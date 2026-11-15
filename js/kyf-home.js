@@ -57,6 +57,19 @@
 
   renderTools();
 
+  // Your plan: three steps with progress. The main buttons always point at the next step.
+  if (window.KYF_JOURNEY) {
+    window.KYF_JOURNEY.mount("#journeyStrip").then(function (model) {
+      if (!model || !model.next) return;
+      ["heroStart", "navStart"].forEach(function (id) {
+        var a = document.getElementById(id);
+        if (a) a.href = model.next.href;
+      });
+      var hero = document.getElementById("heroStart");
+      if (hero && model.overall > 0) hero.textContent = "Continue your plan \u2192";
+    });
+  }
+
   // Lets Open (top bar) restore a .kyf file from the home page
   if (window.KYF_VAULT && typeof window.KYF_VAULT.registerPageHook === "function") {
     window.KYF_VAULT.registerPageHook({

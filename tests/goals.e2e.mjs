@@ -222,7 +222,7 @@ check((await page.locator("#goalPortfolioHint").count()) === 1 && !(await page.l
 
 console.log("[4] Checklist lives in Cadence");
 const goalId = await page.locator("#goalList .goal-row", { hasText: "Child's education" }).getAttribute("data-id");
-check((await page.locator("#goalList .goal-row", { hasText: "Child's education" }).locator(".checklist-link").textContent()).includes("0/4"), "goal shows 0/4 steps");
+check((await page.locator("#goalList .goal-row", { hasText: "Child's education" }).locator(".gs-head span").textContent()).includes("0 of 5"), "goal shows 0 of 5 steps done (money + its 4 steps)");
 await page.goto(cadenceUrl + "?goal=" + goalId);
 await page.waitForSelector(".goal-group-head");
 check((await page.locator("#goalsGrid .act-card").count()) === 4, "Cadence lists the goal's 4 steps");
@@ -235,8 +235,8 @@ await page.locator('#goalsGrid .quick-done-btn').first().click();
 check((await page.textContent(".goal-group-progress")).includes("1/"), "ticking a step updates the group progress");
 await page.goto(goalsUrl);
 await page.waitForSelector("#goalList .goal-row");
-const steps = (await page.locator("#goalList .goal-row", { has: page.locator(".row-name", { hasText: /^Child's education$/ }) }).locator(".checklist-link").first().textContent()).trim();
-check(steps.includes("1/4 steps") || steps.includes("/4 steps"), `Goals page reflects Cadence progress (${steps})`);
+const steps = (await page.locator("#goalList .goal-row", { has: page.locator(".row-name", { hasText: /^Child's education$/ }) }).locator(".gs-head span").first().textContent()).trim();
+check(steps.includes("1 of 5"), `Goals page reflects Cadence progress (${steps})`);
 
 console.log("[5] Import an older (v2) file: both goal lists merge, Portfolio funds the goal");
 const v2 = {

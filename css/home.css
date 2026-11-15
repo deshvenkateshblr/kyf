@@ -386,3 +386,6 @@ em.accent { color: var(--teal); }
 .tool-secondary { color: var(--teal); font-size: 13px; font-weight: 600; }
 .vault-note { margin-top: 8px; padding: 14px 18px; border-radius: 10px; background: #fff; border: 1px dashed var(--line); font-size: 14px; color: var(--ink-soft); }
 @media (max-width: 720px) { .start-path { grid-template-columns: 1fr; } }
+
+#journeyStrip .journey { padding: 0; }
+#journeyStrip .jr-head { font-size: 16px; }

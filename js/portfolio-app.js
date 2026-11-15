@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.15.0
+ * Version: v1.16.0
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -636,6 +636,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const enriched = window.KYF_PORTFOLIO_ENGINE.enrichHoldingsWithLiveMarket(rawHoldings, activeHorizon);
 
     renderAssignBanner(enriched);
+    const jr = document.getElementById("journeyStrip");
+    if (jr && window.KYF_JOURNEY) {
+      if (isDemoMode) jr.innerHTML = "";
+      else window.KYF_JOURNEY.render(jr, window.KYF_JOURNEY.compute(rawGoals, rawHoldings), { compact: true, current: "portfolio" });
+    }
 
     // 2. Render Top-Level Hero Member Chips
     renderHeroMemberChips(enriched);
@@ -1237,6 +1242,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   function openForGoalFromUrl() {
     let gid = "";
     try { gid = new URLSearchParams(window.location.search).get("addFor") || ""; } catch (_) { /* ignore */ }
+    if (!isDemoMode && new URLSearchParams(window.location.search).get("assign")) {
+      try { window.history.replaceState({}, "", window.location.pathname); } catch (_) { /* ignore */ }
+      openAssign();
+      return;
+    }
     if (!gid || isDemoMode || !rawGoals.some((g) => g.id === gid)) return;
     returnToGoals = true;
     openHoldingModal(false, null);
