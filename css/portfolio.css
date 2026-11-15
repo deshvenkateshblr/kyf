@@ -3388,3 +3388,5 @@ button {
 .goal-pick.is-current { background: var(--panel-soft, #eef6f2); border-color: var(--teal, #0b6b6d); }
 .goal-pick--none { color: var(--muted); }
 .goal-pick-empty { color: var(--muted); font-size: 13px; }
+
+.new-goal-inline { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }

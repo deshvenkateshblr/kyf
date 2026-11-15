@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Live Market Valuation & Aggregation Engine (`js/portfolio-engine.js`)
- * Version: v1.13.1
+ * Version: v1.14.0
  * Pure Vanilla ES6+ | O(1) Indexing, Live Valuation, Multi-Horizon Returns (1M, 3M, 6M, 1Y),
  * Goal Envelopes, Macro Inflation Compounding, Virtual Lot Splitting,
  * Dual-Unit Commodity & Real Estate Engine (Gold Grams + RESIDEX Sq.Ft + INR) & Divergence Detection
@@ -1402,6 +1402,17 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     return usMap ? (usMap.get(String(ticker).trim().toUpperCase()) || null) : null;
   }
 
+  // Live "money tagged to each goal", valued today. Portfolio and Goals both call this, so they agree.
+  function fundingByGoal(holdings = [], goals = []) {
+    const enriched = enrichHoldingsWithLiveMarket(holdings || [], "1y");
+    const byGoal = {};
+    expandGoalSlices(enriched, goals || []).slices.forEach((sl) => {
+      const gid = sl.goalId || (sl.allocations && sl.allocations[0] && sl.allocations[0].goalId);
+      if (gid && gid !== "goal_unallocated") byGoal[gid] = (byGoal[gid] || 0) + Math.max(0, sl.currentValue || 0);
+    });
+    return { byGoal, enriched };
+  }
+
   return {
     ensureIndexed,
     lookupByIsin,
@@ -1419,6 +1430,7 @@ window.KYF_PORTFOLIO_ENGINE = (() => {
     computeHoldingPhysicalUnits,
     calculateInflationAdjustedTarget,
     expandGoalSlices,
+    fundingByGoal,
     enrichHoldingsWithLiveMarket,
     isLiabilityHolding,
     normalizeAssetClass,

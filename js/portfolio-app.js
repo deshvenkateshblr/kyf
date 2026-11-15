@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.13.1
+ * Version: v1.14.0
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -644,17 +644,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       scopedHoldings = enriched.filter((h) => activeMemberScope.has(h.member));
     }
 
-    // Share per-goal funding with the Goals page (derived, never stored in the .kyf file)
-    if (!isDemoMode && window.KYF_GOALS && window.KYF_PORTFOLIO_ENGINE.expandGoalSlices) {
-      const fundingSlices = window.KYF_PORTFOLIO_ENGINE.expandGoalSlices(enriched, rawGoals).slices;
-      const byGoal = {};
-      fundingSlices.forEach((sl) => {
-        const gid = sl.goalId || (sl.allocations && sl.allocations[0] && sl.allocations[0].goalId);
-        if (gid && gid !== "goal_unallocated") byGoal[gid] = (byGoal[gid] || 0) + Math.max(0, sl.currentValue || 0);
-      });
-      window.KYF_GOALS.writeFundingCache(byGoal);
-    }
-
     // 4. Prepare Working Holdings (Virtual Lot Slices if viewing by Goal)
     let workingHoldings = [];
     if (activeDimension === "goal") {
@@ -1199,6 +1188,61 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (hid) handleDeleteHolding(hid);
       });
     });
+  }
+
+  // ---- Holding <-> goal flow ----
+  let returnToGoals = false; // arrived from a goal's "Add a holding for this goal"
+
+  // After a holding is added: no goal yet -> offer to tag one; came from a goal -> offer the way back
+  function addedNudge(h) {
+    if (returnToGoals) {
+      returnToGoals = false;
+      return { label: "Back to my goal", onAction: () => { window.location.href = "goals.html"; } };
+    }
+    if (h && !h.isLiability && (!h.allocations || !h.allocations.length)) {
+      return { label: "Is this for a goal?", onAction: () => openGoalPicker([h.id]) };
+    }
+    return null;
+  }
+
+  // A goal made inline while adding a holding: just a name and a year, the rest can be filled later
+  async function createGoalFromHoldingForm() {
+    const name = (document.getElementById("new-goal-name").value || "").trim();
+    const year = Number(document.getElementById("new-goal-year").value) || 0;
+    const cost = Number(document.getElementById("new-goal-cost").value) || 0;
+    if (!name || year < new Date().getFullYear()) {
+      showToast("Give the new goal a name and the year you need it", "warning");
+      return null;
+    }
+    const goal = window.KYF_GOALS.normalizeGoal({ name, targetYear: year, baseTargetINR: cost, fundingChecked: true });
+    goal.targetYear = year;
+    rawGoals = [...rawGoals, goal];
+    userGoals = [...rawGoals];
+    localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
+    try { await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals); } catch (err) { console.warn("[KYF Portfolio] Could not save the new goal:", err); }
+    return goal;
+  }
+
+  function bindHoldingGoalFlow() {
+    if (els.selectHoldingGoal) {
+      els.selectHoldingGoal.addEventListener("change", () => {
+        const box = document.getElementById("new-goal-inline");
+        if (!box) return;
+        box.hidden = els.selectHoldingGoal.value !== "__new__";
+        if (!box.hidden) document.getElementById("new-goal-name").focus();
+      });
+    }
+  }
+
+  // Opened from the Goals page: add a holding with that goal already chosen
+  function openForGoalFromUrl() {
+    let gid = "";
+    try { gid = new URLSearchParams(window.location.search).get("addFor") || ""; } catch (_) { /* ignore */ }
+    if (!gid || isDemoMode || !rawGoals.some((g) => g.id === gid)) return;
+    returnToGoals = true;
+    openHoldingModal(false, null);
+    if (els.selectHoldingGoal) els.selectHoldingGoal.value = gid;
+    try { window.history.replaceState({}, "", window.location.pathname); } catch (_) { /* ignore */ }
   }
 
   // ---- Tag holdings to a goal (row chip + per-group bulk) ----
@@ -2454,7 +2498,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       goalsList.filter((g) => g.kind !== "COVER").forEach((g) => {
         goalOptions += `<option value="${escapeHTML(g.id)}">${g.icon || "🎯"} ${escapeHTML(g.name)} (${g.targetYear || "Goal"})</option>`;
       });
+      goalOptions += `<option value="__new__">＋ New goal…</option>`;
       els.selectHoldingGoal.innerHTML = goalOptions;
+      const ng = document.getElementById("new-goal-inline");
+      if (ng) ng.hidden = true;
     }
   }
 
@@ -2470,7 +2517,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const currentVal = parseFloat(els.inputHoldingCurVal.value);
     const investedValInput = els.inputHoldingInvVal ? els.inputHoldingInvVal.value.trim() : "";
     const investedVal = investedValInput !== "" && !isNaN(parseFloat(investedValInput)) ? parseFloat(investedValInput) : null;
-    const goalId = els.selectHoldingGoal && els.selectHoldingGoal.value;
+    let goalId = els.selectHoldingGoal && els.selectHoldingGoal.value;
+    if (goalId === "__new__") {
+      const created = await createGoalFromHoldingForm();
+      if (!created) return;
+      goalId = created.id;
+    }
     const unitsInput = els.inputHoldingUnits ? els.inputHoldingUnits.value.trim() : "";
     const priceInput = els.inputHoldingPrice ? els.inputHoldingPrice.value.trim() : "";
     const price = priceInput !== "" && !isNaN(parseFloat(priceInput)) ? parseFloat(priceInput) : null;
@@ -2663,9 +2715,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
       rawHoldings.push(newHolding);
       if (isUs) {
-        showToast(`✓ Added ${name} ($${currentVal.toLocaleString("en-US", { minimumFractionDigits: 2 })} ≈ ${formatINR(baseCurrentValINR)})`, "success");
+        showToast(`✓ Added ${name} ($${currentVal.toLocaleString("en-US", { minimumFractionDigits: 2 })} ≈ ${formatINR(baseCurrentValINR)})`, "success", addedNudge(newHolding));
       } else {
-        showToast(`✓ Added ${name} (${formatINR(currentVal)})`, "success");
+        showToast(`✓ Added ${name} (${formatINR(currentVal)})`, "success", addedNudge(newHolding));
       }
     }
 
@@ -3898,6 +3950,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function boot() {
     renderMarketPulse();
     setupEventListeners();
+    bindHoldingGoalFlow();
 
     if (els.demoDataToggle) {
       els.demoDataToggle.checked = isDemoMode;
@@ -3960,6 +4013,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     renderApp();
+    openForGoalFromUrl();
   }
 
   boot();

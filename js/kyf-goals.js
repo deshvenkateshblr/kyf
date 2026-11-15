@@ -22,8 +22,7 @@
 (function (global) {
   "use strict";
 
-  const FUNDING_CACHE_KEY = "kyf_goal_funding_v1";
-  const LEGACY_PLANNER_KEY = "kyf_goals_v1";
+    const LEGACY_PLANNER_KEY = "kyf_goals_v1";
 
   const CATEGORIES = {
     retirement: { label: "Retirement / Freedom", icon: "🌴" },
@@ -305,6 +304,7 @@
       expectedReturn: raw.expectedReturn != null && raw.expectedReturn !== "" ? Number(raw.expectedReturn) : null,
       manualSavedINR: Math.max(0, Number(raw.manualSavedINR != null ? raw.manualSavedINR : raw.currentSavings) || 0),
       ownerId: raw.ownerId || "",
+      fundingChecked: !!raw.fundingChecked,
       notes: String(raw.notes != null ? raw.notes : (raw.description || "")),
       templateId: raw.templateId || "",
       createdAt: raw.createdAt || new Date().toISOString()
@@ -462,20 +462,6 @@
   // ---------------------------------------------------------------------------
   // Portfolio funding cache (written by Portfolio, read by Goals)
   // ---------------------------------------------------------------------------
-  function writeFundingCache(byGoal) {
-    try {
-      localStorage.setItem(FUNDING_CACHE_KEY, JSON.stringify({ asOf: new Date().toISOString(), byGoal: byGoal || {} }));
-    } catch (e) { /* storage unavailable */ }
-  }
-
-  function readFundingCache() {
-    try {
-      const raw = JSON.parse(localStorage.getItem(FUNDING_CACHE_KEY) || "null");
-      if (raw && raw.byGoal) return raw;
-    } catch (e) { /* ignore */ }
-    return { asOf: null, byGoal: {} };
-  }
-
   // ---------------------------------------------------------------------------
   // Template helpers
   // ---------------------------------------------------------------------------
@@ -658,10 +644,9 @@
   }
 
   global.KYF_GOALS = {
-    CATEGORIES, PRIORITIES, TEMPLATES, FUNDING_CACHE_KEY, LEGACY_PLANNER_KEY, LEGACY_MILESTONE_IDS,
+    CATEGORIES, PRIORITIES, TEMPLATES, LEGACY_PLANNER_KEY, LEGACY_MILESTONE_IDS,
     normalizeGoal, mergeGoalLists, inferCategory,
     macroRates, inflationFor, horizonDefaults, computeGoal, computeCover, protectionSummary, affordability,
-    writeFundingCache, readFundingCache,
     IDEA_GROUPS, templateById, goalFromIdea, searchIdeas, retirementPlan, termCoverPlan, residexEstimate, residexCities, checklistFor, withChecklist, withoutGoalTasks, taskProgress, migrateCadence
   };
 })(typeof window !== "undefined" ? window : globalThis);

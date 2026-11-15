@@ -142,7 +142,5 @@ ok(migrated.length === 3 && !migrated.some((a) => a.id === "goal-home"), "untouc
 console.log("Funding cache");
 const store = {};
 ctx.localStorage = { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); } };
-K.writeFundingCache({ goal_a: 1234 });
-ok(K.readFundingCache().byGoal.goal_a === 1234, "funding cache round-trips");
 
 console.log(`\n${passed} passed`);

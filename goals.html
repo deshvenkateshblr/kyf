@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>Goals | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.13.1">
-  <link rel="stylesheet" href="css/goals.css?v=1.13.1">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.14.0">
+  <link rel="stylesheet" href="css/goals.css?v=1.14.0">
 </head>
 <body>
 
@@ -239,6 +239,16 @@
             </div>
           </div>
 
+          <section class="funding-pick" id="fundingSection" data-kind="save">
+            <h4 class="funding-title">What do you already have for this?</h4>
+            <p class="field-hint" id="fundingLead"></p>
+            <div class="funding-list" id="fundingList"></div>
+            <div class="funding-actions">
+              <button type="button" class="btn-action btn-small" id="fundingAddBtn">＋ Add a holding for this goal</button>
+              <label class="funding-none"><input type="checkbox" id="fundingNone"> Nothing set aside yet</label>
+            </div>
+          </section>
+
           <div class="modal-preview-box" id="modalPreviewBox" data-kind="save">
             <div class="prev-item">
               <div class="prev-lbl">Cost in future rupees</div>
@@ -322,18 +332,25 @@
 
 
   <!-- VAULT ENGINE -->
-  <script src="data/market-pulse.js?v=1.13.1"></script>
-  <script src="data/market-realestate.js?v=1.13.1"></script>
-  <script src="js/kyf-goals.js?v=1.13.1"></script>
-  <script src="js/kyf-vault.js?v=1.13.1"></script>
+  <script src="data/market-pulse.js?v=1.14.0"></script>
+  <script src="data/market-realestate.js?v=1.14.0"></script>
+  <script src="data/market-status.js?v=1.14.0"></script>
+  <script src="data/market-corporate-actions.js?v=1.14.0"></script>
+  <script src="data/market-equities.js?v=1.14.0"></script>
+  <script src="data/market-mf.js?v=1.14.0"></script>
+  <script src="data/market-us.js?v=1.14.0"></script>
+  <script src="data/market-holidays.js?v=1.14.0"></script>
+  <script src="js/kyf-goals.js?v=1.14.0"></script>
+  <script src="js/kyf-vault.js?v=1.14.0"></script>
+  <script src="js/portfolio-engine.js?v=1.14.0"></script>
 
   <!-- SCRIPT -->
-  <script src="js/goals-app.js?v=1.13.1"></script>
-  <script src="js/kyf-footer.js?v=1.13.1"></script>
-  <script src="js/kyf-features.js?v=1.13.1"></script>
-  <script src="data/kyf-terms.js?v=1.13.1"></script>
-  <script src="js/kyf-nav.js?v=1.13.1"></script>
-  <script src="js/kyf-terms.js?v=1.13.1"></script>
+  <script src="js/goals-app.js?v=1.14.0"></script>
+  <script src="js/kyf-footer.js?v=1.14.0"></script>
+  <script src="js/kyf-features.js?v=1.14.0"></script>
+  <script src="data/kyf-terms.js?v=1.14.0"></script>
+  <script src="js/kyf-nav.js?v=1.14.0"></script>
+  <script src="js/kyf-terms.js?v=1.14.0"></script>
 </body>
 </html>
 

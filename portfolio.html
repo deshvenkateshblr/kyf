@@ -14,8 +14,8 @@
   <link rel="icon" href="css/kyf_logo.png">
 
   <!-- Application Stylesheet with v1.4.8 Cache-Busting -->
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.13.1">
-  <link rel="stylesheet" href="css/portfolio.css?v=1.13.1">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.14.0">
+  <link rel="stylesheet" href="css/portfolio.css?v=1.14.0">
 </head>
 <body>
 
@@ -399,6 +399,20 @@
             💡 Enter either units or today's value &mdash; the other is filled in from the live price.
           </div>
 
+          <div class="form-field full">
+            <label class="form-label" for="select-holding-goal">Is this money for a goal?</label>
+            <select id="select-holding-goal" class="form-control">
+              <option value="">None / General Wealth</option>
+              <!-- Populated dynamically from rawGoals -->
+            </select>
+            <div class="form-hint" id="holding-goal-split-hint" hidden></div>
+            <div class="new-goal-inline" id="new-goal-inline" hidden>
+              <input type="text" id="new-goal-name" class="form-control" placeholder="What is it for? e.g. Daughter's college" autocomplete="off">
+              <input type="number" id="new-goal-year" class="form-control" min="2026" max="2100" inputmode="numeric" placeholder="Year you need it, e.g. 2036">
+              <input type="number" id="new-goal-cost" class="form-control" min="0" step="1" inputmode="numeric" placeholder="Roughly how much in today's money (optional)">
+            </div>
+          </div>
+
           <details class="holding-more full" id="holding-more-details">
             <summary>More details <span class="holding-more-optional">(optional)</span></summary>
             <div class="holding-form-grid holding-more-grid">
@@ -433,14 +447,6 @@
                 <input type="text" id="input-holding-custodian" class="form-control" placeholder="e.g. Zerodha, Groww, SBI">
               </div>
 
-              <div class="form-field full">
-                <label class="form-label" for="select-holding-goal">Goal</label>
-                <select id="select-holding-goal" class="form-control">
-                  <option value="">None / General Wealth</option>
-                  <!-- Populated dynamically from rawGoals -->
-                </select>
-                <div class="form-hint" id="holding-goal-split-hint" hidden></div>
-              </div>
             </div>
           </details>
         </div>
@@ -610,29 +616,29 @@
   <!-- ==========================================================================
        DATASETS (Auto-Generated Daily by admin/sync_market_data.py)
        ========================================================================== -->
-  <script src="data/market-status.js?v=1.13.1"></script>
-  <script src="data/market-pulse.js?v=1.13.1"></script>
-  <script src="data/market-corporate-actions.js?v=1.13.1"></script>
-  <script src="data/market-equities.js?v=1.13.1"></script>
-  <script src="data/market-mf.js?v=1.13.1"></script>
-  <script src="data/market-us.js?v=1.13.1"></script>
-  <script src="data/market-realestate.js?v=1.13.1"></script>
-  <script src="data/market-holidays.js?v=1.13.1"></script>
+  <script src="data/market-status.js?v=1.14.0"></script>
+  <script src="data/market-pulse.js?v=1.14.0"></script>
+  <script src="data/market-corporate-actions.js?v=1.14.0"></script>
+  <script src="data/market-equities.js?v=1.14.0"></script>
+  <script src="data/market-mf.js?v=1.14.0"></script>
+  <script src="data/market-us.js?v=1.14.0"></script>
+  <script src="data/market-realestate.js?v=1.14.0"></script>
+  <script src="data/market-holidays.js?v=1.14.0"></script>
 
   <!-- ==========================================================================
-       PORTFOLIO MODULE SCRIPTS (with ?v=1.13.1 Cache-Busting)
+       PORTFOLIO MODULE SCRIPTS (with ?v=1.14.0 Cache-Busting)
        ========================================================================== -->
-  <script src="js/kyf-goals.js?v=1.13.1"></script>
-  <script src="js/kyf-vault.js?v=1.13.1"></script>
-  <script src="js/portfolio-data.js?v=1.13.1"></script>
-  <script src="js/portfolio-engine.js?v=1.13.1"></script>
-  <script src="js/portfolio-importer.js?v=1.13.1"></script>
-  <script src="js/portfolio-app.js?v=1.13.1"></script>
-  <script src="js/kyf-footer.js?v=1.13.1"></script>
-  <script src="js/kyf-features.js?v=1.13.1"></script>
-  <script src="data/kyf-terms.js?v=1.13.1"></script>
-  <script src="js/kyf-nav.js?v=1.13.1"></script>
-  <script src="js/kyf-terms.js?v=1.13.1"></script>
+  <script src="js/kyf-goals.js?v=1.14.0"></script>
+  <script src="js/kyf-vault.js?v=1.14.0"></script>
+  <script src="js/portfolio-data.js?v=1.14.0"></script>
+  <script src="js/portfolio-engine.js?v=1.14.0"></script>
+  <script src="js/portfolio-importer.js?v=1.14.0"></script>
+  <script src="js/portfolio-app.js?v=1.14.0"></script>
+  <script src="js/kyf-footer.js?v=1.14.0"></script>
+  <script src="js/kyf-features.js?v=1.14.0"></script>
+  <script src="data/kyf-terms.js?v=1.14.0"></script>
+  <script src="js/kyf-nav.js?v=1.14.0"></script>
+  <script src="js/kyf-terms.js?v=1.14.0"></script>
 </body>
 </html>
 

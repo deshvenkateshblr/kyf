@@ -13,7 +13,9 @@
   let goals = [];
   let members = [];
   let cadence = [];
-  let funding = { asOf: null, byGoal: {} };
+  let funding = { byGoal: {} };
+  let holdings = [];   // raw holdings from the shared Portfolio store
+  let enriched = [];   // the same holdings valued at today's prices
   let settings = {};
 
   let statusFilter = "open";
@@ -72,9 +74,25 @@
     goals = G.mergeGoalLists(await readSection("goals"));
     members = await readSection("members");
     cadence = await readSection("cadence");
-    funding = G.readFundingCache();
+    holdings = await readSection("portfolio");
+    recomputeFunding();
     const extra = vault ? vault.getExtraData() : {};
     settings = (extra && extra.settings) || {};
+  }
+
+  // Money tagged to each goal, valued live (never cached), so every number on this page moves with prices
+  function recomputeFunding(hs) {
+    const E = window.KYF_PORTFOLIO_ENGINE;
+    const list = Array.isArray(hs) ? hs : holdings;
+    try {
+      const r = E.fundingByGoal(list, goals);
+      funding = { byGoal: r.byGoal };
+      enriched = r.enriched;
+    } catch (e) {
+      console.warn("Could not value holdings", e);
+      funding = { byGoal: {} };
+      enriched = [];
+    }
   }
 
   async function persistGoals() {
@@ -210,9 +228,10 @@
   }
 
   function rowHtml(g, c) {
+    const unanswered = !isAnswered(g) && c.hasAmount;
     const cat = G.CATEGORIES[g.category] || G.CATEGORIES.other;
     const owner = ownerName(g);
-    const st = statusLine(g, c);
+    const st = unanswered ? { cls: "needs", text: "Tell us what you already have" } : statusLine(g, c);
     const list = checklistState(g);
     const horizonClass = g.kind === "COVER" ? "kind-cover" : (c.years <= 3 ? "horizon-short" : (c.years <= 7 ? "horizon-medium" : "horizon-long"));
     const savedParts = [];
@@ -235,10 +254,10 @@
         <div class="goal-math-box">
           <div class="math-item"><span class="math-lbl">Cost today</span><span class="math-val">${formatINR(g.baseTargetINR, true)}</span></div>
           <div class="math-item"><span class="math-lbl">In ${g.targetYear} (${c.inflationRate}% ${escapeHtml(infl)})</span><span class="math-val fv-val">${formatINR(c.futureCost, true)}</span></div>
-          <div class="math-item"><span class="math-lbl">Saved so far</span><span class="math-val">${formatINR(c.saved, true)}</span></div>
-          <div class="math-item"><span class="math-lbl">Monthly SIP</span><span class="math-val sip-val">${c.sip ? formatINR(c.sip) : "—"}</span></div>
+          ${unanswered ? "" : `<div class="math-item"><span class="math-lbl">Saved so far</span><span class="math-val">${formatINR(c.saved, true)}</span></div>
+          <div class="math-item"><span class="math-lbl">Monthly SIP</span><span class="math-val sip-val">${c.sip ? formatINR(c.sip) : "—"}</span></div>`}
         </div>
-        <p class="saved-note">${escapeHtml(savedNote)}</p>
+        ${unanswered ? `<p class="saved-note">Once we know what you already have for this, we will show what is left to build and the monthly SIP.</p>` : `<p class="saved-note">${escapeHtml(savedNote)}</p>`}
         <div class="recipe-strip">
           <span>${escapeHtml(c.horizon.label)}:</span>
           <strong>${escapeHtml(c.horizon.recipe)}</strong>
@@ -264,6 +283,7 @@
             <a class="checklist-link" href="cadence.html?goal=${encodeURIComponent(g.id)}">☑ ${list.done}/${list.total} steps</a>
             <div class="card-btns">
               ${c.hasAmount ? "" : `<button class="icon-btn primary-soft" data-action="number">➕ Add a number</button>`}
+              ${unanswered ? `<button class="icon-btn primary-soft" data-action="funding">➕ What I already have</button>` : ""}
               <button class="icon-btn" data-action="toggle">${g.status === "ACHIEVED" ? "↩ Reopen" : "✅ Achieved"}</button>
               <button class="icon-btn" data-action="edit" aria-label="Edit ${escapeHtml(g.name)}">✏️ Edit</button>
               <button class="icon-btn delete" data-action="delete" aria-label="Delete ${escapeHtml(g.name)}">🗑️</button>
@@ -386,6 +406,8 @@
     $("goalReturnInput").value = g.expectedReturn != null ? g.expectedReturn : "";
     $("goalDescInput").value = g.notes || "";
     $("moreOptions").open = false;
+    goNextAfterSave = false;
+    initFunding(g);
     syncInflationField();
     setupHelp(g);
     updatePreview();
@@ -426,6 +448,7 @@
       coverNeededINR: Number($("coverNeededInput").value) || 0,
       coverInPlaceINR: Number($("coverInPlaceInput").value) || 0,
       annualPremiumINR: Number($("coverPremiumInput").value) || 0,
+      fundingChecked: existing ? existing.fundingChecked : false,
       createdAt: existing ? existing.createdAt : undefined
     });
     if (g && g.kind !== "COVER") g.targetYear = year;
@@ -440,22 +463,121 @@
     const g = readForm();
     if (g && g.kind === "COVER") return;
     const ready = g && g.baseTargetINR > 0 && g.targetYear >= new Date().getFullYear();
+    const answered = pendingTags.size > 0 || pendingNone || (g && isAnswered(g));
+    const pfNow = g ? pendingFunding(g.id) : 0;
     if (!ready) {
       $("prevFv").textContent = $("prevGap").textContent = $("prevSip").textContent = "—";
     } else {
-      const c = G.computeGoal(g, funding.byGoal[g.id] || 0);
+      const c = G.computeGoal(g, pfNow);
       $("prevFv").textContent = formatINR(c.futureCost, true);
-      $("prevGap").textContent = formatINR(c.gap, true);
-      $("prevSip").textContent = c.sip ? formatINR(c.sip) + " /mo" : "—";
+      $("prevGap").textContent = answered ? formatINR(c.gap, true) : "after you answer above";
+      $("prevSip").textContent = answered ? (c.sip ? formatINR(c.sip) + " /mo" : "—") : "after you answer above";
       $("goalReturnHint").textContent = `Leave blank for ${c.horizon.expectedReturn}% (${c.horizon.label.toLowerCase()}).`;
     }
-    const pf = g ? (funding.byGoal[g.id] || 0) : 0;
+    const pf = g ? pendingFunding(g.id) : 0;
     const manual = g ? (Number(g.manualSavedINR) || 0) : 0;
     const parts = [];
     if (pf) parts.push(`${formatINR(pf, true)} counted from Portfolio`);
     if (manual) parts.push(`${formatINR(manual, true)} entered by hand earlier`);
     $("goalPortfolioHint").innerHTML = (parts.length ? parts.join(" + ") + ". " : "") +
       'Money counts towards this goal once you tag holdings to it in <a href="portfolio.html">Portfolio</a>.';
+  }
+
+  // -------------------------------------------------------------------------
+  // "What do you already have for this?" -- holdings tagged right from the goal
+  // -------------------------------------------------------------------------
+  let pendingTags = new Set();   // holding ids ticked for the goal being edited
+  let pendingNone = false;       // "Nothing set aside yet"
+  let goNextAfterSave = false;   // "Add a holding" saves the goal, then opens Portfolio
+
+  const taggable = () => enriched.filter((h) => !h.isLiability);
+  const allocsOf = (h) => (Array.isArray(h.allocations) ? h.allocations.filter((a) => a && a.goalId) : []);
+
+  function isAnswered(g) {
+    return g.kind === "COVER" || !!g.fundingChecked || (funding.byGoal[g.id] || 0) > 0 || (Number(g.manualSavedINR) || 0) > 0;
+  }
+
+  function pendingFunding(goalId) {
+    let sum = 0;
+    taggable().forEach((h) => {
+      const a = allocsOf(h);
+      const split = a.length > 1 && a.some((x) => x.goalId === goalId);
+      if (split) sum += (h.currentValue || 0) * ((a.find((x) => x.goalId === goalId).percentage || 0) / 100);
+      else if (pendingTags.has(h.id)) sum += h.currentValue || 0;
+    });
+    return sum;
+  }
+
+  function renderFundingList(goalId) {
+    const list = taggable();
+    const lead = $("fundingLead");
+    const box = $("fundingList");
+    $("fundingNone").checked = pendingNone;
+    if (!list.length) {
+      lead.textContent = "You have not added any holdings yet. Add the savings, funds or gold you would use for this, and we will work out what is left to build.";
+      box.innerHTML = "";
+      return;
+    }
+    lead.textContent = "Tick the money you would use for this goal. We count its value today, so the numbers stay current.";
+    const nameOf = (id) => { const x = goals.find((q) => q.id === id); return x ? x.name : "another goal"; };
+    box.innerHTML = list.map((h) => {
+      const a = allocsOf(h);
+      const split = a.length > 1 && a.some((x) => x.goalId === goalId);
+      const other = a.length === 1 && a[0].goalId !== goalId ? nameOf(a[0].goalId) : "";
+      const note = split ? "Split across goals — change in Portfolio" : other ? `Now counts for ${other}` : "";
+      const checked = split || pendingTags.has(h.id);
+      return `<label class="funding-row${split ? " is-locked" : ""}">
+        <input type="checkbox" data-hid="${escapeHtml(h.id)}"${checked ? " checked" : ""}${split ? " disabled" : ""}>
+        <span class="funding-name">${escapeHtml(h.name)}<small>${escapeHtml([h.member, h.assetClass].filter(Boolean).join(" · "))}${note ? ` · ${escapeHtml(note)}` : ""}</small></span>
+        <span class="funding-val">${formatINR(h.currentValue || 0, true)}</span>
+      </label>`;
+    }).join("");
+  }
+
+  function initFunding(g) {
+    pendingTags = new Set();
+    taggable().forEach((h) => {
+      const a = allocsOf(h);
+      if (g.id && a.length === 1 && a[0].goalId === g.id) pendingTags.add(h.id);
+    });
+    pendingNone = !!g.fundingChecked && pendingTags.size === 0 && !(Number(g.manualSavedINR) > 0);
+    renderFundingList(g.id);
+  }
+
+  function bindFunding() {
+    $("fundingList").addEventListener("change", (e) => {
+      const cb = e.target.closest("input[data-hid]");
+      if (!cb) return;
+      if (cb.checked) pendingTags.add(cb.dataset.hid); else pendingTags.delete(cb.dataset.hid);
+      if (pendingTags.size) { pendingNone = false; $("fundingNone").checked = false; }
+      updatePreview();
+    });
+    $("fundingNone").addEventListener("change", (e) => {
+      pendingNone = e.target.checked;
+      if (pendingNone) { pendingTags.clear(); renderFundingList($("goalId").value); }
+      updatePreview();
+    });
+    $("fundingAddBtn").addEventListener("click", () => {
+      goNextAfterSave = true;
+      $("goalForm").requestSubmit();
+    });
+  }
+
+  // Write the ticks onto the holdings (the same data Portfolio reads), then refresh live funding
+  async function applyTags(goalId) {
+    let changed = false;
+    holdings.forEach((h) => {
+      const a = allocsOf(h);
+      if (a.length > 1) return;
+      const onThis = a.length === 1 && a[0].goalId === goalId;
+      if (pendingTags.has(h.id) && !onThis) { h.allocations = [{ goalId, percentage: 100 }]; changed = true; }
+      else if (!pendingTags.has(h.id) && onThis) { h.allocations = []; changed = true; }
+    });
+    if (changed) {
+      try { await vault.sections.get("portfolio").write(holdings); vault.markDirty(); }
+      catch (e) { console.error("Could not save tags", e); showToast("Could not save the tags — storage unavailable"); }
+    }
+    recomputeFunding();
   }
 
   // --- "Help me work it out" ------------------------------------------------
@@ -606,6 +728,7 @@
       $("helpToggleBtn").setAttribute("aria-expanded", "true");
     }
     overlay.classList.add("open");
+    if (opts && opts.openFunding) setTimeout(() => $("fundingSection").scrollIntoView({ block: "center" }), 80);
     setTimeout(() => (g.name ? (g.kind === "COVER" ? $("coverNeededInput") : $("goalYearInput")) : $("goalTitleInput")).focus(), 60);
   }
 
@@ -667,6 +790,7 @@
     $("useDownPaymentBtn").addEventListener("click", () => applyResidex("down"));
     $("useFullCostBtn").addEventListener("click", () => applyResidex("full"));
 
+    bindFunding();
     $("goalInflationInput").addEventListener("change", () => { syncInflationField(); updatePreview(); updateRetirement(); });
     ["goalYearInput", "goalPvInput", "goalSavedInput", "goalCustomRateInput", "goalReturnInput"].forEach((id) =>
       $(id).addEventListener("input", updatePreview));
@@ -676,9 +800,12 @@
       const g = readForm();
       if (!g || !g.name || (g.kind !== "COVER" && g.targetYear < new Date().getFullYear())) return;
       const i = goals.findIndex((x) => x.id === g.id);
+      g.fundingChecked = pendingTags.size > 0 || pendingNone || goNextAfterSave || !!g.fundingChecked;
       if (i >= 0) goals[i] = g; else goals.push(g);
       expanded.add(g.id);
       await persistGoals();
+      await applyTags(g.id);
+      if (goNextAfterSave) { window.location.href = "portfolio.html?addFor=" + encodeURIComponent(g.id); return; }
       closeDrawer();
       render();
       showToast((g.kind === "COVER" ? g.coverNeededINR > 0 : g.baseTargetINR > 0) ? (i >= 0 ? "✓ Goal updated" : "✓ Goal added") : "✓ Goal added — add a number when you are ready");
@@ -699,6 +826,8 @@
       const action = btn.dataset.action;
       if (action === "edit") {
         openDrawer(g, { isNew: false });
+      } else if (action === "funding") {
+        openDrawer(g, { isNew: false, openFunding: true });
       } else if (action === "number") {
         openDrawer(g, { isNew: false, openHelp: true });
         setTimeout(() => (g.kind === "COVER" ? $("coverNeededInput") : $("goalPvInput")).focus(), 80);
