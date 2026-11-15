@@ -1,13 +1,13 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.14.1
+ * Version: v1.15.0
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  bindGoalPicker();
+  bindAssign();
   // Application State
   let rawHoldings = [];
   let rawGoals = [];
@@ -635,6 +635,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 1. Live Market Valuation Pass for all holdings
     const enriched = window.KYF_PORTFOLIO_ENGINE.enrichHoldingsWithLiveMarket(rawHoldings, activeHorizon);
 
+    renderAssignBanner(enriched);
+
     // 2. Render Top-Level Hero Member Chips
     renderHeroMemberChips(enriched);
 
@@ -1166,7 +1168,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         e.preventDefault();
         e.stopPropagation();
         const ids = (btn.getAttribute("data-holding-ids") || "").split("|").filter(Boolean);
-        if (ids.length) openGoalPicker(ids);
+        if (ids.length) openAssign(ids);
       });
     });
 
@@ -1198,9 +1200,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (returnToGoals) {
       returnToGoals = false;
       return { label: "Back to my goal", onAction: () => { if (window.KYF_VAULT) window.KYF_VAULT.navigate("goals.html"); else window.location.href = "goals.html"; } };
-    }
-    if (h && !h.isLiability && (!h.allocations || !h.allocations.length)) {
-      return { label: "Is this for a goal?", onAction: () => openGoalPicker([h.id]) };
     }
     return null;
   }
@@ -1271,67 +1270,88 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (isDemoMode) return "";
     const ids = [...new Set(holdings.filter((h) => !h.isLiability).map((h) => h.originalHoldingId || h.id))];
     if (ids.length < 2) return "";
-    return `<div class="bulk-tag-row"><button type="button" class="btn-bulk-tag" data-holding-ids="${escapeHTML(ids.join("|"))}">🎯 Tag these ${ids.length} to a goal…</button></div>`;
+    return `<div class="bulk-tag-row"><button type="button" class="btn-bulk-tag" data-holding-ids="${escapeHTML(ids.join("|"))}">🎯 Give these ${ids.length} a job…</button></div>`;
   }
 
-  function openGoalPicker(ids) {
+  // ---- Giving money a job: one sheet for every holding and every goal (js/kyf-assign.js) ----
+  let assignCtl = null;
+
+  function unassignedHoldings(list) {
+    const A = window.KYF_ASSIGN;
+    return (list || []).filter((h) => A.isAssignable(h) && A.isUnassigned(h));
+  }
+
+  function renderAssignBanner(enriched) {
+    const el = document.getElementById("assign-banner");
+    if (!el) return;
+    const un = isDemoMode ? [] : unassignedHoldings(enriched);
+    if (!un.length) { el.hidden = true; return; }
+    const total = un.reduce((sum, h) => sum + (Number(h.currentValue) || 0), 0);
+    const goalsExist = rawGoals.some((g) => g.kind !== "COVER");
+    el.hidden = false;
+    el.innerHTML = `<span><strong>${formatINR(total)}</strong> in ${un.length} holding${un.length > 1 ? "s" : ""} ${goalsExist ? "has no goal yet" : "is not for anything yet"}.</span>` +
+      `<button type="button" class="btn-pill btn-pill--primary" id="btn-open-assign">🎯 ${goalsExist ? "Give it a job" : "Set a goal for it"}</button>`;
+    document.getElementById("btn-open-assign").addEventListener("click", () => openAssign());
+  }
+
+  function openAssign(ids) {
     if (blockDemoChange()) return;
-    const modal = document.getElementById("goal-tag-modal");
-    if (!modal) return;
-    const list = document.getElementById("goal-tag-list");
-    const title = document.getElementById("goal-tag-title");
-    const sub = document.getElementById("goal-tag-sub");
-    const first = ids.length === 1 ? findRawHolding(ids[0]) : null;
-    title.textContent = ids.length === 1 ? "Tag to a goal" : `Tag ${ids.length} holdings to a goal`;
-    sub.textContent = first ? first.name : "Their full value will count towards the goal you pick.";
-    const current = first && first.allocations && first.allocations.length === 1 ? first.allocations[0].goalId : null;
-    const goals = rawGoals.filter((g) => g && g.id);
-    list.innerHTML = goals.length
-      ? goals.map((g) => `<button type="button" class="goal-pick${g.id === current ? " is-current" : ""}" data-goal-id="${escapeHTML(g.id)}">${escapeHTML(g.name)}${g.id === current ? " ✓" : ""}</button>`).join("") +
-        `<button type="button" class="goal-pick goal-pick--none" data-goal-id="">No goal</button>`
-      : `<p class="goal-pick-empty">You have no goals yet. <a href="goals.html">Add a goal</a>, then tag your holdings to it.</p>`;
-    list.querySelectorAll(".goal-pick").forEach((b) => {
-      b.addEventListener("click", () => applyGoalTag(ids, b.getAttribute("data-goal-id")));
+    const modal = document.getElementById("assign-modal");
+    const body = document.getElementById("assign-body");
+    if (!modal || !body) return;
+    const enriched = window.KYF_PORTFOLIO_ENGINE.enrichHoldingsWithLiveMarket(rawHoldings, activeHorizon);
+    body.innerHTML = "";
+    const inner = document.createElement("div");
+    body.appendChild(inner);
+    assignCtl = window.KYF_ASSIGN.mount(inner, {
+      holdings: enriched,
+      goals: rawGoals,
+      holdingIds: ids && ids.length ? ids : null,
+      createGoal: createGoalQuick
     });
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
-    const f = list.querySelector(".goal-pick");
-    if (f) f.focus();
   }
 
-  function closeGoalPicker() {
-    const modal = document.getElementById("goal-tag-modal");
+  function closeAssign() {
+    const modal = document.getElementById("assign-modal");
     if (!modal) return;
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
+    assignCtl = null;
   }
 
-  async function applyGoalTag(ids, goalId) {
-    closeGoalPicker();
-    let n = 0;
-    rawHoldings.forEach((h) => {
-      if (ids.includes(h.id) || ids.includes(h.originalHoldingId)) {
-        h.allocations = goalId ? [{ goalId, percentage: 100 }] : [];
-        n++;
-      }
-    });
-    if (!n) return;
+  // A goal made while assigning: a name and a year are enough, the rest can be filled in on Goals
+  function createGoalQuick(name, year) {
+    const goal = window.KYF_GOALS.normalizeGoal({ name, targetYear: year, baseTargetINR: 0, fundingChecked: true });
+    goal.targetYear = year;
+    rawGoals = [...rawGoals, goal];
+    userGoals = [...rawGoals];
+    localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
+    window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals).catch((err) => console.warn("[KYF Portfolio] Could not save the new goal:", err));
+    return goal;
+  }
+
+  async function saveAssign() {
+    const ctl = assignCtl;
+    closeAssign();
+    if (!ctl || !ctl.apply(rawHoldings)) return;
     userHoldings = [...rawHoldings];
     localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
     renderApp();
     markDataChanged();
     try { await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings); } catch (err) { console.warn("[KYF Portfolio] Error persisting goal tags:", err); }
-    const g = rawGoals.find((x) => x.id === goalId);
-    showToast(goalId ? `${n} tagged to "${g ? g.name : "goal"}"` : `${n} untagged from goals`, "info");
+    showToast("✓ Saved", "success");
   }
 
-  function bindGoalPicker() {
-    const modal = document.getElementById("goal-tag-modal");
+  function bindAssign() {
+    const modal = document.getElementById("assign-modal");
     if (!modal) return;
-    const close = document.getElementById("btn-close-goal-tag");
-    if (close) close.addEventListener("click", closeGoalPicker);
-    modal.addEventListener("click", (e) => { if (e.target === modal) closeGoalPicker(); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal.classList.contains("open")) closeGoalPicker(); });
+    ["btn-close-assign", "btn-cancel-assign"].forEach((id) => { const b = document.getElementById(id); if (b) b.addEventListener("click", closeAssign); });
+    const save = document.getElementById("btn-save-assign");
+    if (save) save.addEventListener("click", saveAssign);
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeAssign(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal.classList.contains("open")) closeAssign(); });
   }
 
   function escapeHTML(str) {
@@ -3342,6 +3362,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     activeMemberScope = new Set([selectedMember]);
     closeImportModal();
     renderApp();
+    const needJob = unassignedHoldings(window.KYF_PORTFOLIO_ENGINE.enrichHoldingsWithLiveMarket(rawHoldings, activeHorizon));
+    if (needJob.length) setTimeout(() => openAssign(), 350);
 
     const brokerStr = pendingImportBrokers[0] || "Broker";
     showToast(`✓ ${sourceLabel(sourceId)} · ${selectedMember} updated: ${addedCount} new, ${updatedCount} updated, ${removedCount} removed.`, "success");

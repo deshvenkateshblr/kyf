@@ -14,8 +14,9 @@
   <link rel="icon" href="css/kyf_logo.png">
 
   <!-- Application Stylesheet with v1.4.8 Cache-Busting -->
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.14.1">
-  <link rel="stylesheet" href="css/portfolio.css?v=1.14.1">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.15.0">
+  <link rel="stylesheet" href="css/portfolio.css?v=1.15.0">
+  <link rel="stylesheet" href="css/assign.css?v=1.15.0">
 </head>
 <body>
 
@@ -211,6 +212,7 @@
     <!-- ==========================================================================
          SORTABLE TREEGRID CONTAINER
          ========================================================================== -->
+    <div class="assign-banner" id="assign-banner" hidden></div>
     <div class="treegrid-container" role="table" aria-label="Portfolio Holdings TreeGrid">
       <!-- Fixed Header Row with Sortable Columns -->
       <div class="treegrid-header" role="row">
@@ -299,16 +301,20 @@
     </div>
   </div>
 
-  <!-- Tag holdings to a goal -->
-  <div id="goal-tag-modal" class="drawer-overlay" role="dialog" aria-modal="true" aria-labelledby="goal-tag-title" aria-hidden="true">
-    <div class="drawer-panel">
+  <!-- Give money a job (holdings x goals) -->
+  <div id="assign-modal" class="drawer-overlay" role="dialog" aria-modal="true" aria-labelledby="assign-title" aria-hidden="true">
+    <div class="drawer-panel assign-panel">
       <div class="drawer-head">
-        <h3 id="goal-tag-title">Tag to a goal</h3>
-        <button type="button" class="modal-close" id="btn-close-goal-tag" aria-label="Close panel">✕</button>
+        <h3 id="assign-title">🎯 What is this money for?</h3>
+        <button type="button" class="modal-close" id="btn-close-assign" aria-label="Close panel">✕</button>
       </div>
-      <div class="drawer-body">
-        <p class="goal-pick-sub" id="goal-tag-sub"></p>
-        <div class="goal-pick-list" id="goal-tag-list"></div>
+      <div class="drawer-body" id="assign-body"></div>
+      <div class="modal-actions drawer-actions">
+        <div></div>
+        <div class="modal-actions-right">
+          <button type="button" class="btn-pill btn-pill--ghost" id="btn-cancel-assign">Cancel</button>
+          <button type="button" class="btn-pill btn-pill--primary" id="btn-save-assign">Save</button>
+        </div>
       </div>
     </div>
   </div>
@@ -616,29 +622,30 @@
   <!-- ==========================================================================
        DATASETS (Auto-Generated Daily by admin/sync_market_data.py)
        ========================================================================== -->
-  <script src="data/market-status.js?v=1.14.1"></script>
-  <script src="data/market-pulse.js?v=1.14.1"></script>
-  <script src="data/market-corporate-actions.js?v=1.14.1"></script>
-  <script src="data/market-equities.js?v=1.14.1"></script>
-  <script src="data/market-mf.js?v=1.14.1"></script>
-  <script src="data/market-us.js?v=1.14.1"></script>
-  <script src="data/market-realestate.js?v=1.14.1"></script>
-  <script src="data/market-holidays.js?v=1.14.1"></script>
+  <script src="data/market-status.js?v=1.15.0"></script>
+  <script src="data/market-pulse.js?v=1.15.0"></script>
+  <script src="data/market-corporate-actions.js?v=1.15.0"></script>
+  <script src="data/market-equities.js?v=1.15.0"></script>
+  <script src="data/market-mf.js?v=1.15.0"></script>
+  <script src="data/market-us.js?v=1.15.0"></script>
+  <script src="data/market-realestate.js?v=1.15.0"></script>
+  <script src="data/market-holidays.js?v=1.15.0"></script>
 
   <!-- ==========================================================================
-       PORTFOLIO MODULE SCRIPTS (with ?v=1.14.1 Cache-Busting)
+       PORTFOLIO MODULE SCRIPTS (with ?v=1.15.0 Cache-Busting)
        ========================================================================== -->
-  <script src="js/kyf-goals.js?v=1.14.1"></script>
-  <script src="js/kyf-vault.js?v=1.14.1"></script>
-  <script src="js/portfolio-data.js?v=1.14.1"></script>
-  <script src="js/portfolio-engine.js?v=1.14.1"></script>
-  <script src="js/portfolio-importer.js?v=1.14.1"></script>
-  <script src="js/portfolio-app.js?v=1.14.1"></script>
-  <script src="js/kyf-footer.js?v=1.14.1"></script>
-  <script src="js/kyf-features.js?v=1.14.1"></script>
-  <script src="data/kyf-terms.js?v=1.14.1"></script>
-  <script src="js/kyf-nav.js?v=1.14.1"></script>
-  <script src="js/kyf-terms.js?v=1.14.1"></script>
+  <script src="js/kyf-goals.js?v=1.15.0"></script>
+  <script src="js/kyf-vault.js?v=1.15.0"></script>
+  <script src="js/portfolio-data.js?v=1.15.0"></script>
+  <script src="js/portfolio-engine.js?v=1.15.0"></script>
+  <script src="js/kyf-assign.js?v=1.15.0"></script>
+  <script src="js/portfolio-importer.js?v=1.15.0"></script>
+  <script src="js/portfolio-app.js?v=1.15.0"></script>
+  <script src="js/kyf-footer.js?v=1.15.0"></script>
+  <script src="js/kyf-features.js?v=1.15.0"></script>
+  <script src="data/kyf-terms.js?v=1.15.0"></script>
+  <script src="js/kyf-nav.js?v=1.15.0"></script>
+  <script src="js/kyf-terms.js?v=1.15.0"></script>
 </body>
 </html>
 

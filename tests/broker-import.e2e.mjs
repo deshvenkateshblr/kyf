@@ -42,6 +42,8 @@ async function importFile(p, file, member, source = "zerodha_stocks") {
   const rows = await p.locator("#import-preview-tbody tr").count();
   await p.click("#btn-confirm-import");
   await p.waitForTimeout(700);
+  // a fresh import opens the "what is this money for?" sheet; close it so the page is usable
+  if (await p.locator("#assign-modal.open").count()) { p.__assignOpened = (p.__assignOpened || 0) + 1; await p.click("#btn-cancel-assign"); }
   return rows;
 }
 const holdingsCount = (p) => p.evaluate(() => (document.getElementById("kpi-net-worth-sub")?.textContent.match(/\((\d+) holdings?\)/) || [])[1] | 0);
@@ -55,6 +57,7 @@ const holdingsCount = (p) => p.evaluate(() => (document.getElementById("kpi-net-
   const rows = await importFile(p, { name: "holdings.csv", mimeType: "text/csv", buffer: Buffer.from("﻿" + csv) });
   ok(rows === 2, `csv preview shows 2 holdings (two ITC lots merged), got ${rows}`);
   ok(await holdingsCount(p) === 2, "csv: two holdings on the page");
+  ok(p.__assignOpened === 1, "a first import opens the 'what is this money for?' sheet");
   const again = await importFile(p, { name: "holdings.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
   ok(await holdingsCount(p) === 2, "csv: importing the same file again adds nothing");
   // overwrite: a smaller file means the missing holding was sold
@@ -67,6 +70,7 @@ const holdingsCount = (p) => p.evaluate(() => (document.getElementById("kpi-net-
   ok(/account has 2 stocks & ETFs saved/.test(summary) && /Other brokers and family members are not changed/.test(summary), "csv: preview names the broker account and says others are untouched: " + summary);
   ok(/1 updated/.test(summary) && /1 no longer held/.test(summary), "csv: preview says what will be removed: " + summary);
   await p.click("#btn-confirm-import"); await p.waitForTimeout(600);
+  if (await p.locator("#assign-modal.open").count()) await p.click("#btn-cancel-assign");
   ok(await holdingsCount(p) === 1, "csv: the holding missing from the new file is gone");
   // a second broker is a separate bucket
   await importFile(p, { name: "u.csv", mimeType: "text/csv", buffer: Buffer.from("Instrument,Qty.,Avg. cost,LTP\r\nRELIANCE,3,1200,1300\r\n") }, null, "upstox");
@@ -95,6 +99,7 @@ const holdingsCount = (p) => p.evaluate(() => (document.getElementById("kpi-net-
   await p.waitForFunction(() => !document.getElementById("btn-confirm-import").disabled, null, { timeout: 5000 }).catch(() => {});
   ok(!(await p.isDisabled("#btn-confirm-import")), "csv: and the import can go ahead");
   await p.click("#btn-confirm-import"); await p.waitForTimeout(600);
+  if (await p.locator("#assign-modal.open").count()) await p.click("#btn-cancel-assign");
   ok(await holdingsCount(p) === 3, "csv: the new broker's holding is added next to the others");
   await p.reload(); await p.waitForTimeout(500);
   await p.click("#btn-open-import-modal");

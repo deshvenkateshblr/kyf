@@ -3381,12 +3381,6 @@ button {
 .bulk-tag-row { padding: 8px 16px 0; }
 .btn-bulk-tag { font: inherit; font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel, #fff); color: var(--teal, #0b6b6d); cursor: pointer; }
 .btn-bulk-tag:hover, .btn-bulk-tag:focus-visible { border-color: var(--teal, #0b6b6d); }
-.goal-pick-sub { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
-.goal-pick-list { display: flex; flex-direction: column; gap: 8px; }
-.goal-pick { font: inherit; text-align: left; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel, #fff); color: var(--text); cursor: pointer; }
-.goal-pick:hover, .goal-pick:focus-visible { border-color: var(--teal, #0b6b6d); }
-.goal-pick.is-current { background: var(--panel-soft, #eef6f2); border-color: var(--teal, #0b6b6d); }
-.goal-pick--none { color: var(--muted); }
-.goal-pick-empty { color: var(--muted); font-size: 13px; }
+.assign-panel { --drawer-width: 640px; }
 
 .new-goal-inline { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }

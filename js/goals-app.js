@@ -463,8 +463,8 @@
     const g = readForm();
     if (g && g.kind === "COVER") return;
     const ready = g && g.baseTargetINR > 0 && g.targetYear >= new Date().getFullYear();
-    const answered = pendingTags.size > 0 || pendingNone || (g && isAnswered(g));
-    const pfNow = g ? pendingFunding(g.id) : 0;
+    const answered = tickedCount() > 0 || pendingNone || (g && isAnswered(g));
+    const pfNow = pendingFunding();
     if (!ready) {
       $("prevFv").textContent = $("prevGap").textContent = $("prevSip").textContent = "—";
     } else {
@@ -474,7 +474,7 @@
       $("prevSip").textContent = answered ? (c.sip ? formatINR(c.sip) + " /mo" : "—") : "after you answer above";
       $("goalReturnHint").textContent = `Leave blank for ${c.horizon.expectedReturn}% (${c.horizon.label.toLowerCase()}).`;
     }
-    const pf = g ? pendingFunding(g.id) : 0;
+    const pf = pendingFunding();
     const manual = g ? (Number(g.manualSavedINR) || 0) : 0;
     const parts = [];
     if (pf) parts.push(`${formatINR(pf, true)} counted from Portfolio`);
@@ -486,75 +486,44 @@
   // -------------------------------------------------------------------------
   // "What do you already have for this?" -- holdings tagged right from the goal
   // -------------------------------------------------------------------------
-  let pendingTags = new Set();   // holding ids ticked for the goal being edited
+  let assign = null;             // the shared assignment component (js/kyf-assign.js), one goal in focus
+  let fundingFocus = "";         // id of the goal being edited (a placeholder while it is new)
   let pendingNone = false;       // "Nothing set aside yet"
   let goNextAfterSave = false;   // "Add a holding" saves the goal, then opens Portfolio
 
-  const taggable = () => enriched.filter((h) => !h.isLiability);
   const allocsOf = (h) => (Array.isArray(h.allocations) ? h.allocations.filter((a) => a && a.goalId) : []);
+  const hasHoldings = () => enriched.some((h) => window.KYF_ASSIGN.isAssignable(h));
+  const tickedCount = () => (assign ? assign.valueOn(fundingFocus) : 0);
 
   function isAnswered(g) {
     return g.kind === "COVER" || !!g.fundingChecked || (funding.byGoal[g.id] || 0) > 0 || (Number(g.manualSavedINR) || 0) > 0;
   }
 
-  function pendingFunding(goalId) {
-    let sum = 0;
-    taggable().forEach((h) => {
-      const a = allocsOf(h);
-      const split = a.length > 1 && a.some((x) => x.goalId === goalId);
-      if (split) sum += (h.currentValue || 0) * ((a.find((x) => x.goalId === goalId).percentage || 0) / 100);
-      else if (pendingTags.has(h.id)) sum += h.currentValue || 0;
-    });
-    return sum;
-  }
-
-  function renderFundingList(goalId) {
-    const list = taggable();
-    const lead = $("fundingLead");
-    const box = $("fundingList");
-    $("fundingNone").checked = pendingNone;
-    if (!list.length) {
-      lead.textContent = "You have not added any holdings yet. Add the savings, funds or gold you would use for this, and we will work out what is left to build.";
-      box.innerHTML = "";
-      return;
-    }
-    lead.textContent = "Tick the money you would use for this goal. We count its value today, so the numbers stay current.";
-    const nameOf = (id) => { const x = goals.find((q) => q.id === id); return x ? x.name : "another goal"; };
-    box.innerHTML = list.map((h) => {
-      const a = allocsOf(h);
-      const split = a.length > 1 && a.some((x) => x.goalId === goalId);
-      const other = a.length === 1 && a[0].goalId !== goalId ? nameOf(a[0].goalId) : "";
-      const note = split ? "Split across goals — change in Portfolio" : other ? `Now counts for ${other}` : "";
-      const checked = split || pendingTags.has(h.id);
-      return `<label class="funding-row${split ? " is-locked" : ""}">
-        <input type="checkbox" data-hid="${escapeHtml(h.id)}"${checked ? " checked" : ""}${split ? " disabled" : ""}>
-        <span class="funding-name">${escapeHtml(h.name)}<small>${escapeHtml([h.member, h.assetClass].filter(Boolean).join(" · "))}${note ? ` · ${escapeHtml(note)}` : ""}</small></span>
-        <span class="funding-val">${formatINR(h.currentValue || 0, true)}</span>
-      </label>`;
-    }).join("");
+  function pendingFunding() {
+    return assign ? assign.valueOn(fundingFocus) : 0;
   }
 
   function initFunding(g) {
-    pendingTags = new Set();
-    taggable().forEach((h) => {
-      const a = allocsOf(h);
-      if (g.id && a.length === 1 && a[0].goalId === g.id) pendingTags.add(h.id);
+    fundingFocus = $("goalId").value || window.KYF_ASSIGN.FOCUS;
+    const host = $("fundingList");
+    host.innerHTML = "";
+    const inner = document.createElement("div");
+    host.appendChild(inner);
+    assign = window.KYF_ASSIGN.mount(inner, {
+      holdings: enriched, goals, focusGoalId: fundingFocus,
+      onChange: () => { if (assign.valueOn(fundingFocus) > 0) { pendingNone = false; $("fundingNone").checked = false; } updatePreview(); }
     });
-    pendingNone = !!g.fundingChecked && pendingTags.size === 0 && !(Number(g.manualSavedINR) > 0);
-    renderFundingList(g.id);
+    pendingNone = !!g.fundingChecked && assign.valueOn(fundingFocus) === 0 && !(Number(g.manualSavedINR) > 0);
+    $("fundingNone").checked = pendingNone;
+    $("fundingLead").textContent = hasHoldings()
+      ? "Tick the money you would use for this goal. We count its value today, so the numbers stay current."
+      : "You have not added any holdings yet. Add or import your savings, funds and gold first, and we will work out what is left to build.";
+    $("fundingAddBtn").textContent = hasHoldings() ? "＋ Add another holding" : "＋ Add or import holdings";
   }
 
   function bindFunding() {
-    $("fundingList").addEventListener("change", (e) => {
-      const cb = e.target.closest("input[data-hid]");
-      if (!cb) return;
-      if (cb.checked) pendingTags.add(cb.dataset.hid); else pendingTags.delete(cb.dataset.hid);
-      if (pendingTags.size) { pendingNone = false; $("fundingNone").checked = false; }
-      updatePreview();
-    });
     $("fundingNone").addEventListener("change", (e) => {
       pendingNone = e.target.checked;
-      if (pendingNone) { pendingTags.clear(); renderFundingList($("goalId").value); }
       updatePreview();
     });
     $("fundingAddBtn").addEventListener("click", () => {
@@ -565,15 +534,7 @@
 
   // Write the ticks onto the holdings (the same data Portfolio reads), then refresh live funding
   async function applyTags(goalId) {
-    let changed = false;
-    holdings.forEach((h) => {
-      const a = allocsOf(h);
-      if (a.length > 1) return;
-      const onThis = a.length === 1 && a[0].goalId === goalId;
-      if (pendingTags.has(h.id) && !onThis) { h.allocations = [{ goalId, percentage: 100 }]; changed = true; }
-      else if (!pendingTags.has(h.id) && onThis) { h.allocations = []; changed = true; }
-    });
-    if (changed) {
+    if (assign && assign.apply(holdings, goalId)) {
       try { await vault.sections.get("portfolio").write(holdings); vault.markDirty(); }
       catch (e) { console.error("Could not save tags", e); showToast("Could not save the tags — storage unavailable"); }
     }
@@ -800,7 +761,7 @@
       const g = readForm();
       if (!g || !g.name || (g.kind !== "COVER" && g.targetYear < new Date().getFullYear())) return;
       const i = goals.findIndex((x) => x.id === g.id);
-      g.fundingChecked = pendingTags.size > 0 || pendingNone || goNextAfterSave || !!g.fundingChecked;
+      g.fundingChecked = tickedCount() > 0 || pendingNone || goNextAfterSave || !!g.fundingChecked;
       if (i >= 0) goals[i] = g; else goals.push(g);
       expanded.add(g.id);
       await persistGoals();

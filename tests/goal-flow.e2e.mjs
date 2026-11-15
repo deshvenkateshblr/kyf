@@ -59,7 +59,7 @@ await p.click("#btn-add-holding").catch(async () => { await p.click("text=Add Ho
 await p.fill("#modal-omni-search-input", "Spare cash");
 await p.fill("#input-holding-curval", "50000");
 await p.click("#btn-save-holding"); await p.waitForTimeout(600);
-ok(await p.locator(".toast-action-btn", { hasText: "Is this for a goal?" }).count() === 1, "untagged holding gets a goal nudge");
+ok(await p.locator("#assign-banner").isVisible(), "untagged holding shows the give-it-a-job banner");
 
 ok(errs.length === 0, "no page errors " + errs.join(";"));
 await b.close(); srv.close();
