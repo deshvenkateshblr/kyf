@@ -3373,3 +3373,18 @@ button {
 .import-custom-row input { flex: 1 1 160px; min-width: 0; }
 .import-custom-row select { flex: 0 1 auto; width: auto; }
 .import-custom-row button { padding: 8px 18px; border: 0; border-radius: 999px; background: var(--teal, #1f7a6c); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+
+/* Tag holdings to a goal */
+.btn-goal-chip { font: inherit; font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px dashed var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.btn-goal-chip:hover, .btn-goal-chip:focus-visible { border-color: var(--teal, #0b6b6d); color: var(--teal, #0b6b6d); }
+.btn-goal-chip.is-tagged { border-style: solid; background: var(--panel-soft, #eef6f2); color: var(--teal, #0b6b6d); }
+.bulk-tag-row { padding: 8px 16px 0; }
+.btn-bulk-tag { font: inherit; font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel, #fff); color: var(--teal, #0b6b6d); cursor: pointer; }
+.btn-bulk-tag:hover, .btn-bulk-tag:focus-visible { border-color: var(--teal, #0b6b6d); }
+.goal-pick-sub { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.goal-pick-list { display: flex; flex-direction: column; gap: 8px; }
+.goal-pick { font: inherit; text-align: left; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel, #fff); color: var(--text); cursor: pointer; }
+.goal-pick:hover, .goal-pick:focus-visible { border-color: var(--teal, #0b6b6d); }
+.goal-pick.is-current { background: var(--panel-soft, #eef6f2); border-color: var(--teal, #0b6b6d); }
+.goal-pick--none { color: var(--muted); }
+.goal-pick-empty { color: var(--muted); font-size: 13px; }

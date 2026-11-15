@@ -1,12 +1,13 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.12.6
+ * Version: v1.13.0
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
+  bindGoalPicker();
   // Application State
   let rawHoldings = [];
   let rawGoals = [];
@@ -1041,6 +1042,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
           <!-- Nested Leaf Holdings -->
           <div class="tree-leaf-container">
+            ${bulkTagHTML(group.holdings)}
             ${group.holdings
               .map((h) => {
                 const targetHoldingId = h.originalHoldingId || h.id;
@@ -1101,6 +1103,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         ${(h.currency === "USD" || h.pricingMode === "LIVE_US") ? '<span class="tag-badge tag-us">USD ($)</span>' : ""}
                         <span class="tag-badge">${escapeHTML(h.subCategory || h.assetClass)}</span>
                         ${sliceTag}
+                        ${goalChipHTML(h, targetHoldingId)}
                         ${custTag}
                         ${regularDragTag}
                       </div>
@@ -1169,6 +1172,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     });
 
+    els.treegrid.querySelectorAll(".btn-goal-chip, .btn-bulk-tag").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const ids = (btn.getAttribute("data-holding-ids") || "").split("|").filter(Boolean);
+        if (ids.length) openGoalPicker(ids);
+      });
+    });
+
     // Attach Edit and Delete listeners to leaf row buttons
     els.treegrid.querySelectorAll(".btn-edit-leaf").forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -1187,6 +1199,95 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (hid) handleDeleteHolding(hid);
       });
     });
+  }
+
+  // ---- Tag holdings to a goal (row chip + per-group bulk) ----
+  function findRawHolding(id) {
+    return rawHoldings.find((h) => h.id === id || h.originalHoldingId === id);
+  }
+
+  function goalChipHTML(h, holdingId) {
+    if (h.isLiability) return "";
+    const raw = findRawHolding(holdingId) || h;
+    const allocs = Array.isArray(raw.allocations) ? raw.allocations.filter((a) => a && a.goalId) : [];
+    let label = "＋ Tag to goal";
+    let cls = "btn-goal-chip";
+    if (allocs.length === 1) {
+      const g = rawGoals.find((x) => x.id === allocs[0].goalId);
+      label = "🎯 " + (g ? g.name : "Goal");
+      cls += " is-tagged";
+    } else if (allocs.length > 1) {
+      label = "🎯 " + allocs.length + " goals";
+      cls += " is-tagged";
+    }
+    return `<button type="button" class="${cls}" data-holding-ids="${escapeHTML(holdingId)}" title="Choose which goal this holding counts towards">${escapeHTML(label)}</button>`;
+  }
+
+  function bulkTagHTML(holdings) {
+    if (isDemoMode) return "";
+    const ids = [...new Set(holdings.filter((h) => !h.isLiability).map((h) => h.originalHoldingId || h.id))];
+    if (ids.length < 2) return "";
+    return `<div class="bulk-tag-row"><button type="button" class="btn-bulk-tag" data-holding-ids="${escapeHTML(ids.join("|"))}">🎯 Tag these ${ids.length} to a goal…</button></div>`;
+  }
+
+  function openGoalPicker(ids) {
+    if (blockDemoChange()) return;
+    const modal = document.getElementById("goal-tag-modal");
+    if (!modal) return;
+    const list = document.getElementById("goal-tag-list");
+    const title = document.getElementById("goal-tag-title");
+    const sub = document.getElementById("goal-tag-sub");
+    const first = ids.length === 1 ? findRawHolding(ids[0]) : null;
+    title.textContent = ids.length === 1 ? "Tag to a goal" : `Tag ${ids.length} holdings to a goal`;
+    sub.textContent = first ? first.name : "Their full value will count towards the goal you pick.";
+    const current = first && first.allocations && first.allocations.length === 1 ? first.allocations[0].goalId : null;
+    const goals = rawGoals.filter((g) => g && g.id);
+    list.innerHTML = goals.length
+      ? goals.map((g) => `<button type="button" class="goal-pick${g.id === current ? " is-current" : ""}" data-goal-id="${escapeHTML(g.id)}">${escapeHTML(g.name)}${g.id === current ? " ✓" : ""}</button>`).join("") +
+        `<button type="button" class="goal-pick goal-pick--none" data-goal-id="">No goal</button>`
+      : `<p class="goal-pick-empty">You have no goals yet. <a href="goals.html">Add a goal</a>, then tag your holdings to it.</p>`;
+    list.querySelectorAll(".goal-pick").forEach((b) => {
+      b.addEventListener("click", () => applyGoalTag(ids, b.getAttribute("data-goal-id")));
+    });
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    const f = list.querySelector(".goal-pick");
+    if (f) f.focus();
+  }
+
+  function closeGoalPicker() {
+    const modal = document.getElementById("goal-tag-modal");
+    if (!modal) return;
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  async function applyGoalTag(ids, goalId) {
+    closeGoalPicker();
+    let n = 0;
+    rawHoldings.forEach((h) => {
+      if (ids.includes(h.id) || ids.includes(h.originalHoldingId)) {
+        h.allocations = goalId ? [{ goalId, percentage: 100 }] : [];
+        n++;
+      }
+    });
+    if (!n) return;
+    userHoldings = [...rawHoldings];
+    localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
+    renderApp();
+    markDataChanged();
+    try { await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings); } catch (err) { console.warn("[KYF Portfolio] Error persisting goal tags:", err); }
+    const g = rawGoals.find((x) => x.id === goalId);
+    showToast(goalId ? `${n} tagged to "${g ? g.name : "goal"}"` : `${n} untagged from goals`, "info");
+  }
+
+  function bindGoalPicker() {
+    const modal = document.getElementById("goal-tag-modal");
+    if (!modal) return;
+    const close = document.getElementById("btn-close-goal-tag");
+    if (close) close.addEventListener("click", closeGoalPicker);
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeGoalPicker(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal.classList.contains("open")) closeGoalPicker(); });
   }
 
   function escapeHTML(str) {
