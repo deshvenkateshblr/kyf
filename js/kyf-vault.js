@@ -81,11 +81,17 @@
       this._dirty = false;
       if (typeof window !== "undefined" && window.addEventListener) {
         window.addEventListener("beforeunload", (e) => {
-          if (!this._dirty) return;
+          if (!this._dirty || this._skipLeavePrompt) return;
           e.preventDefault();
           e.returnValue = "";
         });
       }
+    }
+
+    /** Go to another KYF page as part of a flow: the data is already stored in this browser, so skip the 'Leave site?' prompt. */
+    navigate(url) {
+      this._skipLeavePrompt = true;
+      window.location.href = url;
     }
 
     /** Mark data as changed since the last .kyf save. */
