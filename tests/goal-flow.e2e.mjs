@@ -40,7 +40,7 @@ ok(/month/i.test(status), "goal now shows its monthly SIP once something is set 
 // --- Flow 2: holding first -> new goal inline
 p = await fresh();
 await p.goto(base + "/portfolio.html"); await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForTimeout(800);
-await p.click("#btn-add-holding").catch(async () => { await p.click("text=Add Holding"); });
+await p.click("#btn-open-holding-modal");
 await p.waitForSelector("#holding-modal", { state: "visible" });
 await p.fill("#modal-omni-search-input", "Gold coins");
 await p.fill("#input-holding-curval", "150000");
@@ -55,7 +55,7 @@ ok(hs.length === 1 && hs[0].allocations && hs[0].allocations[0].goalId === gs[0]
 
 // --- Flow 3: holding with no goal -> nudge
 await p.reload(); await p.waitForTimeout(800);
-await p.click("#btn-add-holding").catch(async () => { await p.click("text=Add Holding"); });
+await p.click("#btn-open-holding-modal");
 await p.fill("#modal-omni-search-input", "Spare cash");
 await p.fill("#input-holding-curval", "50000");
 await p.click("#btn-save-holding"); await p.waitForTimeout(600);

@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.16.0
+ * Version: v1.16.1
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -824,41 +824,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             <div id="empty-omni-search-results" class="omni-search-results" style="display:none;"></div>
           </div>
 
-          <!-- Quick-Pick Tiles -->
-          <div class="quick-pick-section">
-            <div class="quick-pick-label">Or select a standard asset:</div>
-            <div class="quick-pick-grid">
-              <button type="button" class="quick-pick-tile" data-quick="gold" title="Physical Gold / Sovereign Gold Bond">
-                <span class="tile-icon">🪙</span>
-                <span class="tile-name">Gold</span>
-                <span class="tile-sub mono-num">${goldSub}</span>
-              </button>
-
-              <button type="button" class="quick-pick-tile" data-quick="fd" title="Bank Fixed Deposit">
-                <span class="tile-icon">🏦</span>
-                <span class="tile-name">Fixed Deposit</span>
-                <span class="tile-sub mono-num">${fdSub}</span>
-              </button>
-
-              <button type="button" class="quick-pick-tile" data-quick="epf" title="EPF / PPF Retirement Corpus">
-                <span class="tile-icon">🛡️</span>
-                <span class="tile-name">EPF / PPF</span>
-                <span class="tile-sub mono-num">${epfSub}</span>
-              </button>
-
-              <button type="button" class="quick-pick-tile" data-quick="cash" title="Bank Savings & Liquid Cash">
-                <span class="tile-icon">💵</span>
-                <span class="tile-name">Cash &amp; Bank</span>
-                <span class="tile-sub">Liquid</span>
-              </button>
-
-              <button type="button" class="quick-pick-tile" data-quick="loan" title="Home Loan / Liability">
-                <span class="tile-icon">🏠</span>
-                <span class="tile-name">Loan / Debt</span>
-                <span class="tile-sub mono-num">${loanSub}</span>
-              </button>
-            </div>
-          </div>
+          ${quickPickHTML()}
 
           <div class="portfolio-empty-footer">
             <div style="display:flex; justify-content:center; gap:16px; align-items:center; flex-wrap:wrap;">
@@ -880,14 +846,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("empty-omni-search-clear")
       );
 
-      // Wire quick-pick tiles
-      const tiles = els.treegrid.querySelectorAll(".quick-pick-tile");
-      tiles.forEach((tile) => {
-        tile.addEventListener("click", () => {
-          const quickType = tile.getAttribute("data-quick");
-          handleQuickPick(quickType);
-        });
-      });
+      wireQuickPicks(els.treegrid);
 
       const emptyOpenBtn = document.getElementById("btn-empty-open-vault");
       if (emptyOpenBtn) {
@@ -1893,6 +1852,60 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // Standard assets (gold, FD, EPF/PPF, cash, loan): shown on the empty page AND inside the Add form,
+  // so they are still one tap away after the first holding is in.
+  function quickPickHTML() {
+    const pulse = window.KYF_MARKET_PULSE || {};
+    const metals = pulse.preciousMetals || {};
+    const macro = pulse.macro || {};
+    const goldSub = metals.gold24kPerGram ? `₹${Number(metals.gold24kPerGram).toLocaleString("en-IN")}/g` : "₹14,280/g";
+    const fdSub = macro.sbiFd1Yr ? `FD ~${macro.sbiFd1Yr}%` : "Bank FD ~6.8%";
+    const epfSub = macro.epfRate ? `${macro.epfRate}% Sov.` : "8.25% Sov.";
+    const loanSub = macro.homeLoanAvg ? `~${macro.homeLoanAvg}%` : "~8.65%";
+    return `
+  <div class="quick-pick-section">
+    <div class="quick-pick-label">Or select a standard asset:</div>
+    <div class="quick-pick-grid">
+      <button type="button" class="quick-pick-tile" data-quick="gold" title="Physical Gold / Sovereign Gold Bond">
+        <span class="tile-icon">🪙</span>
+        <span class="tile-name">Gold</span>
+        <span class="tile-sub mono-num">${goldSub}</span>
+      </button>
+
+      <button type="button" class="quick-pick-tile" data-quick="fd" title="Bank Fixed Deposit">
+        <span class="tile-icon">🏦</span>
+        <span class="tile-name">Fixed Deposit</span>
+        <span class="tile-sub mono-num">${fdSub}</span>
+      </button>
+
+      <button type="button" class="quick-pick-tile" data-quick="epf" title="EPF / PPF Retirement Corpus">
+        <span class="tile-icon">🛡️</span>
+        <span class="tile-name">EPF / PPF</span>
+        <span class="tile-sub mono-num">${epfSub}</span>
+      </button>
+
+      <button type="button" class="quick-pick-tile" data-quick="cash" title="Bank Savings & Liquid Cash">
+        <span class="tile-icon">💵</span>
+        <span class="tile-name">Cash &amp; Bank</span>
+        <span class="tile-sub">Liquid</span>
+      </button>
+
+      <button type="button" class="quick-pick-tile" data-quick="loan" title="Home Loan / Liability">
+        <span class="tile-icon">🏠</span>
+        <span class="tile-name">Loan / Debt</span>
+        <span class="tile-sub mono-num">${loanSub}</span>
+      </button>
+    </div>
+  </div>
+    `;
+  }
+
+  function wireQuickPicks(root) {
+    root.querySelectorAll(".quick-pick-tile").forEach((tile) => {
+      tile.addEventListener("click", () => handleQuickPick(tile.getAttribute("data-quick")));
+    });
+  }
+
   function handleQuickPick(type) {
     const pulse = window.KYF_MARKET_PULSE || {};
     const metals = pulse.preciousMetals || {};
@@ -2258,6 +2271,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
     populateHoldingModalDropdowns();
+    const qp = document.getElementById("modal-quick-picks");
+    if (qp) {
+      qp.hidden = !!forEdit;
+      if (!forEdit) { qp.innerHTML = quickPickHTML(); wireQuickPicks(qp); }
+    }
     els.holdingModal.style.display = "flex";
     els.holdingModal.setAttribute("aria-hidden", "false");
 

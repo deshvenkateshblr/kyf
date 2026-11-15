@@ -3384,3 +3384,5 @@ button {
 .assign-panel { --drawer-width: 640px; }
 
 .new-goal-inline { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.modal-quick-picks .quick-pick-section { margin: 0; }
+.modal-quick-picks .quick-pick-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
