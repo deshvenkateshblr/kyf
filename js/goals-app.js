@@ -792,7 +792,7 @@
       expanded.add(g.id);
       await persistGoals();
       await applyTags(g.id);
-      if (goNextAfterSave) { vault.navigate("portfolio.html?addFor=" + encodeURIComponent(g.id)); return; }
+      if (goNextAfterSave) { window.location.href = "portfolio.html?addFor=" + encodeURIComponent(g.id); return; }
       closeDrawer();
       render();
       showToast((g.kind === "COVER" ? g.coverNeededINR > 0 : g.baseTargetINR > 0) ? (i >= 0 ? "✓ Goal updated" : "✓ Goal added") : "✓ Goal added — add a number when you are ready");

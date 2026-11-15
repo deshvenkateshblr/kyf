@@ -36,6 +36,8 @@
   // PART 1: GENERIC MODULE — VividVault (Reusable Across Any Vividnova App)
   // ==========================================================================
 
+  const UNSAVED_KEY = "kyf_unsaved_since_save";
+
   class VividVault {
     /**
      * @param {Object} options
@@ -77,21 +79,26 @@
       // Track bound DOM elements to prevent duplicate event listeners
       this._boundElements = new WeakSet();
 
-      // Unsaved-changes tracking: true when data changed since the last file save/open
+      // Unsaved-changes tracking: true when data changed since the last .kyf file save/open.
+      // Everything is already stored in this browser, so this is only a quiet reminder to keep a
+      // file copy: the Save button gently pulses. It never blocks leaving a page, and it is kept in
+      // localStorage so the reminder follows the person from page to page.
       this._dirty = false;
-      if (typeof window !== "undefined" && window.addEventListener) {
-        window.addEventListener("beforeunload", (e) => {
-          if (!this._dirty || this._skipLeavePrompt) return;
-          e.preventDefault();
-          e.returnValue = "";
-        });
+      try { this._dirty = localStorage.getItem(UNSAVED_KEY) === "1"; } catch (e) { /* storage unavailable */ }
+      if (typeof document !== "undefined") {
+        const apply = () => this._applySaveCue();
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", apply);
+        else apply();
       }
     }
 
-    /** Go to another KYF page as part of a flow: the data is already stored in this browser, so skip the 'Leave site?' prompt. */
-    navigate(url) {
-      this._skipLeavePrompt = true;
-      window.location.href = url;
+    /** Pulse the Save button (if this page has one) while there are changes not yet in a file. */
+    _applySaveCue() {
+      if (typeof document === "undefined") return;
+      const btn = document.getElementById("navSaveDataBtn");
+      if (!btn) return;
+      btn.classList.toggle("has-unsaved", this._dirty);
+      btn.title = this._dirty ? "Your data is safe in this browser. Save a .kyf file to keep a copy." : "Save data as .kyf file";
     }
 
     /** Mark data as changed since the last .kyf save. */
@@ -111,6 +118,8 @@
     _setDirty(value) {
       if (this._dirty === value) return;
       this._dirty = value;
+      try { if (value) localStorage.setItem(UNSAVED_KEY, "1"); else localStorage.removeItem(UNSAVED_KEY); } catch (e) { /* storage unavailable */ }
+      this._applySaveCue();
       if (typeof document !== "undefined" && typeof CustomEvent === "function") {
         document.dispatchEvent(new CustomEvent("vault:dirtychange", { detail: { dirty: value } }));
       }

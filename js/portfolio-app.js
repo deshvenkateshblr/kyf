@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.16.1
+ * Version: v1.16.2
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -252,11 +252,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  document.addEventListener("vault:dirtychange", (e) => {
-    if (els.navSaveBtn) {
-      els.navSaveBtn.classList.toggle("has-unsaved", !!(e.detail && e.detail.dirty));
-    }
-  });
+
 
   // ==========================================================================
   // Market Pulse Status Bar Renderer
@@ -1163,7 +1159,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function addedNudge(h) {
     if (returnToGoals) {
       returnToGoals = false;
-      return { label: "Back to my goal", onAction: () => { if (window.KYF_VAULT) window.KYF_VAULT.navigate("goals.html"); else window.location.href = "goals.html"; } };
+      return { label: "Back to my goal", onAction: () => { window.location.href = "goals.html"; } };
     }
     return null;
   }

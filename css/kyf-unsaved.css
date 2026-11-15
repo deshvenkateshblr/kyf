@@ -1,0 +1,18 @@
+/* A quiet reminder on the Save button: your data is safe in this browser; a file copy is optional. */
+@keyframes save-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(31, 122, 108, 0.55); }
+  70%  { box-shadow: 0 0 0 10px rgba(31, 122, 108, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(31, 122, 108, 0); }
+}
+
+#navSaveDataBtn.has-unsaved {
+  animation: save-pulse 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #navSaveDataBtn.has-unsaved {
+    animation: none;
+    outline: 2px solid var(--teal);
+  }
+}
+
