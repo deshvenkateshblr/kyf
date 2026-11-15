@@ -212,10 +212,9 @@ await page.click("#moreOptions summary");
 await page.selectOption("#goalInflationInput", "CUSTOM");
 check(await page.locator("#customInflationGroup").isVisible(), "custom inflation rate field appears under More options");
 await page.fill("#goalCustomRateInput", "8");
-await page.fill("#goalSavedInput", "500000");
 await page.click("#saveGoalBtn");
 await page.waitForSelector("#goalModalOverlay", { state: "hidden" }).catch(() => {});
-check((await page.locator("#goalList .goal-row", { hasText: "Child's education" }).locator(".saved-note").textContent()).includes("set aside"), "money set aside shows in the goal's detail");
+check((await page.locator("#goalPortfolioHint").count()) === 1 && !(await page.locator("#goalSavedInput:visible").count()), "drawer points to Portfolio tagging, no second savings box");
 
 console.log("[4] Checklist lives in Cadence");
 const goalId = await page.locator("#goalList .goal-row", { hasText: "Child's education" }).getAttribute("data-id");

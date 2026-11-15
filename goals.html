@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>Goals | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.13.0">
-  <link rel="stylesheet" href="css/goals.css?v=1.13.0">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.13.1">
+  <link rel="stylesheet" href="css/goals.css?v=1.13.1">
 </head>
 <body>
 
@@ -257,6 +257,7 @@
           <details class="more-options" id="moreOptions">
             <summary>More options</summary>
             <div class="form-grid">
+              <input type="hidden" id="goalSavedInput" value="0">
               <div class="form-group">
                 <label for="goalCategoryInput">Type</label>
                 <select id="goalCategoryInput" class="form-control" required></select>
@@ -268,11 +269,6 @@
               <div class="form-group">
                 <label for="goalOwnerInput" id="goalOwnerLabel">Whose goal?</label>
                 <select id="goalOwnerInput" class="form-control"></select>
-              </div>
-              <div class="form-group" data-kind="save">
-                <label for="goalSavedInput">Already set aside outside Portfolio (₹)</label>
-                <input type="number" id="goalSavedInput" class="form-control" min="0" step="1" value="0">
-                <p class="field-hint" id="goalPortfolioHint"></p>
               </div>
               <div class="form-group" data-kind="save">
                 <label for="goalInflationInput">Price rises with</label>
@@ -296,6 +292,7 @@
                 <label for="goalDescInput">Notes (optional)</label>
                 <textarea id="goalDescInput" class="form-control" rows="2" placeholder="Which accounts or funds will hold this money?"></textarea>
               </div>
+              <p class="field-hint goal-tag-note" id="goalPortfolioHint"></p>
             </div>
           </details>
         </div>
@@ -325,18 +322,18 @@
 
 
   <!-- VAULT ENGINE -->
-  <script src="data/market-pulse.js?v=1.13.0"></script>
-  <script src="data/market-realestate.js?v=1.13.0"></script>
-  <script src="js/kyf-goals.js?v=1.13.0"></script>
-  <script src="js/kyf-vault.js?v=1.13.0"></script>
+  <script src="data/market-pulse.js?v=1.13.1"></script>
+  <script src="data/market-realestate.js?v=1.13.1"></script>
+  <script src="js/kyf-goals.js?v=1.13.1"></script>
+  <script src="js/kyf-vault.js?v=1.13.1"></script>
 
   <!-- SCRIPT -->
-  <script src="js/goals-app.js?v=1.13.0"></script>
-  <script src="js/kyf-footer.js?v=1.13.0"></script>
-  <script src="js/kyf-features.js?v=1.13.0"></script>
-  <script src="data/kyf-terms.js?v=1.13.0"></script>
-  <script src="js/kyf-nav.js?v=1.13.0"></script>
-  <script src="js/kyf-terms.js?v=1.13.0"></script>
+  <script src="js/goals-app.js?v=1.13.1"></script>
+  <script src="js/kyf-footer.js?v=1.13.1"></script>
+  <script src="js/kyf-features.js?v=1.13.1"></script>
+  <script src="data/kyf-terms.js?v=1.13.1"></script>
+  <script src="js/kyf-nav.js?v=1.13.1"></script>
+  <script src="js/kyf-terms.js?v=1.13.1"></script>
 </body>
 </html>
 

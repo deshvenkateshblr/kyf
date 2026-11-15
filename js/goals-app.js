@@ -450,9 +450,12 @@
       $("goalReturnHint").textContent = `Leave blank for ${c.horizon.expectedReturn}% (${c.horizon.label.toLowerCase()}).`;
     }
     const pf = g ? (funding.byGoal[g.id] || 0) : 0;
-    $("goalPortfolioHint").textContent = pf
-      ? `Plus ${formatINR(pf, true)} already tagged to this goal in Portfolio.`
-      : "Money tagged to this goal in Portfolio is added automatically.";
+    const manual = g ? (Number(g.manualSavedINR) || 0) : 0;
+    const parts = [];
+    if (pf) parts.push(`${formatINR(pf, true)} counted from Portfolio`);
+    if (manual) parts.push(`${formatINR(manual, true)} entered by hand earlier`);
+    $("goalPortfolioHint").innerHTML = (parts.length ? parts.join(" + ") + ". " : "") +
+      'Money counts towards this goal once you tag holdings to it in <a href="portfolio.html">Portfolio</a>.';
   }
 
   // --- "Help me work it out" ------------------------------------------------

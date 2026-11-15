@@ -373,7 +373,8 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 100; letter-spacing: -0.015
 .form-grid > .form-group { margin-bottom: 16px; display: grid; grid-template-rows: subgrid; grid-row: span 3; row-gap: 0; }
 .form-grid > .form-group[hidden] { display: none; }
 .form-grid > .form-group > .field-hint { grid-row: 3; }
-.form-grid > .form-group > label { margin-bottom: 6px; }
+.form-grid > .form-group > label { margin-bottom: 6px; align-self: end; }
+.goal-tag-note { grid-column: 1 / -1; margin: 0; }
 .form-group.full { grid-column: span 2; }
 @media (max-width: 520px) {
   .form-grid { grid-template-columns: 1fr; }
