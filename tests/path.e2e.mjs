@@ -28,6 +28,10 @@ await p.reload(); await p.waitForSelector("#stages .stage");
 ok((await p.textContent("#upNext")).includes("Add what you owe"), "holding added: holdings task ticks itself, next is debts");
 ok(await p.locator("#stages .task.is-done .badge", { hasText: "Done for you" }).count() === 1, "auto task labelled");
 
+ok((await p.textContent("#upNext")).includes("I owe nothing"), "debts task offers I owe nothing");
+await p.click("#upNext a.btn-action"); await p.waitForSelector("#holding-modal", { state: "visible" });
+ok((await p.inputValue("#modal-omni-search-input")).includes("Loan"), "Add a loan opens the loan form on Portfolio");
+await p.goto(base + "/cadence.html"); await p.waitForSelector("#stages .stage");
 await p.click("#upNext [data-act=done]"); await p.waitForTimeout(300);
 ok(!(await p.textContent("#upNext")).includes("Add what you owe"), "marking done moves to the next task");
 const doneCount = await p.locator("#stages .task.is-done").count();

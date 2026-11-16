@@ -129,7 +129,7 @@
     const primary = t.href
       ? `<a class="btn-action primary" href="${esc(t.href)}">${esc(t.cta || "Do it")} &rarr;</a>`
       : "";
-    const done = n.v.auto ? "" : `<button type="button" class="btn-action${t.href ? "" : " primary"}" data-act="done" data-id="${esc(t.id)}">${again ? "Done again" : "I’ve done this"} ✓</button>`;
+    const done = n.v.auto ? "" : `<button type="button" class="btn-action${t.href ? "" : " primary"}" data-act="done" data-id="${esc(t.id)}">${again ? "Done again" : esc(t.doneLabel || "I’ve done this")} ✓</button>`;
     el.className = "up-next";
     el.innerHTML = `
       <p class="up-label">${again ? "Due again" : "Up next"} &middot; Stage ${stage.id}: ${esc(stage.name)}</p>
@@ -180,6 +180,7 @@
     if (t.href && v.state !== "na") acts.push(`<a class="btn-action primary small" href="${esc(t.href)}">${esc(t.cta || "Open")} &rarr;</a>`);
     if (v.state === "later") acts.push(`<button type="button" class="btn-action small" data-act="reopen" data-id="${esc(id)}">Bring back</button>`);
     if (v.state === "open") acts.push(`<button type="button" class="btn-action small" data-act="later" data-id="${esc(id)}">Later</button>`);
+    if (v.state === "open" && t.doneLabel) acts.push(`<button type="button" class="btn-action small" data-act="done" data-id="${esc(id)}">${esc(t.doneLabel)} ✓</button>`);
     if (v.state === "open" && !custom && !(rec && rec.goalId)) acts.push(`<button type="button" class="btn-action small quiet" data-act="na" data-id="${esc(id)}">Not for me</button>`);
     if (v.state === "na") acts.push(`<button type="button" class="btn-action small" data-act="reopen" data-id="${esc(id)}">Put it back</button>`);
     if (custom) acts.push(`<button type="button" class="btn-action small quiet" data-act="remove" data-id="${esc(id)}">Remove</button>`);

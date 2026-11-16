@@ -4,6 +4,7 @@
  * Six stages, each a group of small tasks. Order inside a stage is the order to do them.
  *   auto      the app can see this one itself (holdings added, goals named...) so it ticks itself
  *   recurDays comes back as "due again" after this many days once done (leave out for one-off tasks)
+ *   doneLabel text for the manual done button when "I've done this" does not fit
  *   href/cta  where the work happens (a page in this app)
  *
  * Ids that start with "house-" are the older Cadence housekeeping items; they keep their ids so a
@@ -32,8 +33,8 @@ window.KYF_PATH_DATA = {
       id: "p-debts", stage: 1, icon: "🧾", auto: "liabilities",
       title: "Add what you owe",
       why: "Loans and card balances are the other half of your net worth.",
-      how: ["Add home, car and personal loans and any card dues", "No loans? Just mark this done"],
-      href: "portfolio.html", cta: "Add loans"
+      how: ["Add home, car and personal loans and any card dues", "No loans or dues? Tap \"I owe nothing\""],
+      href: "portfolio.html?add=loan", cta: "Add a loan", doneLabel: "I owe nothing"
     },
     {
       id: "house-networth", stage: 1, icon: "📊", recurDays: 90, frequency: "Quarterly",
