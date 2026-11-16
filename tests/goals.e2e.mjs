@@ -225,13 +225,13 @@ const goalId = await page.locator("#goalList .goal-row", { hasText: "Child's edu
 check((await page.locator("#goalList .goal-row", { hasText: "Child's education" }).locator(".gs-head span").textContent()).includes("0 of 5"), "goal shows 0 of 5 steps done (money + its 4 steps)");
 await page.goto(cadenceUrl + "?goal=" + goalId);
 await page.waitForSelector(".goal-group-head");
-check((await page.locator("#goalsGrid .act-card").count()) === 4, "Cadence lists the goal's 4 steps");
+check((await page.locator("#goalsGrid .task").count()) === 4, "Cadence lists the goal's 4 steps");
 check((await page.textContent(".goal-group-head h3")).includes("Child's education"), "steps are grouped under the goal name");
 await page.goto(cadenceUrl);
 await page.waitForSelector(".goal-group-head");
-check((await page.locator("#housekeepingGrid .act-card").count()) >= 8, "housekeeping cards are still there");
+check((await page.locator("#stages .stage").count()) === 6, "the six stages of the money path are there");
 check(!(await page.textContent("#goalsGrid")).includes("Buy My First Home"), "old generic milestone cards are gone");
-await page.locator('#goalsGrid .quick-done-btn').first().click();
+await page.locator('#goalsGrid .tick').first().click();
 check((await page.textContent(".goal-group-progress")).includes("1/"), "ticking a step updates the group progress");
 await page.goto(goalsUrl);
 await page.waitForSelector("#goalList .goal-row");

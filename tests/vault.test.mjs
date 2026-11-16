@@ -33,7 +33,8 @@ class FakeDOMElement {
     this.classList = {
       add: () => {},
       remove: () => {},
-      contains: () => false
+      contains: () => false,
+      toggle: () => {}
     };
   }
   addEventListener(event, fn) {

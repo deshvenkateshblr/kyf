@@ -7,9 +7,9 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>Financial Cadence — Secret sauce of success | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.16.3">
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.16.3">
-  <link rel="stylesheet" href="css/cadence.css?v=1.16.3">
+  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.17.0">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.17.0">
+  <link rel="stylesheet" href="css/cadence.css?v=1.17.0">
 </head>
 <body>
 
@@ -30,156 +30,81 @@
   </header>
 
   <main>
-    <!-- HERO / OVERVIEW -->
-    <section class="cadence-hero">
+    <!-- YOUR MONEY PATH -->
+    <section class="path-hero" id="pathHero">
       <div class="wrap">
-        <div class="hero-top">
-          <div>
-            <h1>Financial Cadence &mdash; Secret sauce of success</h1>
-            <p class="lede">Manage the complete spectrum of your personal wealth journey: from high-conviction life milestone targets to regular housekeeping health checks. Track progress, schedule target dates, and review at your own calm pace.</p>
-          </div>
-          <div class="action-buttons">
-            <button class="btn-action primary" id="openAddModalBtn">+ Add Activity</button>
-            <button class="btn-action" id="resetCadenceBtn" title="Reset all activities to clean slate">Reset</button>
-          </div>
-        </div>
+        <p class="eyebrow">Your money path</p>
+        <h1 id="pathHeadline">Let&rsquo;s build your money path.</h1>
+        <p class="lede" id="pathSub">Six stages, one small step at a time. We tick off what we can see for you.</p>
 
-        <!-- METRIC SUMMARY STRIP -->
-        <div class="metric-strip">
-          <div class="metric-card active-metric" data-status-filter="all">
-            <div class="val" id="metricTotal">0</div>
-            <div class="lbl">Total Items</div>
-          </div>
-          <div class="metric-card" data-status-filter="active">
-            <div class="val" id="metricActive" style="color:var(--teal)">0</div>
-            <div class="lbl">Active</div>
-          </div>
-          <div class="metric-card" data-status-filter="scheduled">
-            <div class="val" id="metricScheduled" style="color:var(--amber)">0</div>
-            <div class="lbl">Work on Date</div>
-          </div>
-          <div class="metric-card" data-status-filter="done">
-            <div class="val" id="metricDone" style="color:var(--green)">0</div>
-            <div class="lbl">Completed</div>
-          </div>
-          <div class="metric-card" data-status-filter="not_applicable">
-            <div class="val" id="metricNA" style="color:var(--muted)">0</div>
-            <div class="lbl">Not Applicable</div>
-          </div>
+        <div class="path-bar" role="progressbar" aria-label="Your money path" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pathBar">
+          <ol class="path-track" id="pathTrack"></ol>
         </div>
+        <p class="path-foot" id="pathFoot"></p>
       </div>
     </section>
 
-    <!-- SEARCH & FILTERS TOOLBAR -->
-    <section class="controls-bar">
-      <div class="wrap controls-inner">
-        <div class="search-row">
-          <div class="search-box">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" id="searchInput" class="search-input" placeholder="Search activities by keyword, goal, vehicle, or topic (e.g., home, car, mutual fund, CIBIL, tax)..." aria-label="Search activities">
-            <button id="searchClearBtn" class="search-clear" aria-label="Clear search">&times;</button>
-          </div>
-        </div>
-
-        <div class="filter-pills-row">
-          <span class="filter-label">View:</span>
-          <button class="filter-pill active" data-category="all">All Activities</button>
-          <button class="filter-pill" data-category="goals">🎯 Goal steps</button>
-          <button class="filter-pill" data-category="housekeeping">🧹 Housekeeping</button>
-
-          <span class="filter-label" style="margin-left:12px;">Status:</span>
-          <button class="filter-pill active" data-status="all">All</button>
-          <button class="filter-pill" data-status="active">Active</button>
-          <button class="filter-pill" data-status="scheduled">Work on Date</button>
-          <button class="filter-pill" data-status="done">Done</button>
-          <button class="filter-pill" data-status="not_applicable">N/A</button>
-        </div>
+    <!-- UP NEXT -->
+    <section class="up-next-wrap" id="upNextWrap">
+      <div class="wrap">
+        <div class="up-next" id="upNext" hidden></div>
       </div>
     </section>
 
-    <!-- SECTION 1: LIFE MILESTONES & GOALS -->
-    <section class="activities-section" id="goalsSection">
+    <!-- STAGES -->
+    <section class="stages-wrap" id="stagesWrap">
       <div class="wrap">
-        <div class="section-title-wrap">
-          <h2>🎯 Goal steps</h2>
-          <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-            <a href="goals.html" style="font-family:var(--mono); font-size:11.5px; font-weight:700; color:var(--teal); text-decoration:none; text-transform:uppercase; letter-spacing:.06em; background:var(--teal-soft); padding:4px 10px; border-radius:999px;">📐 Open Goals &rarr;</a>
-            <span class="section-badge" id="goalsCountBadge">0 activities</span>
-          </div>
-        </div>
         <p class="goal-filter-note" id="goalFilterNote" hidden></p>
-        <div class="cards-grid" id="goalsGrid">
-          <!-- Dynamically populated -->
-        </div>
+        <div class="stages" id="stages"></div>
       </div>
     </section>
 
-    <!-- SECTION 2: FINANCIAL HYGIENE & HOUSEKEEPING -->
-    <section class="activities-section" id="housekeepingSection" style="background:rgba(255,255,255,.45); border-top:1px solid var(--line);">
+    <!-- GOAL BY GOAL -->
+    <section class="stages-wrap" id="goalsSection">
       <div class="wrap">
         <div class="section-title-wrap">
-          <h2>🧹 Housekeeping &amp; Financial Hygiene</h2>
-          <span class="section-badge" id="housekeepingCountBadge">0 activities</span>
+          <h2>🎯 Goal by goal</h2>
+          <a class="section-link" href="goals.html">Open goals &rarr;</a>
         </div>
-        <div class="cards-grid" id="housekeepingGrid">
-          <!-- Dynamically populated -->
-        </div>
+        <div class="goal-groups" id="goalsGrid"></div>
       </div>
     </section>
+
+    <!-- YOUR OWN -->
+    <section class="stages-wrap" id="ownSection" hidden>
+      <div class="wrap">
+        <div class="section-title-wrap"><h2>📝 Your own tasks</h2></div>
+        <ul class="task-list" id="ownList"></ul>
+      </div>
+    </section>
+
+    <div class="wrap path-tools">
+      <button type="button" class="btn-action primary" id="openAddModalBtn">＋ Add your own task</button>
+      <button type="button" class="btn-action" id="resetCadenceBtn" title="Start the path again from scratch">Start over</button>
+    </div>
   </main>
 
-  <!-- ADD CUSTOM ACTIVITY MODAL -->
+  <!-- ADD YOUR OWN TASK -->
   <div class="drawer-overlay" id="addModalOverlay" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
     <div class="drawer-panel">
       <div class="drawer-head">
-        <h3 id="addModalTitle">Add Custom Action Activity</h3>
+        <h3 id="addModalTitle">Add your own task</h3>
         <button class="modal-close" id="closeAddModalBtn" aria-label="Close panel">&times;</button>
       </div>
       <form id="addActivityForm" class="drawer-form">
         <div class="drawer-body">
-        <div class="form-group">
-          <label for="actSection">Section Category</label>
-          <select id="actSection" class="form-control" required>
-            <option value="goals">🎯 Life Milestones &amp; Major Goals</option>
-            <option value="housekeeping">🧹 Housekeeping &amp; Financial Hygiene</option>
-          </select>
+          <div class="form-group">
+            <label for="actTitle">What do you want to do?</label>
+            <input type="text" id="actTitle" class="form-control" placeholder="e.g. Move the old PF to my new employer" required>
+          </div>
+          <div class="form-group">
+            <label for="actDueDate">By when? (optional)</label>
+            <input type="date" id="actDueDate" class="form-control">
+          </div>
         </div>
-        <div class="form-group">
-          <label for="actTitle">Title</label>
-          <input type="text" id="actTitle" class="form-control" placeholder="e.g. Save for Sister's Wedding, Review Crypto..." required>
-        </div>
-        <div class="form-group">
-          <label for="actFrequency">Frequency / Horizon</label>
-          <input type="text" id="actFrequency" class="form-control" placeholder="e.g. Monthly, Annual, 3-Year Target..." value="Annual">
-        </div>
-        <div class="form-group">
-          <label for="actDesc">Brief Description</label>
-          <textarea id="actDesc" class="form-control" rows="3" placeholder="What needs to be done and key numbers or checklist items..." required></textarea>
-        </div>
-        <div class="form-group">
-          <label for="actTags">Tags (comma separated)</label>
-          <input type="text" id="actTags" class="form-control" placeholder="e.g. Savings, Downpayment, Gold, Tax">
-        </div>
-        <div class="form-group">
-          <label for="actStatus">Initial Status</label>
-          <select id="actStatus" class="form-control">
-            <option value="active">🟢 Active</option>
-            <option value="scheduled">📅 Work on this date</option>
-            <option value="done">✅ Done</option>
-            <option value="not_applicable">⚪ Not Applicable</option>
-          </select>
-        </div>
-        <div class="form-group" id="actDateGroup">
-          <label for="actDueDate">Target Work Date (Optional)</label>
-          <input type="date" id="actDueDate" class="form-control">
-        </div>
-        </div>
-
         <div class="drawer-actions">
           <button type="button" class="btn-action" id="cancelAddBtn">Cancel</button>
-          <button type="submit" class="btn-action primary">Save Activity</button>
+          <button type="submit" class="btn-action primary">Add task</button>
         </div>
       </form>
     </div>
@@ -203,14 +128,16 @@
 
 
   <!-- VAULT ENGINE -->
-  <script src="js/kyf-goals.js?v=1.16.3"></script>
-  <script src="js/kyf-vault.js?v=1.16.3"></script>
+  <script src="data/kyf-path.js?v=1.17.0"></script>
+  <script src="js/kyf-path.js?v=1.17.0"></script>
+  <script src="js/kyf-goals.js?v=1.17.0"></script>
+  <script src="js/kyf-vault.js?v=1.17.0"></script>
 
   <!-- SCRIPT -->
-  <script src="js/cadence-app.js?v=1.16.3"></script>
-  <script src="js/kyf-footer.js?v=1.16.3"></script>
-  <script src="js/kyf-features.js?v=1.16.3"></script>
-  <script src="js/kyf-nav.js?v=1.16.3"></script>
+  <script src="js/cadence-app.js?v=1.17.0"></script>
+  <script src="js/kyf-footer.js?v=1.17.0"></script>
+  <script src="js/kyf-features.js?v=1.17.0"></script>
+  <script src="js/kyf-nav.js?v=1.17.0"></script>
 </body>
 </html>
 
