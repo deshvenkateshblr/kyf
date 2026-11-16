@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.16.2
+ * Version: v1.16.3
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -1857,6 +1857,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const goldSub = metals.gold24kPerGram ? `₹${Number(metals.gold24kPerGram).toLocaleString("en-IN")}/g` : "₹14,280/g";
     const fdSub = macro.sbiFd1Yr ? `FD ~${macro.sbiFd1Yr}%` : "Bank FD ~6.8%";
     const epfSub = macro.epfRate ? `${macro.epfRate}% Sov.` : "8.25% Sov.";
+    const ppfSub = macro.ppfRate ? `${macro.ppfRate}% Sov.` : "7.1% Sov.";
     const loanSub = macro.homeLoanAvg ? `~${macro.homeLoanAvg}%` : "~8.65%";
     return `
   <div class="quick-pick-section">
@@ -1874,10 +1875,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         <span class="tile-sub mono-num">${fdSub}</span>
       </button>
 
-      <button type="button" class="quick-pick-tile" data-quick="epf" title="EPF / PPF Retirement Corpus">
+      <button type="button" class="quick-pick-tile" data-quick="epf" title="Employees Provident Fund">
         <span class="tile-icon">🛡️</span>
-        <span class="tile-name">EPF / PPF</span>
+        <span class="tile-name">EPF</span>
         <span class="tile-sub mono-num">${epfSub}</span>
+      </button>
+
+      <button type="button" class="quick-pick-tile" data-quick="ppf" title="Public Provident Fund">
+        <span class="tile-icon">📘</span>
+        <span class="tile-name">PPF</span>
+        <span class="tile-sub mono-num">${ppfSub}</span>
       </button>
 
       <button type="button" class="quick-pick-tile" data-quick="cash" title="Bank Savings & Liquid Cash">
@@ -1933,11 +1940,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       const rate = macro.epfRate || 8.25;
       initiateAddHoldingFromSelection({
         type: "epf",
-        tag: "EPF / PPF",
+        tag: "EPF",
         name: "Employees Provident Fund (EPF)",
         assetClass: "Fixed Income",
         subCategory: `EPF (${rate}% Sovereign Rate)`,
         custodian: "EPFO"
+      });
+    } else if (type === "ppf") {
+      const rate = macro.ppfRate || 7.1;
+      initiateAddHoldingFromSelection({
+        type: "ppf",
+        tag: "PPF",
+        name: "Public Provident Fund (PPF)",
+        assetClass: "Fixed Income",
+        subCategory: `PPF (${rate}% Sovereign Rate)`,
+        custodian: "Post Office / Bank"
       });
     } else if (type === "cash") {
       initiateAddHoldingFromSelection({
