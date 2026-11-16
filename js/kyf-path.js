@@ -31,9 +31,18 @@
       case "liabilities": return hs.some((h) => h && h.isLiability);
       case "goal": return gs.length > 0;
       case "goalsComplete": return gs.length > 0 && gs.every((g) => (Number(g.baseTargetINR) || 0) > 0 && Number(g.targetYear) > 0);
+      case "emergencyGoal": return gs.some((g) => /emergency|buffer|safety/i.test(String(g.name || g.title || "")));
       case "assigned": return own.length > 0 && own.every((h) => allocsOf(h).length > 0);
       default: return false;
     }
+  }
+
+  /** Tasks that only apply to some people. ctx = { holdings, goals } */
+  function applies(task, ctx) {
+    if (!task.when) return true;
+    const hs = (ctx && ctx.holdings) || [];
+    if (task.when === "hasDebt") return hs.some((h) => h && h.isLiability);
+    return true;
   }
 
   function view(task, rec, ctx, now) {
@@ -60,7 +69,7 @@
   function build(data, records, ctx, now) {
     const byId = new Map((records || []).map((r) => [r.id, r]));
     const stages = data.stages.map((s) => {
-      const items = data.tasks.filter((t) => t.stage === s.id).map((task) => {
+      const items = data.tasks.filter((t) => t.stage === s.id && applies(t, ctx)).map((task) => {
         const rec = byId.get(task.id) || null;
         return { task, rec, v: view(task, rec, ctx, now) };
       });
@@ -89,6 +98,8 @@
 
   /** Keep every catalogue task present on the stored list, carrying over saved state by id. */
   function merge(stored, data) {
+    const gone = new Set(data.retired || []);
+    stored = (stored || []).filter((a) => !gone.has(a.id));
     const have = new Map((stored || []).map((a) => [a.id, a]));
     const out = (stored || []).map((a) => {
       const t = data.tasks.find((x) => x.id === a.id);
@@ -107,5 +118,5 @@
     };
   }
 
-  root.KYF_PATH = { build, view, autoDone, merge, markDone, reopen, snooze, notForMe, LATER_DAYS };
+  root.KYF_PATH = { build, view, autoDone, applies, merge, markDone, reopen, snooze, notForMe, LATER_DAYS };
 })(typeof window !== "undefined" ? window : globalThis);

@@ -19,9 +19,9 @@ let dialogs = 0; p.on("dialog", (d) => { dialogs++; d.dismiss(); });
 const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 const seed = (hs) => p.evaluate((h) => { localStorage.clear(); if (h) localStorage.setItem("kyf_user_holdings", JSON.stringify(h)); }, hs);
 await p.goto(base + "/cadence.html"); await seed(null); await p.reload(); await p.waitForSelector("#stages .stage");
-ok(await p.locator("#stages .stage").count() === 6, "six stages");
+ok(await p.locator("#stages .stage").count() === 4, "four stages");
 ok((await p.textContent("#upNext")).includes("Add what you own"), "empty: up next is add holdings");
-ok(await p.locator("#pathTrack .seg").count() === 6, "six segments in the bar");
+ok(await p.locator("#pathTrack .seg").count() === 4, "four segments in the bar");
 
 await seed([{ id: "h1", name: "Fund", assetClass: "Mutual Funds", member: "Me", custodian: "X", currentValue: 1000, investedValue: 900, allocations: [] }]);
 await p.reload(); await p.waitForSelector("#stages .stage");
@@ -40,8 +40,8 @@ ok(doneCount === 2, "two tasks done");
 await p.click("#upNext [data-act=later]"); await p.waitForTimeout(300);
 ok(await p.locator("#stages .task.is-later").count() === 1, "Later parks a task");
 
-await p.locator("#stages .stage").nth(1).locator("> summary").click();
-const t = p.locator("#stages .stage").nth(1).locator(".task").first();
+if (!(await p.locator("#stages .stage").nth(1).evaluate((e) => e.open))) await p.locator("#stages .stage").nth(1).locator("> summary").click();
+const t = p.locator("#stages .stage").nth(1).locator(".task").nth(1);
 await t.locator("summary").click();
 await t.locator("[data-act=na]").click(); await p.waitForTimeout(300);
 ok(await p.locator("#stages .task.is-na").count() === 1, "Not for me marks it");

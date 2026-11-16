@@ -229,7 +229,7 @@ check((await page.locator("#goalsGrid .task").count()) === 4, "Cadence lists the
 check((await page.textContent(".goal-group-head h3")).includes("Child's education"), "steps are grouped under the goal name");
 await page.goto(cadenceUrl);
 await page.waitForSelector(".goal-group-head");
-check((await page.locator("#stages .stage").count()) === 6, "the six stages of the money path are there");
+check((await page.locator("#stages .stage").count()) === 4, "the four stages of the money path are there");
 check(!(await page.textContent("#goalsGrid")).includes("Buy My First Home"), "old generic milestone cards are gone");
 await page.locator('#goalsGrid .tick').first().click();
 check((await page.textContent(".goal-group-progress")).includes("1/"), "ticking a step updates the group progress");

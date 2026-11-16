@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.17.1
+ * Version: v1.18.0
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -2318,6 +2318,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (modalTitle) modalTitle.textContent = "📈 Add Investment Holding";
       if (els.btnSaveHolding) els.btnSaveHolding.textContent = "＋ Save Holding";
       if (els.btnDeleteHolding) els.btnDeleteHolding.style.display = "none";
+      // A fresh form starts from the first type, not whatever the last one (a loan, say) left behind
+      if (els.selectHoldingAssetClass) els.selectHoldingAssetClass.selectedIndex = 0;
+      applyHoldingTypeMode();
 
       if (els.inputHoldingName) {
         els.inputHoldingName.value = "";

@@ -101,6 +101,7 @@
       : stage.line;
     const bar = $("pathBar");
     bar.setAttribute("aria-valuenow", String(path.pct));
+    $("pathTrack").style.setProperty("--n", String(path.stages.length));
     $("pathTrack").innerHTML = path.stages.map((s) => {
       const cls = "seg" + (s.pct >= 100 ? " is-done" : "") + (s.id === path.current && path.pct < 100 ? " is-current" : "");
       return `<li class="${cls}" title="${esc(s.name)}: ${s.done} of ${s.total}">
