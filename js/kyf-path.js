@@ -21,6 +21,9 @@
 
   const allocsOf = (h) => (Array.isArray(h.allocations) ? h.allocations.filter((a) => a && a.goalId) : []);
 
+  const text = (h) => `${h.assetClass || ""} ${h.subCategory || ""} ${h.name || ""}`.toLowerCase();
+  const has = (list, re, not) => list.some((h) => re.test(text(h)) && !(not && not.test(text(h))));
+
   /** What the app can see for itself. ctx = { holdings, goals } */
   function autoDone(key, ctx) {
     const hs = (ctx && ctx.holdings) || [];
@@ -28,6 +31,13 @@
     const own = hs.filter((h) => h && !h.isLiability);
     switch (key) {
       case "holdings": return own.length > 0;
+      case "savings": return has(own, /cash|savings|liquid/);
+      case "fd": return has(own, /fixed deposit|\bfd\b|deposit/, /epf|ppf|provident/);
+      case "mf": return own.some((h) => /mutual/i.test(h.assetClass || ""));
+      case "equity": return own.some((h) => /equit|stock|share/i.test(h.assetClass || ""));
+      case "epf": return has(own, /\bepf\b|employees.? provident/);
+      case "ppf": return has(own, /\bppf\b|public provident/);
+      case "gold": return own.some((h) => /gold|commodit|real estate|property/i.test(h.assetClass || ""));
       case "liabilities": return hs.some((h) => h && h.isLiability);
       case "goal": return gs.length > 0;
       case "goalsComplete": return gs.length > 0 && gs.every((g) => (Number(g.baseTargetINR) || 0) > 0 && Number(g.targetYear) > 0);
@@ -42,6 +52,7 @@
     if (!task.when) return true;
     const hs = (ctx && ctx.holdings) || [];
     if (task.when === "hasDebt") return hs.some((h) => h && h.isLiability);
+    if (task.when === "hasGoal") return ((ctx && ctx.goals) || []).some((g) => g && g.kind !== "COVER" && g.status !== "ACHIEVED");
     return true;
   }
 
@@ -52,8 +63,11 @@
     if (st === "not_applicable") return { state: "na", auto: false, renew: false };
     if (st === "done") {
       const doneAt = rec.doneAt ? Date.parse(rec.doneAt) : NaN;
-      const renew = !!task.recurDays && !isNaN(doneAt) && t - doneAt > task.recurDays * DAY;
-      return { state: "done", auto: false, renew, doneAt: isNaN(doneAt) ? null : doneAt, dueAt: !isNaN(doneAt) && task.recurDays ? doneAt + task.recurDays * DAY : null };
+      const every = Number(rec.everyDays) || task.recurDays || 0;
+      const picked = rec.nextOn ? Date.parse(rec.nextOn) : NaN;
+      const dueAt = every && !isNaN(picked) ? picked : every && !isNaN(doneAt) ? doneAt + every * DAY : null;
+      const renew = dueAt != null && t > dueAt;
+      return { state: "done", auto: false, renew, doneAt: isNaN(doneAt) ? null : doneAt, dueAt, every };
     }
     const until = rec && rec.snoozedUntil ? Date.parse(rec.snoozedUntil) : NaN;
     if (!isNaN(until) && until > t) return { state: "later", auto: false, renew: false, until };
@@ -91,9 +105,11 @@
 
   // ---- changes a person can make (return the updated record) ---------------------------------
   const nowIso = (now) => new Date(now || Date.now()).toISOString();
-  const markDone = (rec, now) => Object.assign({}, rec, { status: "done", doneAt: nowIso(now), snoozedUntil: "" });
+  const markDone = (rec, now) => Object.assign({}, rec, { status: "done", doneAt: nowIso(now), snoozedUntil: "", nextOn: "" });
   const reopen = (rec) => Object.assign({}, rec, { status: "active", doneAt: "", snoozedUntil: "" });
   const snooze = (rec, now) => Object.assign({}, rec, { status: "active", snoozedUntil: nowIso((now || Date.now()) + LATER_DAYS * DAY) });
+  const setEvery = (rec, days) => Object.assign({}, rec, { everyDays: Number(days) || 0, nextOn: "" });
+  const setNextOn = (rec, iso) => Object.assign({}, rec, { nextOn: iso || "" });
   const notForMe = (rec) => Object.assign({}, rec, { status: "not_applicable", snoozedUntil: "" });
 
   /** Keep every catalogue task present on the stored list, carrying over saved state by id. */
@@ -118,5 +134,5 @@
     };
   }
 
-  root.KYF_PATH = { build, view, autoDone, applies, merge, markDone, reopen, snooze, notForMe, LATER_DAYS };
+  root.KYF_PATH = { build, view, autoDone, applies, merge, markDone, reopen, snooze, notForMe, setEvery, setNextOn, LATER_DAYS };
 })(typeof window !== "undefined" ? window : globalThis);

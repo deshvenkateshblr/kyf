@@ -199,6 +199,8 @@ a.btn-action { text-decoration: none; display: inline-flex; align-items: center;
 .stage.is-done .mini-bar i { background: var(--green); }
 
 /* Tasks */
+.sched { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 4px 0 8px; font-size: 13px; color: var(--ink-soft); }
+.sched select, .sched input { font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); }
 .task-list { list-style: none; margin: 0; padding: 4px 12px 14px; display: flex; flex-direction: column; gap: 2px; }
 .task { display: flex; align-items: flex-start; gap: 12px; padding: 8px 8px; border-radius: 12px; }
 .task:hover { background: #f6f9f4; }

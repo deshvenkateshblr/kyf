@@ -97,7 +97,7 @@
       : `You’re on stage ${stage.id} of ${path.stages.length}: ${stage.name}.`;
     $("pathSub").textContent = path.pct >= 100
       ? "Every step is done. A few calm check-ins a year keep it that way."
-      : none ? "Six stages, one small step at a time. We tick off what we can see for you."
+      : none ? "Three short groups, one small step at a time. We tick off what we can see for you."
       : stage.line;
     const bar = $("pathBar");
     bar.setAttribute("aria-valuenow", String(path.pct));
@@ -186,13 +186,18 @@
     if (v.state === "na") acts.push(`<button type="button" class="btn-action small" data-act="reopen" data-id="${esc(id)}">Put it back</button>`);
     if (custom) acts.push(`<button type="button" class="btn-action small quiet" data-act="remove" data-id="${esc(id)}">Remove</button>`);
 
+    const recurring = !!(t.recurDays && v.state === "done" && !v.auto);
+    const sched = recurring ? `<div class="sched">
+        <label>Check <select data-field="every" data-id="${esc(id)}">${EVERY.map(([d, l]) => `<option value="${d}"${d === v.every ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label>Next on <input type="date" data-field="nextOn" data-id="${esc(id)}" value="${v.dueAt ? new Date(v.dueAt).toISOString().slice(0, 10) : ""}"></label>
+      </div>` : "";
     const why = t.why || (rec && rec.description) || "";
     const how = t.how && t.how.length ? `<ul class="how">${t.how.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : "";
     return `<li class="task is-${v.state}${v.renew ? " is-renew" : ""}" id="task-${esc(id)}" data-id="${esc(id)}">
       ${tick}
       <details>
-        <summary><span class="task-icon" aria-hidden="true">${esc(t.icon || (rec && rec.icon) || "📌")}</span><span class="task-title">${esc(t.title)}</span>${badge}</summary>
-        <div class="task-body">${why ? `<p>${esc(why)}</p>` : ""}${how}${acts.length ? `<div class="task-actions">${acts.join("")}</div>` : ""}</div>
+        <summary><span class="task-icon" aria-hidden="true">${esc(t.icon || (rec && rec.icon) || "📌")}</span><span class="task-title">${esc(t.title)}</span>${t.tag ? `<span class="badge soft">${esc(t.tag)}</span>` : ""}${badge}</summary>
+        <div class="task-body">${why ? `<p>${esc(why)}</p>` : ""}${how}${sched}${acts.length ? `<div class="task-actions">${acts.join("")}</div>` : ""}</div>
       </details>
     </li>`;
   }
@@ -235,6 +240,16 @@
     commit();
   }
 
+  const EVERY = [[30, "every month"], [90, "every quarter"], [182, "twice a year"], [365, "every year"]];
+
+  function onChange(e) {
+    const f = e.target.closest("[data-field]");
+    if (!f) return;
+    const id = f.dataset.id;
+    if (f.dataset.field === "every") update(id, (r) => P.setEvery(r, f.value));
+    else if (f.dataset.field === "nextOn" && f.value) update(id, (r) => P.setNextOn(r, new Date(f.value + "T00:00:00").toISOString()));
+  }
+
   function onClick(e) {
     const b = e.target.closest("[data-act]");
     if (!b) return;
@@ -264,6 +279,7 @@
 
   function bindEvents() {
     document.addEventListener("click", onClick);
+    document.addEventListener("change", onChange);
 
     const modal = $("addModalOverlay"), form = $("addActivityForm");
     $("openAddModalBtn").addEventListener("click", () => { modal.classList.add("open"); $("actTitle").focus(); });

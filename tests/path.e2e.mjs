@@ -19,31 +19,45 @@ let dialogs = 0; p.on("dialog", (d) => { dialogs++; d.dismiss(); });
 const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 const seed = (hs) => p.evaluate((h) => { localStorage.clear(); if (h) localStorage.setItem("kyf_user_holdings", JSON.stringify(h)); }, hs);
 await p.goto(base + "/cadence.html"); await seed(null); await p.reload(); await p.waitForSelector("#stages .stage");
-ok(await p.locator("#stages .stage").count() === 4, "four stages");
-ok((await p.textContent("#upNext")).includes("Add what you own"), "empty: up next is add holdings");
-ok(await p.locator("#pathTrack .seg").count() === 4, "four segments in the bar");
+ok(await p.locator("#stages .stage").count() === 3, "three groups");
+ok((await p.textContent("#upNext")).includes("Add your savings accounts"), "empty: up next is the first asset type");
+ok(await p.locator("#pathTrack .seg").count() === 3, "three segments in the bar");
+ok(await p.locator("#stages .task", { hasText: "Track your goals" }).count() === 0, "goal tracking hidden until there is a goal");
 
 await seed([{ id: "h1", name: "Fund", assetClass: "Mutual Funds", member: "Me", custodian: "X", currentValue: 1000, investedValue: 900, allocations: [] }]);
 await p.reload(); await p.waitForSelector("#stages .stage");
-ok((await p.textContent("#upNext")).includes("Add what you owe"), "holding added: holdings task ticks itself, next is debts");
-ok(await p.locator("#stages .task.is-done .badge", { hasText: "Done for you" }).count() === 1, "auto task labelled");
-
-ok((await p.textContent("#upNext")).includes("I owe nothing"), "debts task offers I owe nothing");
-await p.click("#upNext a.btn-action"); await p.waitForSelector("#holding-modal", { state: "visible" });
-ok((await p.inputValue("#modal-omni-search-input")).includes("Loan"), "Add a loan opens the loan form on Portfolio");
-await p.goto(base + "/cadence.html"); await p.waitForSelector("#stages .stage");
-await p.click("#upNext [data-act=done]"); await p.waitForTimeout(300);
-ok(!(await p.textContent("#upNext")).includes("Add what you owe"), "marking done moves to the next task");
-const doneCount = await p.locator("#stages .task.is-done").count();
-ok(doneCount === 2, "two tasks done");
+ok(await p.locator("#stages .task.is-done .badge", { hasText: "Done for you" }).count() === 1, "a fund ticks the mutual fund task by itself");
 
 await p.click("#upNext [data-act=later]"); await p.waitForTimeout(300);
 ok(await p.locator("#stages .task.is-later").count() === 1, "Later parks a task");
+ok((await p.textContent("#upNext")).includes("Add your fixed deposits"), "up next moves on");
+await p.click("#upNext a.btn-action"); await p.waitForSelector("#holding-modal", { state: "visible" });
+ok((await p.inputValue("#modal-omni-search-input")).includes("Fixed Deposit"), "Add an FD opens the FD form");
+await p.goto(base + "/portfolio.html?add=equity"); await p.waitForSelector("#holding-modal", { state: "visible" });
+ok((await p.inputValue("#select-holding-assetclass")) === "Equities", "Add shares opens the form on Equities");
+await p.goto(base + "/cadence.html"); await p.waitForSelector("#stages .stage");
+await p.click("#upNext [data-act=done]"); await p.waitForTimeout(300);
+ok(await p.locator("#stages .task.is-done").count() === 2, "marking done counts");
 
-if (!(await p.locator("#stages .stage").nth(1).evaluate((e) => e.open))) await p.locator("#stages .stage").nth(1).locator("> summary").click();
-const t = p.locator("#stages .stage").nth(1).locator(".task").nth(1);
-await t.locator("summary").click();
-await t.locator("[data-act=na]").click(); await p.waitForTimeout(300);
+const owed = p.locator("#stages .task", { hasText: "Add what you owe" });
+await owed.locator("summary").click();
+ok(await owed.locator("[data-act=done]", { hasText: "I owe nothing" }).count() === 1, "I owe nothing is offered");
+await owed.locator("[data-act=done]").click(); await p.waitForTimeout(300);
+ok(await p.locator("#stages .task.is-done", { hasText: "Add what you owe" }).count() === 1, "I owe nothing completes it");
+
+const nw = p.locator("#stages .task", { hasText: "Check your net worth" });
+await nw.locator(".tick").click(); await p.waitForTimeout(300);
+await nw.locator("summary").click();
+ok(await nw.locator("[data-field=nextOn]").count() === 1, "a done recurring task shows its next date");
+await nw.locator("[data-field=every]").selectOption("30"); await p.waitForTimeout(300);
+await p.locator("#stages .task", { hasText: "Check your net worth" }).locator("summary").click().catch(() => {});
+const due = await p.locator("#stages .task", { hasText: "Check your net worth" }).locator("[data-field=nextOn]").inputValue();
+const days = Math.round((Date.parse(due) - Date.now()) / 864e5);
+ok(days >= 28 && days <= 31, "choosing monthly puts the next date about 30 days out (" + due + ")");
+
+const shares = p.locator("#stages .task", { hasText: "Add your shares" });
+await shares.locator("summary").click();
+await shares.locator("[data-act=na]").click(); await p.waitForTimeout(300);
 ok(await p.locator("#stages .task.is-na").count() === 1, "Not for me marks it");
 await p.reload(); await p.waitForSelector("#stages .stage");
 ok(await p.locator("#stages .task.is-na").count() === 1 && await p.locator("#stages .task.is-later").count() === 1, "state survives reload");

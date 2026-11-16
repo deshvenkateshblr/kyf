@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.18.0
+ * Version: v1.19.0
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -1204,9 +1204,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     let addType = "";
     try { addType = new URLSearchParams(window.location.search).get("add") || ""; } catch (_) { /* ignore */ }
-    if (!isDemoMode && addType === "loan") {
+    if (!isDemoMode && addType) {
       try { window.history.replaceState({}, "", window.location.pathname); } catch (_) { /* ignore */ }
-      handleQuickPick("loan");
+      const klass = { equity: "Equities", mf: "Mutual Funds" }[addType];
+      if (klass) {
+        openHoldingModal(false, null);
+        if (els.selectHoldingAssetClass) { els.selectHoldingAssetClass.value = klass; applyHoldingTypeMode(); }
+      } else handleQuickPick(addType);
       return;
     }
     if (!gid || isDemoMode || !rawGoals.some((g) => g.id === gid)) return;
