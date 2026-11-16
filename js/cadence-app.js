@@ -72,6 +72,7 @@
     const focus = !!goalFilterId;
     ["pathHero", "upNextWrap", "stagesWrap"].forEach((id) => { const el = $(id); if (el) el.hidden = focus; });
     if (!focus) { renderHero(path); renderUpNext(path); renderStages(path); }
+    renderSchedule(path);
     renderGoalGroups();
     renderOwn();
     const note = $("goalFilterNote");
@@ -80,7 +81,7 @@
       note.hidden = !focus;
       if (focus) note.innerHTML = `Showing steps for <strong>${esc(g ? g.name : "this goal")}</strong> &middot; <a href="cadence.html">Show my whole path</a>`;
     }
-    $("goalsSection").hidden = !goalsList.length && !focus;
+    $("goalsSection").hidden = !focus;
     window.dispatchEvent(new CustomEvent("kyf:path-rendered", { detail: { pct: path.pct } }));
   }
 
@@ -97,7 +98,7 @@
       : `You’re on stage ${stage.id} of ${path.stages.length}: ${stage.name}.`;
     $("pathSub").textContent = path.pct >= 100
       ? "Every step is done. A few calm check-ins a year keep it that way."
-      : none ? "Three short groups, one small step at a time. We tick off what we can see for you."
+      : none ? "Three short groups, one small step at a time. You confirm each one, and set the date for the next look."
       : stage.line;
     const bar = $("pathBar");
     bar.setAttribute("aria-valuenow", String(path.pct));
@@ -110,9 +111,29 @@
         <span class="seg-label">${esc(s.name)}</span></li>`;
     }).join("");
     setWidths($("pathTrack"));
-    const due = path.renewals.length;
+    const due = path.schedule.overdue.length;
     $("pathFoot").innerHTML = `<strong>${path.done}</strong> of ${path.total} steps done` +
-      (due ? ` &middot; <button type="button" class="link-btn" data-act="show-due">${due} due again</button>` : "");
+      (due ? ` &middot; <button type="button" class="link-btn" data-act="show-due" data-id="${esc(path.schedule.overdue[0].item.task.id)}">${due} overdue</button>` : "");
+  }
+
+  const dateVal = (ms) => (ms ? new Date(ms).toISOString().slice(0, 10) : "");
+  const tomorrow = () => dateVal(Date.now() + 86400000);
+
+  // The one question, the buttons that answer it, and the "I'll do it by" date. Used by Up next and task rows.
+  function answerButtons(t, v, id, small) {
+    const sz = small ? " small" : "";
+    const out = [];
+    if (t.href && v.state !== "na") out.push(`<a class="btn-action primary${sz}" href="${esc(t.href)}">${esc(t.cta || "Open")} &rarr;</a>`);
+    if (v.state === "open" || v.state === "later") {
+      out.push(`<button type="button" class="btn-action${sz}${t.href ? "" : " primary"}" data-act="done" data-id="${esc(id)}">${esc(t.doneLabel || "I’ve done this")} ✓</button>`);
+      if (t.naLabel) out.push(`<button type="button" class="btn-action quiet${sz}" data-act="na" data-id="${esc(id)}">${esc(t.naLabel)}</button>`);
+    }
+    return out.join("");
+  }
+
+  function planBox(t, v, id) {
+    if (v.state !== "open" && v.state !== "later") return "";
+    return `<label class="plan-by">I’ll do this by <input type="date" data-field="plan" data-id="${esc(id)}" min="${tomorrow()}" value="${v.state === "later" ? dateVal(v.until) : ""}"></label>`;
   }
 
   function renderUpNext(path) {
@@ -121,108 +142,158 @@
     el.hidden = false;
     if (!n) {
       el.className = "up-next is-clear";
-      el.innerHTML = `<p class="up-label">All clear</p><h2>Nothing to do right now 🎉</h2><p class="up-why">Everything on your path is done or put off for later. Come back when something is due again.</p>`;
+      el.innerHTML = `<p class="up-label">All clear</p><h2>Nothing to do right now 🎉</h2><p class="up-why">Everything is confirmed or planned. Come back when something is due.</p>`;
       return;
     }
     const t = n.task;
-    const stage = path.stages.find((s) => s.id === t.stage);
+    const stage = path.stages.find((s) => s.id === (t.stage || (n.rec && n.rec.stage) || 2)) || path.stages[0];
     const again = n.v.renew;
-    const primary = t.href
-      ? `<a class="btn-action primary" href="${esc(t.href)}">${esc(t.cta || "Do it")} &rarr;</a>`
-      : "";
-    const done = n.v.auto ? "" : `<button type="button" class="btn-action${t.href ? "" : " primary"}" data-act="done" data-id="${esc(t.id)}">${again ? "Done again" : esc(t.doneLabel || "I’ve done this")} ✓</button>`;
+    const label = again ? "Overdue" : n.v.overdue ? "You planned this" : "Up next";
+    const buttons = again
+      ? `<button type="button" class="btn-action primary" data-act="done" data-id="${esc(t.id)}">Done again ✓</button>`
+      : answerButtons(t, n.v, t.id, false);
+    const sub = t.goalId ? `Goal: ${esc((goalsList.find((g) => g.id === t.goalId) || {}).name || "")}` : `${esc(stage.name)}`;
     el.className = "up-next";
     el.innerHTML = `
-      <p class="up-label">${again ? "Due again" : "Up next"} &middot; Stage ${stage.id}: ${esc(stage.name)}</p>
+      <p class="up-label">${label} &middot; ${sub}</p>
       <div class="up-body">
-        <div class="up-icon" aria-hidden="true">${t.icon}</div>
+        <div class="up-icon" aria-hidden="true">${esc(t.icon || "📌")}</div>
         <div class="up-main">
           <h2>${esc(t.title)}</h2>
-          <p class="up-why">${esc(t.why)}</p>
-          ${t.how && t.how.length ? `<ul class="how">${t.how.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}
-          <div class="up-actions">${primary}${done}<button type="button" class="btn-action quiet" data-act="later" data-id="${esc(t.id)}">Later</button></div>
+          ${t.ask ? `<p class="up-ask">${esc(t.ask)}</p>` : ""}
+          <p class="up-why">${esc(t.why || "")}</p>
+          ${n.v.hint ? `<p class="up-hint">${n.v.hint} ${esc(t.hintUnit || "added so far")}</p>` : ""}
+          <div class="up-actions">${buttons}</div>
+          ${again ? "" : planBox(t, n.v, t.id)}
         </div>
       </div>`;
   }
 
+  function taskList(items) {
+    let last = null;
+    return items.map((i) => {
+      const g = i.task.group;
+      const head = g && g !== last ? `<li class="task-group">${esc(g)}</li>` : "";
+      last = g || last;
+      return head + taskRow(i.task, i.rec, i.v);
+    }).join("");
+  }
+
+  function goalGroupHtml(g, items) {
+    const live = items.filter((i) => i.v.state !== "na");
+    const done = live.filter((i) => i.v.state === "done").length;
+    const pct = live.length ? Math.round((done / live.length) * 100) : 0;
+    return `<section class="goal-group" data-goal="${esc(g.id)}">
+      <div class="goal-group-head"><h3>${esc(g.icon || "🎯")} ${esc(g.name)}</h3><span class="goal-group-progress">${done} of ${live.length}</span><a href="goals.html">Open goal &rarr;</a></div>
+      <span class="mini-bar wide"><i data-w="${pct}"></i></span>
+      <ul class="task-list">${items.map((i) => taskRow(i.task, i.rec, i.v)).join("")}</ul>
+    </section>`;
+  }
+
+  // Redrawing must not fold away what the person has open: remember which groups and tasks were open
+  let openTasks = new Set(), lastCurrent = null;
+
   function renderStages(path) {
-    $("stages").innerHTML = path.stages.map((s) => {
+    const host = $("stages");
+    const had = host.children.length > 0;
+    const openStages = new Set([...host.querySelectorAll("details.stage[open]")].map((d) => Number(d.dataset.stage)));
+    openTasks = new Set([...document.querySelectorAll(".task > details[open]")].map((d) => d.closest(".task").dataset.id));
+    const moved = lastCurrent !== null && lastCurrent !== path.current;
+    lastCurrent = path.current;
+    host.innerHTML = path.stages.map((s) => {
       const state = s.pct >= 100 ? "is-done" : s.id === path.current ? "is-current" : "is-later";
-      const open = s.id === path.current && path.pct < 100;
+      const open = !had || moved ? s.id === path.current && path.pct < 100 : openStages.has(s.id);
       const tag = s.pct >= 100 ? "Done ✓" : s.id === path.current ? "You are here" : "";
+      const goals = s.goalSteps
+        ? (s.goalGroups.length
+          ? `<div class="goal-groups"><p class="task-group-note">Goal by goal</p>${s.goalGroups.map((g) => goalGroupHtml(g.goal, g.items)).join("")}</div>`
+          : `<p class="empty-note stage-note">Once you add a goal, its steps appear here.</p>`)
+        : "";
       return `<details class="stage ${state}" data-stage="${s.id}"${open ? " open" : ""}>
         <summary>
           <span class="stage-icon" aria-hidden="true">${s.pct >= 100 ? "✓" : s.icon}</span>
           <span class="stage-title"><strong>${s.id}. ${esc(s.name)}</strong><small>${esc(s.line)}</small></span>
           <span class="stage-meta">${tag ? `<em>${tag}</em>` : ""}<span class="stage-count">${s.done} of ${s.total}</span><span class="mini-bar"><i data-w="${s.pct}"></i></span></span>
         </summary>
-        <ul class="task-list">${s.items.map((i) => taskRow(i.task, i.rec, i.v)).join("")}</ul>
+        <ul class="task-list">${taskList(s.items)}</ul>
+        ${goals}
       </details>`;
     }).join("");
     setWidths($("stages"));
   }
 
-  // One task, from the catalogue or from a stored record (goal steps, the person's own)
+  // One task, from the catalogue, a goal's checklist, or the person's own
   function taskRow(t, rec, v) {
     const id = t.id;
     const custom = !catalogueIds.has(id) && !(rec && rec.goalId);
     let badge = "";
-    if (v.state === "done" && v.auto) badge = `<span class="badge ok">Done for you</span>`;
-    else if (v.state === "done" && v.renew) badge = `<span class="badge due">Due again</span>`;
-    else if (v.state === "done") badge = `<span class="badge ok">Done${v.doneAt ? " " + fmtDate(v.doneAt) : ""}${v.dueAt ? ` &middot; again ${fmtDate(v.dueAt)}` : ""}</span>`;
-    else if (v.state === "later") badge = `<span class="badge soft">Back ${fmtDate(v.until)}</span>`;
-    else if (v.state === "na") badge = `<span class="badge soft">Not for me</span>`;
+    if (v.state === "done" && v.renew) badge = `<span class="badge due">Overdue &middot; was ${fmtDate(v.dueAt)}</span>`;
+    else if (v.state === "done") badge = `<span class="badge ok">Done${v.doneAt ? " " + fmtDate(v.doneAt) : ""}${v.dueAt ? ` &middot; ${esc((t.dateLabel || "again").toLowerCase())} ${fmtDate(v.dueAt)}` : ""}</span>`;
+    else if (v.state === "later") badge = `<span class="badge soft">By ${fmtDate(v.until)}</span>`;
+    else if (v.state === "na") badge = `<span class="badge soft">${esc(t.naLabel || "Not for me")}</span>`;
+    else if (v.overdue) badge = `<span class="badge due">Planned for ${fmtDate(v.plan)}</span>`;
+    else if (v.hint) badge = `<span class="badge soft">${v.hint} ${esc(t.hintUnit || "added so far")}</span>`;
     else if (t.frequency) badge = `<span class="badge soft">${esc(t.frequency)}</span>`;
 
     const tickLabel = v.state === "done" ? "Mark as not done" : "Mark as done";
-    const tick = `<button type="button" class="tick${v.state === "done" ? " on" : ""}" data-act="tick" data-id="${esc(id)}" aria-label="${tickLabel}: ${esc(t.title)}"${v.auto || v.state === "na" ? " disabled" : ""}>✓</button>`;
+    const tick = `<button type="button" class="tick${v.state === "done" ? " on" : ""}" data-act="tick" data-id="${esc(id)}" aria-label="${tickLabel}: ${esc(t.title)}"${v.state === "na" ? " disabled" : ""}>✓</button>`;
 
     const acts = [];
-    if (t.href && v.state !== "na") acts.push(`<a class="btn-action primary small" href="${esc(t.href)}">${esc(t.cta || "Open")} &rarr;</a>`);
-    if (v.state === "later") acts.push(`<button type="button" class="btn-action small" data-act="reopen" data-id="${esc(id)}">Bring back</button>`);
-    if (v.state === "open") acts.push(`<button type="button" class="btn-action small" data-act="later" data-id="${esc(id)}">Later</button>`);
-    if (v.state === "open" && t.doneLabel) acts.push(`<button type="button" class="btn-action small" data-act="done" data-id="${esc(id)}">${esc(t.doneLabel)} ✓</button>`);
-    if (v.state === "open" && !custom && !(rec && rec.goalId)) acts.push(`<button type="button" class="btn-action small quiet" data-act="na" data-id="${esc(id)}">Not for me</button>`);
+    if (v.state !== "done") acts.push(answerButtons(t, v, id, true));
+    if (v.state === "done" && t.href) acts.push(`<a class="btn-action small" href="${esc(t.href)}">${esc(t.cta || "Open")} &rarr;</a>`);
+    if (v.state === "done") acts.push(`<button type="button" class="btn-action small quiet" data-act="reopen" data-id="${esc(id)}">Not done after all</button>`);
+    if (v.state === "later") acts.push(`<button type="button" class="btn-action small quiet" data-act="reopen" data-id="${esc(id)}">Clear date</button>`);
     if (v.state === "na") acts.push(`<button type="button" class="btn-action small" data-act="reopen" data-id="${esc(id)}">Put it back</button>`);
+    if (v.state === "open" && !t.naLabel && !custom && !(rec && rec.goalId)) acts.push(`<button type="button" class="btn-action small quiet" data-act="na" data-id="${esc(id)}">Not for me</button>`);
     if (custom) acts.push(`<button type="button" class="btn-action small quiet" data-act="remove" data-id="${esc(id)}">Remove</button>`);
 
-    const recurring = !!(t.recurDays && v.state === "done" && !v.auto);
+    const recurring = !!(t.recurDays && v.state === "done");
     const sched = recurring ? `<div class="sched">
         <label>Check <select data-field="every" data-id="${esc(id)}">${EVERY.map(([d, l]) => `<option value="${d}"${d === v.every ? " selected" : ""}>${l}</option>`).join("")}</select></label>
-        <label>Next on <input type="date" data-field="nextOn" data-id="${esc(id)}" value="${v.dueAt ? new Date(v.dueAt).toISOString().slice(0, 10) : ""}"></label>
+        <label>${esc(t.dateLabel || "Next on")} <input type="date" data-field="nextOn" data-id="${esc(id)}" value="${dateVal(v.dueAt)}"></label>
       </div>` : "";
+    // Insurance and nominee tasks: entering the renewal date is how you say "I have it"
+    const early = t.recurDays && t.dateLabel && (v.state === "open" || v.state === "later")
+      ? `<label class="plan-by">${esc(t.dateLabel)} <input type="date" data-field="renewal" data-id="${esc(id)}" value=""></label>` : "";
     const why = t.why || (rec && rec.description) || "";
     const how = t.how && t.how.length ? `<ul class="how">${t.how.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : "";
     return `<li class="task is-${v.state}${v.renew ? " is-renew" : ""}" id="task-${esc(id)}" data-id="${esc(id)}">
       ${tick}
-      <details>
+      <details${openTasks.has(id) ? " open" : ""}>
         <summary><span class="task-icon" aria-hidden="true">${esc(t.icon || (rec && rec.icon) || "📌")}</span><span class="task-title">${esc(t.title)}</span>${t.tag ? `<span class="badge soft">${esc(t.tag)}</span>` : ""}${badge}</summary>
-        <div class="task-body">${why ? `<p>${esc(why)}</p>` : ""}${how}${sched}${acts.length ? `<div class="task-actions">${acts.join("")}</div>` : ""}</div>
+        <div class="task-body">${t.ask ? `<p class="ask">${esc(t.ask)}</p>` : ""}${why ? `<p>${esc(why)}</p>` : ""}${how}${sched}${early}${acts.length ? `<div class="task-actions">${acts.join("")}</div>` : ""}${planBox(t, v, id)}</div>
       </details>
     </li>`;
   }
 
   function recordEntry(rec) {
-    const t = { id: rec.id, title: rec.title, why: rec.description, icon: rec.icon, href: rec.pageUrl || rec.href, cta: "Open", frequency: "" };
-    const v = P.view({ id: rec.id }, rec, ctx);
-    return taskRow(t, rec, v);
+    const base = rec.goalId ? P.taskOfRecord(rec)
+      : { id: rec.id, title: rec.title, why: rec.description, icon: rec.icon, href: rec.pageUrl || rec.href, cta: "Open" };
+    return taskRow(base, rec, P.view(base, rec, ctx));
+  }
+
+  // Coming up: overdue first, then the next 30 days, then later
+  function renderSchedule(path) {
+    const s = path.schedule, host = $("scheduleWrap");
+    const any = s.overdue.length + s.soon.length + s.later.length;
+    host.hidden = !any || !!goalFilterId;
+    if (host.hidden) return;
+    const row = (r) => {
+      const t = r.item.task;
+      const what = r.kind === "planned" ? "planned" : t.dateLabel ? t.dateLabel.toLowerCase() : "due";
+      return `<li class="sch-row ${r.kind}"><span class="sch-date">${fmtDate(r.at)}</span><button type="button" class="sch-title" data-act="goto" data-id="${esc(t.id)}">${esc(t.icon || "📌")} ${esc(t.title)}</button><span class="sch-what">${esc(what)}</span></li>`;
+    };
+    const block = (title, cls, list) => list.length ? `<div class="sch-col ${cls}"><h3>${title} <span>${list.length}</span></h3><ul>${list.map(row).join("")}</ul></div>` : "";
+    $("schedule").innerHTML = block("Overdue", "is-overdue", s.overdue) + block("Next 30 days", "is-soon", s.soon) + block("Later", "is-later", s.later);
   }
 
   function renderGoalGroups() {
     const host = $("goalsGrid");
-    const goals = goalsList.filter((g) => !goalFilterId || g.id === goalFilterId);
-    if (!goals.length) { host.innerHTML = `<p class="empty-note">No goals yet. <a href="goals.html">Add a goal</a> and its steps appear here.</p>`; return; }
-    host.innerHTML = goals.map((g) => {
-      const list = activities.filter((a) => a.goalId === g.id);
-      const live = list.filter((a) => a.status !== "not_applicable");
-      const done = live.filter((a) => a.status === "done").length;
-      const pct = live.length ? Math.round((done / live.length) * 100) : 0;
-      return `<section class="goal-group">
-        <div class="goal-group-head"><h3>${esc(g.icon || "🎯")} ${esc(g.name)}</h3><span class="goal-group-progress">${done}/${live.length} done</span><a href="goals.html">Open goal &rarr;</a></div>
-        <span class="mini-bar wide"><i data-w="${pct}"></i></span>
-        <ul class="task-list">${list.map(recordEntry).join("")}</ul>
-      </section>`;
-    }).join("");
+    const goals = goalsList.filter((g) => goalFilterId && g.id === goalFilterId);
+    host.innerHTML = goals.map((g) => goalGroupHtml(g, activities.filter((a) => a.goalId === g.id).map((rec) => {
+      const task = P.taskOfRecord(rec);
+      return { task, rec, v: P.view(task, rec, ctx) };
+    }))).join("");
     setWidths(host);
   }
 
@@ -242,12 +313,16 @@
 
   const EVERY = [[30, "every month"], [90, "every quarter"], [182, "twice a year"], [365, "every year"]];
 
+  const isoDay = (v) => new Date(v + "T00:00:00").toISOString();
+
   function onChange(e) {
     const f = e.target.closest("[data-field]");
     if (!f) return;
-    const id = f.dataset.id;
-    if (f.dataset.field === "every") update(id, (r) => P.setEvery(r, f.value));
-    else if (f.dataset.field === "nextOn" && f.value) update(id, (r) => P.setNextOn(r, new Date(f.value + "T00:00:00").toISOString()));
+    const id = f.dataset.id, field = f.dataset.field;
+    if (field === "every") update(id, (r) => P.setEvery(r, f.value));
+    else if (field === "nextOn" && f.value) update(id, (r) => P.setNextOn(r, isoDay(f.value)));
+    else if (field === "plan") update(id, (r) => (f.value ? P.planFor(r, isoDay(f.value)) : P.reopen(r)));
+    else if (field === "renewal" && f.value) update(id, (r) => P.setNextOn(P.markDone(r), isoDay(f.value)));
   }
 
   function onClick(e) {
@@ -262,17 +337,16 @@
       const v = P.view(task, rec, ctx);
       update(id, (r) => (v.state === "done" && !v.renew ? P.reopen(r) : P.markDone(r)));
     } else if (act === "done") update(id, P.markDone);
-    else if (act === "later") update(id, P.snooze);
     else if (act === "reopen") update(id, P.reopen);
     else if (act === "na") update(id, P.notForMe);
     else if (act === "remove") { activities = activities.filter((a) => a.id !== id); commit(); }
-    else if (act === "show-due") {
-      const first = document.querySelector(".task.is-renew");
-      if (first) {
-        const stage = first.closest("details.stage");
+    else if (act === "show-due" || act === "goto") {
+      const row = document.getElementById("task-" + id);
+      if (row) {
+        const stage = row.closest("details.stage");
         if (stage) stage.open = true;
-        first.scrollIntoView({ behavior: "smooth", block: "center" });
-        const d = first.querySelector("details"); if (d) d.open = true;
+        const d = row.querySelector("details"); if (d) d.open = true;
+        row.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     }
   }

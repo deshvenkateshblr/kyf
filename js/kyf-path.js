@@ -1,123 +1,154 @@
 /**
- * KYF_PATH -- turns the task catalogue (data/kyf-path.js) plus what the person has ticked into
- * a path: stages, progress, the one task to do next, and what has come due again.
+ * KYF_PATH -- turns the task catalogue (data/kyf-path.js) plus what the person has confirmed into
+ * a path: groups, progress, the one task to do next, and a small schedule of what is overdue or coming up.
  *
- * Pure functions, no DOM. Saved state lives on the Cadence activities (status, doneAt,
- * snoozedUntil), so it travels in the same .kyf file as before.
+ * Pure functions, no DOM. Nothing ticks itself: the app only counts matching holdings as a hint.
+ * Saved state lives on the Cadence activities, so it travels in the same .kyf file as before.
  *
  * A task is, for display:
- *   done   ticked, or seen by the app (auto)
- *   open   still to do
- *   later  hidden from "up next" until snoozedUntil
- *   na     "not for me": leaves the maths
- * A recurring task that is done but older than its interval is `renew`: it still counts as done for
- * the path (so the bar never slides backwards) and shows up as "due again".
+ *   done   confirmed by the person
+ *   open   still to do (overdue = the date they promised themselves has passed)
+ *   later  the person said "I'll do this by <date>"; hidden from "up next" until then
+ *   na     "I don't have any / not for me": leaves the maths
+ * A recurring task that is done but past its next date is `renew`: it still counts as done (so the
+ * bar never slides backwards) and appears as overdue in the schedule.
  */
 (function (root) {
   "use strict";
 
   const DAY = 86400000;
   const LATER_DAYS = 7;
-
-  const allocsOf = (h) => (Array.isArray(h.allocations) ? h.allocations.filter((a) => a && a.goalId) : []);
+  const SOON_DAYS = 30;
 
   const text = (h) => `${h.assetClass || ""} ${h.subCategory || ""} ${h.name || ""}`.toLowerCase();
-  const has = (list, re, not) => list.some((h) => re.test(text(h)) && !(not && not.test(text(h))));
+  const count = (list, re, not) => list.filter((h) => re.test(text(h)) && !(not && not.test(text(h)))).length;
+  const isGoal = (g) => g && g.kind !== "COVER" && g.status !== "ACHIEVED";
 
-  /** What the app can see for itself. ctx = { holdings, goals } */
-  function autoDone(key, ctx) {
+  /** How many things the app can see for this task. Only a hint; the person still confirms. */
+  function hintCount(key, ctx) {
     const hs = (ctx && ctx.holdings) || [];
-    const gs = ((ctx && ctx.goals) || []).filter((g) => g && g.kind !== "COVER" && g.status !== "ACHIEVED");
     const own = hs.filter((h) => h && !h.isLiability);
+    const cls = (re) => own.filter((h) => re.test(h.assetClass || "")).length;
     switch (key) {
-      case "holdings": return own.length > 0;
-      case "savings": return has(own, /cash|savings|liquid/);
-      case "fd": return has(own, /fixed deposit|\bfd\b|deposit/, /epf|ppf|provident/);
-      case "mf": return own.some((h) => /mutual/i.test(h.assetClass || ""));
-      case "equity": return own.some((h) => /equit|stock|share/i.test(h.assetClass || ""));
-      case "epf": return has(own, /\bepf\b|employees.? provident/);
-      case "ppf": return has(own, /\bppf\b|public provident/);
-      case "gold": return own.some((h) => /gold|commodit|real estate|property/i.test(h.assetClass || ""));
-      case "liabilities": return hs.some((h) => h && h.isLiability);
-      case "goal": return gs.length > 0;
-      case "goalsComplete": return gs.length > 0 && gs.every((g) => (Number(g.baseTargetINR) || 0) > 0 && Number(g.targetYear) > 0);
-      case "emergencyGoal": return gs.some((g) => /emergency|buffer|safety/i.test(String(g.name || g.title || "")));
-      case "assigned": return own.length > 0 && own.every((h) => allocsOf(h).length > 0);
-      default: return false;
+      case "savings": return count(own, /cash|savings|liquid/);
+      case "fd": return count(own, /fixed deposit|\bfd\b|deposit/, /epf|ppf|provident/);
+      case "mf": return cls(/mutual/i);
+      case "equity": return cls(/equit|stock|share/i);
+      case "epf": return count(own, /\bepf\b|employees.? provident/);
+      case "ppf": return count(own, /\bppf\b|public provident/);
+      case "gold": return cls(/gold|commodit|real estate|property/i);
+      case "liabilities": return hs.filter((h) => h && h.isLiability).length;
+      case "goals": return ((ctx && ctx.goals) || []).filter(isGoal).length;
+      default: return 0;
     }
   }
 
-  /** Tasks that only apply to some people. ctx = { holdings, goals } */
-  function applies(task, ctx) {
-    if (!task.when) return true;
-    const hs = (ctx && ctx.holdings) || [];
-    if (task.when === "hasDebt") return hs.some((h) => h && h.isLiability);
-    if (task.when === "hasGoal") return ((ctx && ctx.goals) || []).some((g) => g && g.kind !== "COVER" && g.status !== "ACHIEVED");
-    return true;
-  }
+  const planOf = (rec) => {
+    const v = rec && (rec.planOn || rec.snoozedUntil);
+    const t = v ? Date.parse(v) : NaN;
+    return isNaN(t) ? null : t;
+  };
 
   function view(task, rec, ctx, now) {
     const t = now || Date.now();
-    if (task.auto && autoDone(task.auto, ctx)) return { state: "done", auto: true, renew: false };
+    const hint = task.hint ? hintCount(task.hint, ctx) : 0;
     const st = rec && rec.status;
-    if (st === "not_applicable") return { state: "na", auto: false, renew: false };
+    if (st === "not_applicable") return { state: "na", renew: false, hint };
     if (st === "done") {
       const doneAt = rec.doneAt ? Date.parse(rec.doneAt) : NaN;
       const every = Number(rec.everyDays) || task.recurDays || 0;
       const picked = rec.nextOn ? Date.parse(rec.nextOn) : NaN;
-      const dueAt = every && !isNaN(picked) ? picked : every && !isNaN(doneAt) ? doneAt + every * DAY : null;
+      const dueAt = !isNaN(picked) ? picked : every && !isNaN(doneAt) ? doneAt + every * DAY : null;
       const renew = dueAt != null && t > dueAt;
-      return { state: "done", auto: false, renew, doneAt: isNaN(doneAt) ? null : doneAt, dueAt, every };
+      return { state: "done", renew, doneAt: isNaN(doneAt) ? null : doneAt, dueAt, every, hint };
     }
-    const until = rec && rec.snoozedUntil ? Date.parse(rec.snoozedUntil) : NaN;
-    if (!isNaN(until) && until > t) return { state: "later", auto: false, renew: false, until };
-    return { state: "open", auto: false, renew: false };
+    const plan = planOf(rec);
+    if (plan != null && plan > t) return { state: "later", renew: false, until: plan, hint };
+    return { state: "open", renew: false, overdue: plan != null, plan, hint };
   }
+
+  const taskOfRecord = (rec) => {
+    const review = /review progress|track/i.test(rec.title || "");
+    return {
+      id: rec.id, title: rec.title, icon: rec.icon, why: rec.description, goalId: rec.goalId,
+      href: rec.pageUrl || rec.href || "goals.html", cta: "Open goals",
+      recurDays: review ? 182 : 0, frequency: review ? "Every 6 months" : "", dateLabel: review ? "Next review on" : ""
+    };
+  };
 
   /**
    * build(data, records, ctx, now)
-   *   records: array of stored activities (matched by id)
-   * returns { stages:[{...stage, items:[{task, rec, v}], done, total, pct}], done, total, pct,
-   *           current, next, renewals }
+   *   records: stored activities (matched by id); ctx = { holdings, goals }
+   * returns { stages:[{...stage, items:[{task, rec, v}], goalGroups:[{goal, items}], done,total,pct}],
+   *           done,total,pct,current,next,renewals, schedule }
    */
   function build(data, records, ctx, now) {
     const byId = new Map((records || []).map((r) => [r.id, r]));
+    const goals = ((ctx && ctx.goals) || []).filter(isGoal);
     const stages = data.stages.map((s) => {
-      const items = data.tasks.filter((t) => t.stage === s.id && applies(t, ctx)).map((task) => {
+      const items = data.tasks.filter((t) => t.stage === s.id).map((task) => {
         const rec = byId.get(task.id) || null;
         return { task, rec, v: view(task, rec, ctx, now) };
       });
-      const counted = items.filter((i) => i.v.state !== "na");
+      // Goal-by-goal steps sit under the goals stage
+      const goalGroups = s.goalSteps ? goals.map((goal) => ({
+        goal,
+        items: (records || []).filter((r) => r.goalId === goal.id).map((rec) => {
+          const task = taskOfRecord(rec);
+          return { task, rec, v: view(task, rec, ctx, now) };
+        })
+      })) : [];
+      const all = items.concat(goalGroups.reduce((a, g) => a.concat(g.items), []));
+      const counted = all.filter((i) => i.v.state !== "na");
       const done = counted.filter((i) => i.v.state === "done").length;
       const total = counted.length;
-      return Object.assign({}, s, { items, done, total, pct: total ? Math.round((done / total) * 100) : 100 });
+      return Object.assign({}, s, { items, goalGroups, done, total, pct: total ? Math.round((done / total) * 100) : 100 });
     });
     const done = stages.reduce((n, s) => n + s.done, 0);
     const total = stages.reduce((n, s) => n + s.total, 0);
-    // Each stage counts equally, so a stage with two tasks moves the bar as much as one with four
+    // Each group counts equally
     const pct = Math.round(stages.reduce((n, s) => n + s.pct, 0) / stages.length);
     const current = (stages.find((s) => s.pct < 100) || stages[stages.length - 1]).id;
-    const flat = stages.reduce((a, s) => a.concat(s.items), []);
+    const flat = stages.reduce((a, s) => a.concat(s.items, s.goalGroups.reduce((x, g) => x.concat(g.items), [])), []);
     const renewals = flat.filter((i) => i.v.renew);
-    const next = flat.find((i) => i.v.state === "open") || renewals[0] || null;
-    return { stages, done, total, pct, current, next, renewals };
+    const next = flat.find((i) => i.v.state === "open" && !i.v.overdue) || flat.find((i) => i.v.state === "open") || renewals[0] || null;
+    return { stages, done, total, pct, current, next, renewals, schedule: schedule(flat, now) };
+  }
+
+  /** What has a date on it: overdue, due in the next 30 days, and later. Sorted by date. */
+  function schedule(entries, now) {
+    const t = now || Date.now();
+    const rows = [];
+    entries.forEach((i) => {
+      const v = i.v;
+      if (v.state === "later") rows.push({ item: i, at: v.until, kind: "planned" });
+      else if (v.state === "open" && v.overdue) rows.push({ item: i, at: v.plan, kind: "overdue" });
+      else if (v.state === "done" && v.dueAt != null) rows.push({ item: i, at: v.dueAt, kind: v.renew ? "overdue" : "upcoming" });
+    });
+    rows.sort((a, b) => a.at - b.at);
+    return {
+      overdue: rows.filter((r) => r.kind === "overdue"),
+      soon: rows.filter((r) => r.kind !== "overdue" && r.at - t <= SOON_DAYS * DAY),
+      later: rows.filter((r) => r.kind !== "overdue" && r.at - t > SOON_DAYS * DAY)
+    };
   }
 
   // ---- changes a person can make (return the updated record) ---------------------------------
   const nowIso = (now) => new Date(now || Date.now()).toISOString();
-  const markDone = (rec, now) => Object.assign({}, rec, { status: "done", doneAt: nowIso(now), snoozedUntil: "", nextOn: "" });
-  const reopen = (rec) => Object.assign({}, rec, { status: "active", doneAt: "", snoozedUntil: "" });
-  const snooze = (rec, now) => Object.assign({}, rec, { status: "active", snoozedUntil: nowIso((now || Date.now()) + LATER_DAYS * DAY) });
+  const markDone = (rec, now) => Object.assign({}, rec, { status: "done", doneAt: nowIso(now), snoozedUntil: "", planOn: "", nextOn: "" });
+  const reopen = (rec) => Object.assign({}, rec, { status: "active", doneAt: "", snoozedUntil: "", planOn: "", nextOn: "" });
+  const planFor = (rec, iso) => Object.assign({}, rec, { status: "active", snoozedUntil: "", planOn: iso || "" });
+  const snooze = (rec, now) => planFor(rec, nowIso((now || Date.now()) + LATER_DAYS * DAY));
+  const notForMe = (rec) => Object.assign({}, rec, { status: "not_applicable", snoozedUntil: "", planOn: "" });
   const setEvery = (rec, days) => Object.assign({}, rec, { everyDays: Number(days) || 0, nextOn: "" });
   const setNextOn = (rec, iso) => Object.assign({}, rec, { nextOn: iso || "" });
-  const notForMe = (rec) => Object.assign({}, rec, { status: "not_applicable", snoozedUntil: "" });
 
   /** Keep every catalogue task present on the stored list, carrying over saved state by id. */
   function merge(stored, data) {
     const gone = new Set(data.retired || []);
     stored = (stored || []).filter((a) => !gone.has(a.id));
-    const have = new Map((stored || []).map((a) => [a.id, a]));
-    const out = (stored || []).map((a) => {
+    const have = new Map(stored.map((a) => [a.id, a]));
+    const out = stored.map((a) => {
       const t = data.tasks.find((x) => x.id === a.id);
       return t ? Object.assign({}, a, display(t)) : a;
     });
@@ -134,5 +165,5 @@
     };
   }
 
-  root.KYF_PATH = { build, view, autoDone, applies, merge, markDone, reopen, snooze, notForMe, setEvery, setNextOn, LATER_DAYS };
+  root.KYF_PATH = { build, view, hintCount, schedule, taskOfRecord, merge, markDone, reopen, planFor, snooze, notForMe, setEvery, setNextOn, LATER_DAYS, SOON_DAYS };
 })(typeof window !== "undefined" ? window : globalThis);

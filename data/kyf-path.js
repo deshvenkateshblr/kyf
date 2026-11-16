@@ -1,83 +1,48 @@
 /**
- * KYF_PATH_DATA -- "Your money path": the tasks of a financial life, in the order to do them.
+ * KYF_PATH_DATA -- "Your money path": what a person can do in this app to be financially organised,
+ * in the order to do them. Nothing here ticks itself. The person confirms each one.
  *
- * Three stages, each a group of small tasks. Order inside a stage is the order to do them.
- *   auto      the app can see this one itself (holdings added, goals named...) so it ticks itself
- *   recurDays comes back as "due again" after this many days once done (leave out for one-off tasks)
- *   doneLabel text for the manual done button when "I've done this" does not fit
- *   when      only shown when this is true of the person's data (e.g. "hasDebt"), so nobody sees chores that do not apply
+ *   hint      the app counts matching holdings and shows "2 added so far" as a nudge (never ticks)
+ *   ask       the plain question the person answers ("Have you added every savings account?")
+ *   doneLabel the button that confirms it ("That's all of them")
+ *   naLabel   the button that takes it off the list ("I don't have any")
+ *   recurDays comes round again after this many days; the person can change how often
+ *   dateLabel the date the person sets, e.g. "Renews on" for an insurance policy
+ *   group     a small heading inside a stage
  *   href/cta  where the work happens (a page in this app)
  *
- * Ids that start with "house-" are the older Cadence housekeeping items; they keep their ids so a
- * person's saved ticks and dates carry over.
+ * Goal-by-goal steps come from each goal's own checklist (js/kyf-goals.js), shown under stage 2.
  */
 window.KYF_PATH_DATA = {
   stages: [
-    { id: 1, icon: "🧭", name: "Know what you have", line: "A complete picture of your money, and a regular look at it." },
-    { id: 2, icon: "🎯", name: "Set your goals", line: "Give your money something to work towards, and check in on it." },
-    { id: 3, icon: "🛡️", name: "Protect your family", line: "Cover the big risks so one bad day never undoes years of saving." }
+    { id: 1, icon: "🧭", name: "Know what you have", line: "Add each kind of money you hold, then check your net worth regularly." },
+    { id: 2, goalSteps: true, icon: "🎯", name: "Set your goals", line: "Name what you want, then work on it goal by goal." },
+    { id: 3, icon: "🛡️", name: "Protect your family", line: "Insurance and nominees, with the date each one needs a look." }
   ],
 
   // Older task ids that no longer exist. Anything saved against them is dropped quietly.
-  retired: ["house-insurance-audit", "house-credit-card-debt", "house-savings-audit", "house-mf-xray", "house-equity-check", "house-epf-ppf-nps", "house-market-performance", "p-review", "p-emergency", "p-sip", "p-highinterest", "house-rebalance", "house-tax-harvesting"],
+  retired: ["house-insurance-audit", "house-credit-card-debt", "house-savings-audit", "house-mf-xray", "house-equity-check", "house-epf-ppf-nps", "house-market-performance", "p-review", "p-emergency", "p-sip", "p-highinterest", "house-rebalance", "house-tax-harvesting", "p-holdings", "p-goals-complete", "p-assign", "house-goal-review", "p-motor", "house-nominees-will"],
 
   tasks: [
-    // ---- 1. Know what you have: is the portfolio complete? -------------------------------------
-    { id: "p-savings", stage: 1, icon: "🏦", auto: "savings", title: "Add your savings accounts",
-      why: "Money in the bank is part of your picture, even if it is not earning much.",
-      how: ["Add each account with today's balance"], href: "portfolio.html?add=cash", cta: "Add savings" },
-    { id: "p-fd", stage: 1, icon: "🔒", auto: "fd", title: "Add your fixed deposits",
-      why: "FDs are your safe, predictable money.",
-      how: ["Add each FD with its current value and rate"], href: "portfolio.html?add=fd", cta: "Add an FD" },
-    { id: "p-mf", stage: 1, icon: "📦", auto: "mf", title: "Add your mutual funds",
-      why: "Funds are where most long-term growth money sits.",
-      how: ["Search the fund by name, or import a statement from your broker or AMC"], href: "portfolio.html?add=mf", cta: "Add a fund" },
-    { id: "p-equity", stage: 1, icon: "📈", auto: "equity", title: "Add your shares",
-      why: "Direct shares carry the most risk, so it helps to see them next to everything else.",
-      how: ["Add each stock, or import your demat statement"], href: "portfolio.html?add=equity", cta: "Add shares" },
-    { id: "p-epf", stage: 1, icon: "👷", auto: "epf", tag: "Retirement", title: "Add your EPF",
-      why: "For many people, EPF is the biggest retirement asset they already have.",
-      how: ["Use the balance on your EPFO passbook"], href: "portfolio.html?add=epf", cta: "Add EPF" },
-    { id: "p-ppf", stage: 1, icon: "📜", auto: "ppf", tag: "Retirement", title: "Add your PPF",
-      why: "A tax-free, government-backed building block for the long term.",
-      how: ["Use the balance in your PPF passbook"], href: "portfolio.html?add=ppf", cta: "Add PPF" },
-    { id: "p-gold", stage: 1, icon: "🪙", auto: "gold", title: "Add gold or property",
-      why: "Gold and property are real wealth too, and often the largest part of it.",
-      how: ["Add gold you hold as jewellery, coins, bars or bonds", "Add property at today's rough value"], href: "portfolio.html?add=gold", cta: "Add gold" },
-    { id: "p-debts", stage: 1, icon: "🧾", auto: "liabilities", title: "Add what you owe",
-      why: "Loans and card balances are the other half of your net worth.",
-      how: ["Add home, car and personal loans and any card dues"], href: "portfolio.html?add=loan", cta: "Add a loan", doneLabel: "I owe nothing" },
-    { id: "house-networth", stage: 1, icon: "📊", recurDays: 90, frequency: "Every quarter", title: "Check your net worth",
-      why: "Once your picture is complete, one number tells you whether you are getting richer.",
-      how: ["Open Portfolio and read your net worth", "Do this again each quarter"], href: "portfolio.html", cta: "Open Portfolio" },
-
-    // ---- 2. Set your goals ---------------------------------------------------------------------
-    { id: "p-goal", stage: 2, icon: "✨", auto: "goal", title: "Set a goal",
-      why: "Money with a purpose is far easier to save. A home, college, a break from work, anything.",
-      how: ["Pick an idea or type your own", "Add roughly what it costs today and the year you want it"],
-      href: "goals.html", cta: "Add a goal", doneLabel: "No goals right now" },
-    { id: "p-goals-complete", stage: 2, icon: "🗓️", auto: "goalsComplete", when: "hasGoal", title: "Give every goal a cost and a year",
-      why: "Those two numbers are enough for us to work out the monthly amount, inflation included.",
-      how: ["Open each goal and fill in what is missing"], href: "goals.html", cta: "Open goals" },
-    { id: "p-assign", stage: 2, icon: "🔗", auto: "assigned", when: "hasGoal", title: "Give each holding a goal",
-      why: "This is what makes the progress bars real: which money is for which goal.",
-      how: ["Use Suggest to match by when you need the money"], href: "portfolio.html?assign=1", cta: "Give money a job" },
-    { id: "house-goal-review", stage: 2, icon: "🌤️", recurDays: 90, frequency: "Every quarter", when: "hasGoal", title: "Track your goals",
-      why: "A regular look keeps you honest and lets you celebrate how far you have come.",
-      how: ["Open Goals and see each bar", "Adjust a monthly amount if life has changed"], href: "goals.html", cta: "Open goals" },
-
-    // ---- 3. Protect your family ----------------------------------------------------------------
-    { id: "p-term", stage: 3, icon: "🛡️", recurDays: 365, frequency: "Every year", title: "Term life insurance",
-      why: "If others depend on your income, term cover keeps their plans going if something happens to you.",
-      how: ["Pure term insurance, with no investment mixed in"], doneLabel: "I have it", },
-    { id: "p-health", stage: 3, icon: "🏥", recurDays: 365, frequency: "Every year", title: "Health insurance",
-      why: "Cover from an employer can end the day you leave the job. A policy of your own does not.",
-      how: ["A family health policy in your name"], doneLabel: "I have it" },
-    { id: "p-motor", stage: 3, icon: "🚗", recurDays: 365, frequency: "Every year", title: "Car and two-wheeler insurance",
-      why: "Third-party cover is the law, and a comprehensive policy protects your own vehicle too.",
-      how: ["Keep the renewal date handy so cover never lapses"], doneLabel: "I have it" },
-    { id: "house-nominees-will", stage: 3, icon: "🔐", recurDays: 365, frequency: "Every year", title: "Nominees on every account",
-      why: "Without a nominee, even your own money can get stuck with the people you love.",
-      how: ["Check nominees on bank accounts, demat, EPF and policies"], doneLabel: "All updated" }
+    { id: "p-savings", stage: 1, icon: "🏦", group: "What you own", hint: "savings", title: "Savings accounts", ask: "Have you added every savings account?", why: "Money in the bank is part of your picture, even if it earns little.", how: ["Add each account with today's balance"], href: "portfolio.html?add=cash", cta: "Add savings", doneLabel: "That's all of them", naLabel: "I don't have any" },
+    { id: "p-fd", stage: 1, icon: "🔒", group: "What you own", hint: "fd", title: "Fixed deposits", ask: "Have you added every fixed deposit?", why: "FDs are your safe, predictable money.", how: ["Add each FD with its current value and rate"], href: "portfolio.html?add=fd", cta: "Add an FD", doneLabel: "That's all of them", naLabel: "I don't have any" },
+    { id: "p-mf", stage: 1, icon: "📦", group: "What you own", hint: "mf", title: "Mutual funds", ask: "Have you added every mutual fund?", why: "Funds are where most long-term growth money sits.", how: ["Search the fund by name, or import a statement from your broker or AMC"], href: "portfolio.html?add=mf", cta: "Add a fund", doneLabel: "That's all of them", naLabel: "I don't have any" },
+    { id: "p-equity", stage: 1, icon: "📈", group: "What you own", hint: "equity", title: "Shares", ask: "Have you added every share you hold?", why: "Direct shares carry the most risk, so it helps to see them next to everything else.", how: ["Add each stock, or import your demat statement"], href: "portfolio.html?add=equity", cta: "Add shares", doneLabel: "That's all of them", naLabel: "I don't have any" },
+    { id: "p-epf", stage: 1, icon: "👷", group: "What you own", hint: "epf", title: "EPF", ask: "Have you added your EPF?", why: "For many people, EPF is the biggest retirement asset they already have.", how: ["Use the balance on your EPFO passbook"], href: "portfolio.html?add=epf", cta: "Add EPF", doneLabel: "That's all of them", naLabel: "I don't have any", tag: "Retirement" },
+    { id: "p-ppf", stage: 1, icon: "📜", group: "What you own", hint: "ppf", title: "PPF", ask: "Have you added your PPF?", why: "A tax-free, government-backed building block for the long term.", how: ["Use the balance in your PPF passbook"], href: "portfolio.html?add=ppf", cta: "Add PPF", doneLabel: "That's all of them", naLabel: "I don't have any", tag: "Retirement" },
+    { id: "p-gold", stage: 1, icon: "🪙", group: "What you own", hint: "gold", title: "Gold and property", ask: "Have you added your gold and property?", why: "Gold and property are real wealth too, and often the largest part of it.", how: ["Add gold you hold as jewellery, coins, bars or bonds", "Add property at today's rough value"], href: "portfolio.html?add=gold", cta: "Add gold", doneLabel: "That's all of them", naLabel: "I don't have any" },
+    { id: "p-debts", stage: 1, icon: "🧾", group: "What you owe", hint: "liabilities", title: "Loans and card dues", ask: "Have you added everything you owe?", why: "Loans and card balances are the other half of your net worth.", how: ["Add home, car and personal loans and any card dues"], href: "portfolio.html?add=loan", cta: "Add a loan", doneLabel: "That's everything I owe", naLabel: "I owe nothing" },
+    { id: "house-networth", stage: 1, icon: "📊", group: "Regular check-in", recurDays: 90, frequency: "Every quarter", dateLabel: "Next check on", title: "Check your net worth", why: "Once your picture is complete, one number tells you whether you are getting richer.", how: ["Open Portfolio and read your net worth"], href: "portfolio.html", cta: "Open Portfolio", doneLabel: "I've checked it" },
+    { id: "p-goal", stage: 2, icon: "✨", hint: "goals", hintUnit: "goals so far", title: "Your goals", ask: "Have you added every goal you care about?", why: "Money with a purpose is far easier to save. A home, college, a break from work, anything.", how: ["Pick an idea or type your own", "Add roughly what it costs today and the year you want it"], href: "goals.html", cta: "Add a goal", doneLabel: "That's all my goals", naLabel: "No goals right now" },
+    { id: "p-term", stage: 3, icon: "🛡️", group: "Insurance", recurDays: 365, frequency: "Every year", dateLabel: "Renews on", title: "Term life insurance", ask: "Do you have term life cover?", why: "If others depend on your income, term cover keeps their plans going if something happens to you.", how: ["Note the renewal date so cover never lapses"], doneLabel: "I have it", naLabel: "I don't have one" },
+    { id: "p-health", stage: 3, icon: "🏥", group: "Insurance", recurDays: 365, frequency: "Every year", dateLabel: "Renews on", title: "Health insurance: you and your family", ask: "Do you have health cover of your own?", why: "Cover from an employer can end the day you leave the job. A policy of your own does not.", how: ["Note the renewal date so cover never lapses"], doneLabel: "I have it", naLabel: "I don't have one" },
+    { id: "p-health-parents", stage: 3, icon: "👵", group: "Insurance", recurDays: 365, frequency: "Every year", dateLabel: "Renews on", title: "Health insurance: parents or other family", ask: "Are your parents or other dependants covered?", why: "Their medical costs can fall on you, and cover is harder to get as they age.", how: ["Note the renewal date so cover never lapses"], doneLabel: "I have it", naLabel: "Not needed" },
+    { id: "p-car", stage: 3, icon: "🚗", group: "Insurance", recurDays: 365, frequency: "Every year", dateLabel: "Renews on", title: "Car insurance", ask: "Is your car insured?", why: "Third-party cover is the law, and a comprehensive policy protects your own car too.", how: ["Note the renewal date so cover never lapses"], doneLabel: "I have it", naLabel: "I don't own a car" },
+    { id: "p-bike", stage: 3, icon: "🛵", group: "Insurance", recurDays: 365, frequency: "Every year", dateLabel: "Renews on", title: "Two-wheeler insurance", ask: "Is your two-wheeler insured?", why: "Same rules as a car, and lapses are easy to miss.", how: ["Note the renewal date so cover never lapses"], doneLabel: "I have it", naLabel: "I don't own one" },
+    { id: "p-home-ins", stage: 3, icon: "🏠", group: "Insurance", recurDays: 365, frequency: "Every year", dateLabel: "Renews on", title: "Home insurance", ask: "Is your home and its contents insured?", why: "A fire or flood should not undo years of savings.", how: ["Note the renewal date so cover never lapses"], doneLabel: "I have it", naLabel: "Not needed" },
+    { id: "n-bank", stage: 3, icon: "🏦", group: "Nominees", recurDays: 365, frequency: "Every year", dateLabel: "Check again on", title: "Nominees: bank accounts and FDs", ask: "Is a nominee named on every bank account and FD?", why: "Without a nominee, even your own money can get stuck with the people you love.", how: ["Check the nominee is named, correct and still the right person"], doneLabel: "All updated", naLabel: "Not applicable" },
+    { id: "n-demat", stage: 3, icon: "📈", group: "Nominees", recurDays: 365, frequency: "Every year", dateLabel: "Check again on", title: "Nominees: demat and mutual funds", ask: "Is a nominee named on your demat account and every fund folio?", why: "Without a nominee, even your own money can get stuck with the people you love.", how: ["Check the nominee is named, correct and still the right person"], doneLabel: "All updated", naLabel: "Not applicable" },
+    { id: "n-epf", stage: 3, icon: "👷", group: "Nominees", recurDays: 365, frequency: "Every year", dateLabel: "Check again on", title: "Nominees: EPF, PPF and NPS", ask: "Is a nominee named on EPF, PPF and NPS?", why: "Without a nominee, even your own money can get stuck with the people you love.", how: ["Check the nominee is named, correct and still the right person"], doneLabel: "All updated", naLabel: "Not applicable" },
+    { id: "n-policies", stage: 3, icon: "📄", group: "Nominees", recurDays: 365, frequency: "Every year", dateLabel: "Check again on", title: "Nominees: insurance policies", ask: "Is a nominee named on every insurance policy?", why: "Without a nominee, even your own money can get stuck with the people you love.", how: ["Check the nominee is named, correct and still the right person"], doneLabel: "All updated", naLabel: "Not applicable" }
   ]
 };
