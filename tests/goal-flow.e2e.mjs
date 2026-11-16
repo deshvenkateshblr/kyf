@@ -21,6 +21,7 @@ let p = await fresh();
 await p.goto(base + "/goals.html"); await p.evaluate(() => localStorage.clear()); await p.reload();
 await p.fill("#askInput", "College"); await p.keyboard.press("Enter");
 await p.fill("#goalYearInput", "2036"); await p.fill("#goalPvInput", "2000000");
+await p.waitForFunction(() => document.getElementById("prevSip") && document.getElementById("prevSip").innerText.includes("after you answer"), null, { timeout: 3000 }).catch(() => {});
 ok((await p.locator("#prevSip").innerText()).includes("after you answer"), "SIP waits until we know what the user already has");
 await p.click("#fundingAddBtn");
 await p.waitForURL(/portfolio\.html\?addFor=/);
