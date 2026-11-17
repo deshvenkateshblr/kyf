@@ -21,7 +21,6 @@
   const SOON_DAYS = 30;
 
   const text = (h) => `${h.assetClass || ""} ${h.subCategory || ""} ${h.name || ""}`.toLowerCase();
-  const count = (list, re, not) => list.filter((h) => re.test(text(h)) && !(not && not.test(text(h)))).length;
   const isGoal = (g) => g && g.kind !== "COVER" && g.status !== "ACHIEVED";
 
   /** How many things the app can see for this task. Only a hint; the person still confirms. */
@@ -30,12 +29,12 @@
     const own = hs.filter((h) => h && !h.isLiability);
     const cls = (re) => own.filter((h) => re.test(h.assetClass || "")).length;
     switch (key) {
-      case "savings": return count(own, /cash|savings|liquid/);
-      case "fd": return count(own, /fixed deposit|\bfd\b|deposit/, /epf|ppf|provident/);
+      case "savings": return cls(/cash/i);
+      case "fd": return own.filter((h) => /fixed income/i.test(h.assetClass || "") && /fixed deposit|\bfd\b|deposit/i.test(text(h)) && !/epf|ppf|provident/i.test(text(h))).length;
       case "mf": return cls(/mutual/i);
       case "equity": return cls(/equit|stock|share/i);
-      case "epf": return count(own, /\bepf\b|employees.? provident/);
-      case "ppf": return count(own, /\bppf\b|public provident/);
+      case "epf": return own.filter((h) => /fixed income/i.test(h.assetClass || "") && /\bepf\b|employees.? provident/i.test(text(h))).length;
+      case "ppf": return own.filter((h) => /fixed income/i.test(h.assetClass || "") && /\bppf\b|public provident/i.test(text(h))).length;
       case "gold": return cls(/gold|commodit|real estate|property/i);
       case "liabilities": return hs.filter((h) => h && h.isLiability).length;
       case "goals": return ((ctx && ctx.goals) || []).filter(isGoal).length;

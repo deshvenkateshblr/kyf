@@ -18,6 +18,9 @@ ok(["p-savings","p-fd","p-epf","p-ppf","p-mf","p-equity","p-gold"].every(id=>tas
 ok(m.pct===0&&task(m,"p-savings").v.state==="open","nothing ticks itself, the person confirms");
 m=P.build(D,[],{holdings:[h({assetClass:"Fixed Income",subCategory:"EPF (8%)",name:"EPF"})],goals:[]},now);
 ok(task(m,"p-epf").v.hint===1&&task(m,"p-fd").v.hint===0&&task(m,"p-ppf").v.hint===0,"EPF is not mistaken for an FD or PPF");
+m=P.build(D,[],{holdings:[h({assetClass:"Mutual Funds",subCategory:"Liquid Fund",name:"HDFC Liquid Fund"}),h({assetClass:"Equities",name:"Cash Converters Savings Ltd"}),h({assetClass:"Fixed Income",subCategory:"Bank Deposits",name:"Savings Plus FD"})],goals:[]},now);
+ok(task(m,"p-savings").v.hint===0,"liquid funds, equities and FDs are not savings accounts");
+ok(task(m,"p-fd").v.hint===1,"a Fixed Income deposit is an FD");
 const rec=(id,o)=>[Object.assign({id},o)];
 m=P.build(D,rec("p-savings",{status:"done",doneAt:new Date(now).toISOString()}),empty,now);
 ok(task(m,"p-savings").v.state==="done"&&m.stages[0].done===1&&m.next.task.id==="p-fd","confirming ticks it and moves on");

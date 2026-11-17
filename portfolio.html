@@ -12,13 +12,13 @@
 
   <title>Family Portfolio Tracker | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.20.0">
+  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.21.0">
 
   <!-- Application Stylesheet with v1.4.8 Cache-Busting -->
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.20.0">
-  <link rel="stylesheet" href="css/portfolio.css?v=1.20.0">
-  <link rel="stylesheet" href="css/journey.css?v=1.20.0">
-  <link rel="stylesheet" href="css/assign.css?v=1.20.0">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.21.0">
+  <link rel="stylesheet" href="css/portfolio.css?v=1.21.0">
+  <link rel="stylesheet" href="css/journey.css?v=1.21.0">
+  <link rel="stylesheet" href="css/assign.css?v=1.21.0">
 </head>
 <body>
 
@@ -407,6 +407,16 @@
             <input type="number" id="input-holding-curval" class="form-control" placeholder="e.g. 150000" min="0" step="any" required>
           </div>
 
+          <div class="form-field" id="field-holding-asof" hidden>
+            <label class="form-label" for="input-holding-asof">Balance as of</label>
+            <input type="date" id="input-holding-asof" class="form-control">
+          </div>
+
+          <div class="form-field" id="field-holding-rate" hidden>
+            <label class="form-label" for="input-holding-rate">Interest rate (% p.a.)</label>
+            <input type="number" id="input-holding-rate" class="form-control" placeholder="e.g. 8.65" min="0" step="any">
+          </div>
+
           <div class="form-hint full" id="holding-units-hint">
             💡 Enter either units or today's value &mdash; the other is filled in from the live price.
           </div>
@@ -442,11 +452,6 @@
               <div class="form-field" id="field-holding-price">
                 <label class="form-label" id="label-holding-price" for="input-holding-price">Price / NAV (₹)</label>
                 <input type="number" id="input-holding-price" class="form-control" placeholder="Live price / NAV" min="0" step="any">
-              </div>
-
-              <div class="form-field" id="field-holding-rate" hidden>
-                <label class="form-label" for="input-holding-rate">Interest rate (% p.a.)</label>
-                <input type="number" id="input-holding-rate" class="form-control" placeholder="e.g. 8.65" min="0" step="any">
               </div>
 
               <div class="form-field">
@@ -628,31 +633,31 @@
   <!-- ==========================================================================
        DATASETS (Auto-Generated Daily by admin/sync_market_data.py)
        ========================================================================== -->
-  <script src="data/market-status.js?v=1.20.0"></script>
-  <script src="data/market-pulse.js?v=1.20.0"></script>
-  <script src="data/market-corporate-actions.js?v=1.20.0"></script>
-  <script src="data/market-equities.js?v=1.20.0"></script>
-  <script src="data/market-mf.js?v=1.20.0"></script>
-  <script src="data/market-us.js?v=1.20.0"></script>
-  <script src="data/market-realestate.js?v=1.20.0"></script>
-  <script src="data/market-holidays.js?v=1.20.0"></script>
+  <script src="data/market-status.js?v=1.21.0"></script>
+  <script src="data/market-pulse.js?v=1.21.0"></script>
+  <script src="data/market-corporate-actions.js?v=1.21.0"></script>
+  <script src="data/market-equities.js?v=1.21.0"></script>
+  <script src="data/market-mf.js?v=1.21.0"></script>
+  <script src="data/market-us.js?v=1.21.0"></script>
+  <script src="data/market-realestate.js?v=1.21.0"></script>
+  <script src="data/market-holidays.js?v=1.21.0"></script>
 
   <!-- ==========================================================================
-       PORTFOLIO MODULE SCRIPTS (with ?v=1.20.0 Cache-Busting)
+       PORTFOLIO MODULE SCRIPTS (with ?v=1.21.0 Cache-Busting)
        ========================================================================== -->
-  <script src="js/kyf-goals.js?v=1.20.0"></script>
-  <script src="js/kyf-vault.js?v=1.20.0"></script>
-  <script src="js/portfolio-data.js?v=1.20.0"></script>
-  <script src="js/portfolio-engine.js?v=1.20.0"></script>
-  <script src="js/kyf-assign.js?v=1.20.0"></script>
-  <script src="js/portfolio-importer.js?v=1.20.0"></script>
-  <script src="js/portfolio-app.js?v=1.20.0"></script>
-  <script src="js/kyf-journey.js?v=1.20.0"></script>
-  <script src="js/kyf-footer.js?v=1.20.0"></script>
-  <script src="js/kyf-features.js?v=1.20.0"></script>
-  <script src="data/kyf-terms.js?v=1.20.0"></script>
-  <script src="js/kyf-nav.js?v=1.20.0"></script>
-  <script src="js/kyf-terms.js?v=1.20.0"></script>
+  <script src="js/kyf-goals.js?v=1.21.0"></script>
+  <script src="js/kyf-vault.js?v=1.21.0"></script>
+  <script src="js/portfolio-data.js?v=1.21.0"></script>
+  <script src="js/portfolio-engine.js?v=1.21.0"></script>
+  <script src="js/kyf-assign.js?v=1.21.0"></script>
+  <script src="js/portfolio-importer.js?v=1.21.0"></script>
+  <script src="js/portfolio-app.js?v=1.21.0"></script>
+  <script src="js/kyf-journey.js?v=1.21.0"></script>
+  <script src="js/kyf-footer.js?v=1.21.0"></script>
+  <script src="js/kyf-features.js?v=1.21.0"></script>
+  <script src="data/kyf-terms.js?v=1.21.0"></script>
+  <script src="js/kyf-nav.js?v=1.21.0"></script>
+  <script src="js/kyf-terms.js?v=1.21.0"></script>
 </body>
 </html>
 

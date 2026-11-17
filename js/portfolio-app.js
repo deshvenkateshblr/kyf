@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.20.0
+ * Version: v1.21.0
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -130,6 +130,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     inputHoldingCustodian: document.getElementById("input-holding-custodian"),
     inputHoldingPrice: document.getElementById("input-holding-price"),
     inputHoldingRate: document.getElementById("input-holding-rate"),
+    inputHoldingAsOf: document.getElementById("input-holding-asof"),
     inputHoldingUnits: document.getElementById("input-holding-units"),
     inputHoldingCurVal: document.getElementById("input-holding-curval"),
     inputHoldingInvVal: document.getElementById("input-holding-invval"),
@@ -2052,6 +2053,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.inputHoldingRate) {
       els.inputHoldingRate.value = item.interestRate != null ? item.interestRate : "";
     }
+    if (els.inputHoldingAsOf) els.inputHoldingAsOf.value = todayIso();
 
     const modalTitle = document.getElementById("holding-modal-title");
     if (modalTitle) {
@@ -2073,6 +2075,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Loans and debts are "what you owe": relabel the form and hide fields that only make sense for
   // things you own (units, cost basis, live price); show the interest rate where it matters.
+  const todayIso = () => new Date().toISOString().slice(0, 10);
+
   function applyHoldingTypeMode() {
     const cls = els.selectHoldingAssetClass ? els.selectHoldingAssetClass.value : "";
     const debt = cls === "Liabilities";
@@ -2091,16 +2095,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (el) el.hidden = hide;
     };
 
-    setHidden("field-holding-units", debt);
-    setHidden("holding-units-hint", debt);
-    setHidden("field-holding-invval", debt);
-    setHidden("field-holding-price", debt);
-    setHidden("field-holding-rate", !(debt || cls === "Fixed Income"));
+    // Cash in the bank is a balance, an interest rate and a date: no units, price or cost basis
+    const cash = cls === "Cash & Liquid" && !isUs;
+    setHidden("field-holding-units", debt || cash);
+    setHidden("holding-units-hint", debt || cash);
+    setHidden("field-holding-invval", debt || cash);
+    setHidden("field-holding-price", debt || cash);
+    setHidden("field-holding-rate", !(debt || cash || cls === "Fixed Income"));
+    setHidden("field-holding-asof", !cash);
+    if (cash && els.inputHoldingAsOf && !els.inputHoldingAsOf.value) els.inputHoldingAsOf.value = todayIso();
+    if (els.inputHoldingRate) els.inputHoldingRate.placeholder = cash ? "e.g. 2.7 (blank if none)" : "e.g. 8.65";
     setHidden("field-holding-purchasefx", !isUs);
 
     // With units hidden, the balance gets the full row
     const worthField = document.getElementById("field-holding-curval");
-    if (worthField) worthField.classList.toggle("full", debt);
+    if (worthField) worthField.classList.toggle("full", debt || cash);
     if (els.btnSaveHolding && !editingHoldingId) els.btnSaveHolding.textContent = debt ? "＋ Save Loan" : "＋ Save Holding";
 
     const nameLabel = document.getElementById("label-holding-name");
@@ -2110,6 +2119,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (worthLabel) {
       if (debt) {
         worthLabel.innerHTML = 'Outstanding balance (₹) <span class="required">*</span>';
+      } else if (cash) {
+        worthLabel.innerHTML = 'Balance (₹) <span class="required">*</span>';
       } else if (isUs) {
         worthLabel.innerHTML = 'Worth today ($) <span class="required">*</span>';
       } else {
@@ -2467,6 +2478,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (els.inputHoldingRate) els.inputHoldingRate.value = meta.interestRate != null ? meta.interestRate : "";
+    if (els.inputHoldingAsOf) els.inputHoldingAsOf.value = meta.asOf || "";
 
     const goalId = (holding.allocations && holding.allocations.length > 0 && holding.allocations[0].goalId) || "";
     if (els.selectHoldingGoal) els.selectHoldingGoal.value = goalId;
@@ -2591,7 +2603,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const custodian = (els.inputHoldingCustodian && els.inputHoldingCustodian.value.trim()) || "Direct / Self-Held";
     const currentVal = parseFloat(els.inputHoldingCurVal.value);
     const investedValInput = els.inputHoldingInvVal ? els.inputHoldingInvVal.value.trim() : "";
-    const investedVal = investedValInput !== "" && !isNaN(parseFloat(investedValInput)) ? parseFloat(investedValInput) : null;
+    let investedVal = investedValInput !== "" && !isNaN(parseFloat(investedValInput)) ? parseFloat(investedValInput) : null;
     let goalId = els.selectHoldingGoal && els.selectHoldingGoal.value;
     if (goalId === "__new__") {
       const created = await createGoalFromHoldingForm();
@@ -2695,7 +2707,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     const rateInput = els.inputHoldingRate ? els.inputHoldingRate.value.trim() : "";
     const interestRate = rateInput !== "" && !isNaN(parseFloat(rateInput)) ? parseFloat(rateInput) : null;
-    if (isLiability || assetClass === "Fixed Income") {
+    // Bank cash: a balance as of a date at a rate. Nothing to price, and no cost basis to track.
+    const isCash = assetClass === "Cash & Liquid" && pricingMode !== "LIVE_US" && !(existingH && existingH.currency === "USD");
+    if (isCash) {
+      pricingMode = "MANUAL";
+      units = null;
+      investedVal = null;
+      const asOf = els.inputHoldingAsOf ? els.inputHoldingAsOf.value : "";
+      if (asOf) instrumentMeta.asOf = asOf; else delete instrumentMeta.asOf;
+    }
+    if (isLiability || isCash || assetClass === "Fixed Income") {
       if (interestRate != null) instrumentMeta.interestRate = interestRate;
       else delete instrumentMeta.interestRate;
     }
