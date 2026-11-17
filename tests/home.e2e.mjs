@@ -101,6 +101,7 @@ ok(errs.length === 0, "no page errors: " + errs.join("|"));
   const perrs = []; p.on("pageerror", e => perrs.push(e.message));
   await p.goto(base + "/index.html");
   await p.waitForSelector("#kyf-money-word.mw-in", { timeout: 6000 });
+  await p.click(".mw-toggle"); // on a phone the card starts as a slim strip
   const first = await p.locator(".mw-term").innerText();
   ok(first === "SIP", "Money Word starts with the first curriculum word, got " + first);
   ok((await p.locator(".mw-tip").innerText()).length > 20, "shows the plain meaning");
@@ -140,6 +141,7 @@ ok(errs.length === 0, "no page errors: " + errs.join("|"));
   ok(/off/.test(await p.locator("#kyf-mw-switch").innerText()), "footer switch turns it off");
   await p.click("#kyf-mw-switch");
   await p.waitForSelector("#kyf-money-word");
+  await p.click(".mw-toggle");
   await p.click(".mw-off");
   ok(await p.locator("#kyf-money-word").count() === 0, "Don't show again hides it");
   ok(/off/.test(await p.locator("#kyf-mw-switch").innerText()), "footer shows it is off");

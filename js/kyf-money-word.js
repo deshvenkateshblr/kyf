@@ -14,6 +14,8 @@
   var DELAY_MS = 2500;
   var card = null;
   var current = null;
+  // On a phone the card starts as a slim one-line strip; tapping it opens the full card.
+  var mini = !!(window.matchMedia && window.matchMedia("(max-width: 480px)").matches);
 
   function load() {
     var s = { seen: [], off: false, last: null };
@@ -82,10 +84,15 @@
 
     var head = el("div", "mw-head");
     head.appendChild(el("span", "mw-label", "Money Word"));
+    head.appendChild(button(mini ? "Learn" : "", "mw-toggle", function () { mini = !mini; render(); }));
+    head.lastChild.setAttribute("aria-expanded", mini ? "false" : "true");
+    head.lastChild.setAttribute("aria-label", mini ? "Show the Money Word" : "Shrink the Money Word");
+    head.lastChild.textContent = mini ? "Open ▴" : "Shrink ▾";
     head.appendChild(button("✕", "mw-close", function () { hideThisVisit(); close(); }));
     head.lastChild.setAttribute("aria-label", "Hide Money Word for now");
     card.appendChild(head);
 
+    card.classList.toggle("mw-mini", mini);
     card.appendChild(el("div", "mw-term", current.term));
     card.appendChild(el("p", "mw-tip", current.tip));
 

@@ -27,6 +27,7 @@
   text-transform: uppercase;
   color: var(--amber, #c97a2b);
 }
+.mw-toggle { display: none; margin-left: auto; border: 0; background: transparent; color: var(--teal-deep, #17594f); font: inherit; font-size: 12px; font-weight: 700; padding: 4px 8px; cursor: pointer; }
 .mw-close {
   border: 0;
   background: transparent;
@@ -85,6 +86,12 @@
 
 @media (max-width: 480px) {
   .mw-card { right: 16px; left: 16px; width: auto; bottom: 52px; }
+  .mw-toggle { display: inline-block; }
+  /* slim strip: label, word, open and close on one line */
+  .mw-card.mw-mini { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 10px; }
+  .mw-card.mw-mini .mw-head { order: 1; flex: 1; }
+  .mw-card.mw-mini .mw-term { order: 0; font-size: 15px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+  .mw-card.mw-mini .mw-tip, .mw-card.mw-mini .mw-actions, .mw-card.mw-mini .mw-off { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .mw-card { transition: none; }
