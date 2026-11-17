@@ -70,7 +70,7 @@
     const review = /review progress|track/i.test(rec.title || "");
     return {
       id: rec.id, title: rec.title, icon: rec.icon, why: rec.description, goalId: rec.goalId,
-      href: rec.pageUrl || rec.href || "goals.html", cta: "Open goals",
+      href: rec.pageUrl || rec.href || "goals.html", cta: rec.cta || "Open goals",
       recurDays: review ? 182 : 0, frequency: review ? "Every 6 months" : "", dateLabel: review ? "Next review on" : ""
     };
   };

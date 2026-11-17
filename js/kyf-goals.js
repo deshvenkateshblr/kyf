@@ -167,8 +167,8 @@
       formula: "On-road price − trade-in value",
       checklist: [
         "Decide the budget: on-road price + 1 year of running cost",
-        "Compare a cash down payment against loan interest",
-        "Keep the monthly EMI under 15% of take-home pay",
+        { text: "Compare a cash down payment against loan interest", href: "loans.html?tool=compare", cta: "Open the calculator" },
+        { text: "Keep the monthly EMI under 15% of take-home pay", href: "loans.html?tool=compare", cta: "Check the EMI" },
         "Move the money to debt funds 12 months before buying"
       ]
     },
@@ -598,7 +598,10 @@
   function checklistFor(goal) {
     const tpl = templateById(goal.templateId);
     const lines = tpl ? tpl.checklist : GENERIC_CHECKLIST;
-    return lines.map((text, i) => ({
+    return lines.map((line, i) => {
+      const text = typeof line === "string" ? line : line.text;
+      const link = typeof line === "string" ? {} : { pageUrl: line.href, cta: line.cta };
+      return Object.assign({
       id: `task_${goal.id}_${i + 1}`,
       section: "goals",
       goalId: goal.id,
@@ -610,7 +613,8 @@
       status: "active",
       dueDate: "",
       tags: [(CATEGORIES[goal.category] || CATEGORIES.other).label]
-    }));
+      }, link);
+    });
   }
 
   /** Add the goal's checklist to a cadence list (no duplicates). Returns the new list. */

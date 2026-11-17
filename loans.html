@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Know Your Finance (KYF) loan tools: compare paying cash with taking a loan, and see a full loan repayment schedule. Runs in your browser and never uploads your numbers.">
+  <meta name="theme-color" content="#1f7a6c">
+  <title>Loan tools: cash or loan, and repayment schedule | Know Your Finance (KYF)</title>
+  <link rel="icon" href="css/kyf_logo.png">
+  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.23.0">
+  <link rel="stylesheet" href="css/loans.css?v=1.23.0">
+</head>
+<body>
+
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a href="index.html" aria-label="KYF home"><img src="css/kyf_logo.png" alt="KYF — Know Your Finance"></a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="goals.html">Goals</a>
+        <a href="cadence.html">Cadence</a>
+        <a href="portfolio.html">Portfolio</a>
+        <a href="index.html#framework">Framework</a>
+        <input type="file" id="kyfFileInput" accept=".kyf,.json" hidden>
+        <button type="button" class="nav-btn secondary" id="navOpenFileBtn" title="Open saved .kyf data file">📂 Open</button>
+        <button type="button" class="nav-btn primary" id="navSaveDataBtn" title="Save data as .kyf file">💾 Save Data</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="tool-hero">
+      <div class="wrap">
+        <p class="eyebrow">Loan tools</p>
+        <h1>Borrow with your eyes open.</h1>
+        <p class="lede">See what a loan really costs, whether paying cash would be smarter, and how every payment splits between interest and principal.</p>
+        <div class="tabs" role="tablist" aria-label="Choose a tool">
+          <button type="button" class="tab" role="tab" id="tab-compare" aria-controls="tool-compare" aria-selected="true" data-tool="compare">Cash or loan?</button>
+          <button type="button" class="tab" role="tab" id="tab-schedule" aria-controls="tool-schedule" aria-selected="false" data-tool="schedule">Loan schedule</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CASH OR LOAN -->
+    <section class="tool" id="tool-compare" role="tabpanel" aria-labelledby="tab-compare">
+      <div class="wrap tool-grid">
+        <form class="panel" id="formCompare" autocomplete="off">
+          <h2>Your numbers</h2>
+          <div class="field"><label for="cPrice">Price you will pay</label><input id="cPrice" inputmode="decimal"><span class="echo" id="cPriceEcho"></span></div>
+          <div class="field"><label for="cDown">Down payment you would make</label><input id="cDown" inputmode="decimal"><span class="echo" id="cDownEcho"></span></div>
+          <div class="pair">
+            <div class="field"><label for="cRate">Loan rate <small>% a year</small></label><input id="cRate" inputmode="decimal"></div>
+            <div class="field"><label for="cYears">Years</label><input id="cYears" inputmode="decimal"></div>
+          </div>
+          <div class="field"><label for="cEarn">What spare cash could earn <small>% a year</small></label><input id="cEarn" inputmode="decimal"></div>
+          <div class="field"><label for="cPay">Monthly take-home pay <small>(optional)</small></label><input id="cPay" inputmode="decimal"><span class="echo" id="cPayEcho"></span></div>
+        </form>
+        <div id="outCompare" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- LOAN SCHEDULE -->
+    <section class="tool" id="tool-schedule" role="tabpanel" aria-labelledby="tab-schedule" hidden>
+      <div class="wrap tool-grid">
+        <form class="panel" id="formSchedule" autocomplete="off">
+          <h2>Your loan</h2>
+          <div class="field"><label for="sAmount">Loan amount</label><input id="sAmount" inputmode="decimal"><span class="echo" id="sAmountEcho"></span></div>
+          <div class="pair">
+            <div class="field"><label for="sRate">Rate <small>% a year</small></label><input id="sRate" inputmode="decimal"></div>
+            <div class="field"><label for="sYears">Years</label><input id="sYears" inputmode="decimal"></div>
+          </div>
+          <div class="field"><label for="sStart">First payment</label><input id="sStart" type="month"></div>
+          <div class="field"><label for="sExtra">Extra you could pay every month <small>(optional)</small></label><input id="sExtra" inputmode="decimal"><span class="echo" id="sExtraEcho"></span></div>
+        </form>
+        <div id="outSchedule" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <div class="wrap disclaimer">
+      <p>Educational estimates, not advice. Interest is worked out monthly, the way lenders quote it. Processing fees, taxes, insurance and prepayment charges are not included, and investment returns are never guaranteed. Your numbers stay in this browser; they only leave it inside a link when you choose to share.</p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <span>KYF — Know Your Finance. Loan tools. Runs 100% locally in your browser.</span>
+      <div class="links">
+        <a href="index.html">Home</a>
+        <a href="goals.html">Goals</a>
+        <a href="cadence.html">Cadence</a>
+        <a href="portfolio.html">Portfolio</a>
+        <a href="index.html#framework">Framework</a>
+        <a href="index.html#trust">Privacy</a>
+      </div>
+      <span>100% Educational Simulator &middot; Not Financial Advice.</span>
+    </div>
+  </footer>
+
+  <script src="data/market-pulse.js?v=1.23.0"></script>
+  <script src="js/kyf-loan-math.js?v=1.23.0"></script>
+  <script src="js/kyf-goals.js?v=1.23.0"></script>
+  <script src="js/kyf-vault.js?v=1.23.0"></script>
+  <script src="js/loans-app.js?v=1.23.0"></script>
+  <script src="js/kyf-footer.js?v=1.23.0"></script>
+  <script src="js/kyf-features.js?v=1.23.0"></script>
+  <script src="js/kyf-nav.js?v=1.23.0"></script>
+</body>
+</html>
