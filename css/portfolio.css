@@ -357,81 +357,14 @@ button {
   flex-shrink: 0;
 }
 
-/* Demo Data Toggle in Hero Member Panel */
-.hero-member-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px dashed rgba(215, 221, 210, 0.7);
-}
 
-.demo-checkbox-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  user-select: none;
-  font-family: var(--sans);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--ink);
-  transition: color 0.15s ease;
-}
 
-.demo-checkbox-label:hover {
-  color: var(--teal);
-}
 
-.demo-checkbox-label input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  border: 1.5px solid var(--muted);
-  border-radius: 4px;
-  background: var(--paper);
-  cursor: pointer;
-  display: inline-grid;
-  place-content: center;
-  transition: all 0.15s ease;
-  margin: 0;
-  vertical-align: middle;
-}
 
-.demo-checkbox-label input[type="checkbox"]:hover {
-  border-color: var(--teal);
-}
 
-.demo-checkbox-label input[type="checkbox"]:checked {
-  background: var(--teal);
-  border-color: var(--teal);
-}
 
-.demo-checkbox-label input[type="checkbox"]:checked::before {
-  content: "";
-  width: 8px;
-  height: 4px;
-  border-left: 2px solid #ffffff;
-  border-bottom: 2px solid #ffffff;
-  transform: rotate(-45deg) translate(1px, -1px);
-}
 
-.demo-checkbox-text {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--teal-deep);
-}
 
-.demo-checkbox-hint {
-  font-size: 11px;
-  color: var(--muted);
-}
 
 .eyebrow {
   font-family: var(--mono);
@@ -909,17 +842,7 @@ button {
   color: #ffffff !important;
 }
 
-.action-pill-btn.btn-load-demo {
-  background: var(--amber-soft);
-  border-color: rgba(201, 122, 43, 0.3);
-  color: var(--amber);
-}
 
-.action-pill-btn.btn-load-demo:hover {
-  background: var(--amber);
-  color: #fff;
-  border-color: var(--amber);
-}
 
 .action-pill-btn.btn-reset {
   color: var(--rose);
@@ -1865,24 +1788,7 @@ button {
   margin-top: 8px;
 }
 
-.empty-state-demo-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  color: var(--muted, #668586);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-  transition: color 0.15s ease;
-  background: none;
-  border: none;
-  padding: 4px 8px;
-}
 
-.empty-state-demo-link:hover {
-  color: var(--teal, #0b6b6d);
-}
 
 /* ==========================================================================
    Toast Notification
@@ -2037,28 +1943,10 @@ button {
     padding: 1px 5px;
   }
 
-  .hero-member-footer {
-    margin-top: 8px;
-    padding-top: 6px;
-  }
 
-  .demo-checkbox-label {
-    font-size: 11px;
-    gap: 6px;
-  }
 
-  .demo-checkbox-label input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
-  }
 
-  .demo-checkbox-text {
-    font-size: 11px;
-  }
 
-  .demo-checkbox-hint {
-    font-size: 11px;
-  }
 
   .hero-member-chips::-webkit-scrollbar,
   .nav-links::-webkit-scrollbar,
@@ -2758,11 +2646,6 @@ button {
   .holding-form-grid {
     grid-template-columns: 1fr;
   }
-}
-
-/* Demo data is read-only: its row actions are hidden */
-.leaf-actions[hidden] {
-  display: none;
 }
 
 /* ==========================================================================

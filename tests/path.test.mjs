@@ -49,4 +49,7 @@ ok(P.markDone({id:"a",nextOn:"x",planOn:"y"},now).nextOn===""&&P.reopen(P.markDo
 ok(Date.parse(P.snooze({id:"a"},now).planOn)===now+7*DAY,"snooze is a week");
 const mg=P.merge([{id:"p-term",status:"done",doneAt:"x"},{id:"mine",title:"Mine"},{id:"p-review"},{id:"house-nominees-will"}],D);
 ok(mg.find(a=>a.id==="p-term").status==="done"&&mg.some(a=>a.id==="mine")&&!mg.some(a=>a.id==="p-review"||a.id==="house-nominees-will"),"merge keeps state and custom, drops retired");
+const late=P.overdue(D,[{id:"p-term",status:"done",doneAt:new Date(now-400*DAY).toISOString()},{id:"p-car",status:"done",doneAt:new Date(now-10*DAY).toISOString()},{id:"p-fd",status:"active",planOn:new Date(now-2*DAY).toISOString()},{id:"task_g_2",goalId:"g",title:"Review progress",status:"done",doneAt:new Date(now-200*DAY).toISOString()},{id:"p-bike",status:"active",planOn:new Date(now+4*DAY).toISOString()}],now);
+ok(late.length===3&&late[0].id==="p-term"&&late.some(i=>i.id==="p-fd")&&late.some(i=>i.id==="task_g_2"),"overdue (home notice): lapsed renewals, passed plans, goal reviews; not future dates");
+ok(P.overdue(D,[],now).length===0,"nothing overdue when nothing is stored");
 process.exit(f?1:0);

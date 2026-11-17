@@ -43,9 +43,17 @@ ok(btnBg !== "inline", "tool card button styled");
 await page.evaluate(() => { localStorage.setItem("kyf_user_goals", JSON.stringify([{id:"a"},{id:"b"}])); localStorage.setItem("kyf_user_holdings", JSON.stringify([{id:"h"}])); });
 await page.reload();
 ok(await page.locator("#welcomeBack").count() === 0, "still no Welcome back strip with saved data");
-await page.goto(base + "/portfolio.html?demo=1");
+await page.goto(base + "/index.html");
+await page.evaluate(() => localStorage.removeItem("kyf_cadence_v3")); await page.reload();
+ok(await page.locator("#overdueNote").isHidden(), "no overdue line when nothing is overdue");
+await page.evaluate(() => localStorage.setItem("kyf_cadence_v3", JSON.stringify([{ id: "p-term", status: "done", doneAt: new Date(Date.now() - 400 * 864e5).toISOString() }, { id: "p-fd", status: "active", planOn: new Date(Date.now() - 864e5).toISOString() }, { id: "p-car", status: "done", doneAt: new Date().toISOString() }])));
+await page.reload();
+ok((await page.locator("#overdueNote").textContent()).includes("2 things need a look"), "home shows how many items are overdue");
+ok((await page.locator("#overdueNote a").getAttribute("href")) === "cadence.html", "and links to Cadence");
+await page.goto(base + "/portfolio.html");
 await page.waitForTimeout(800);
-ok(await page.evaluate(() => localStorage.getItem("kyf_demo_mode")) === "true", "demo flag set");
+ok(await page.evaluate(() => document.getElementById("demo-data-toggle")) === null, "no demo-data switch on Portfolio");
+ok(await page.locator("a[href*='demo']").count() === 0, "no demo links anywhere on Home");
 ok(errs.length === 0, "no page errors: " + errs.join("|"));
 
 // ---------- Markets page on phones ----------

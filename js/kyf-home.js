@@ -70,6 +70,24 @@
     });
   }
 
+  // Overdue check-ins: one quiet line with a way in. Nothing at all when nothing is overdue.
+  (function () {
+    var note = document.getElementById("overdueNote");
+    if (!note || !window.KYF_PATH || !window.KYF_PATH_DATA) return;
+    var records = [];
+    try { records = JSON.parse(localStorage.getItem("kyf_cadence_v3") || "[]"); } catch (e) { return; }
+    var late = window.KYF_PATH.overdue(window.KYF_PATH_DATA, Array.isArray(records) ? records : []);
+    if (!late.length) return;
+    var names = late.slice(0, 2).map(function (i) { return i.title; }).join(", ");
+    var more = late.length > 2 ? " and " + (late.length - 2) + " more" : "";
+    note.appendChild(document.createTextNode(late.length + (late.length === 1 ? " thing needs" : " things need") + " a look: " + names + more + ". "));
+    var a = document.createElement("a");
+    a.href = "cadence.html";
+    a.textContent = "Review them \u2192";
+    note.appendChild(a);
+    note.hidden = false;
+  })();
+
   // Lets Open (top bar) restore a .kyf file from the home page
   if (window.KYF_VAULT && typeof window.KYF_VAULT.registerPageHook === "function") {
     window.KYF_VAULT.registerPageHook({

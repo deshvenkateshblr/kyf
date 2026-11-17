@@ -608,7 +608,6 @@
   const STORAGE_KEY_USER_HOLDINGS = "kyf_user_holdings";
   const STORAGE_KEY_USER_GOALS = "kyf_user_goals";
   const STORAGE_KEY_USER_MEMBERS = "kyf_user_members";
-  const STORAGE_KEY_DEMO_MODE = "kyf_demo_mode";
 
   // --------------------------------------------------------------------------
   // IndexedDB Storage Helpers (for Portfolio Holdings & Portfolio Goals)
@@ -837,10 +836,9 @@
         // Persist to IndexedDB
         await writePortfolioStore(KYF_STORE_HOLDINGS, holdings);
 
-        // Also cache in localStorage for fast synchronous bootstrap & disable demo mode
+        // Also cache in localStorage for fast synchronous bootstrap
         try {
           localStorage.setItem(STORAGE_KEY_USER_HOLDINGS, JSON.stringify(holdings));
-          localStorage.setItem(STORAGE_KEY_DEMO_MODE, "false");
         } catch {}
       }
     },

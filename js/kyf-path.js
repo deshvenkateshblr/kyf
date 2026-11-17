@@ -132,6 +132,26 @@
     };
   }
 
+  /**
+   * What is overdue, from the stored records alone (no holdings or goals needed), for the home page.
+   * Returns [{ id, title, at, kind }] oldest first: a recurring task past its next date, or a task whose
+   * "I'll do this by" date has passed.
+   */
+  function overdue(data, records, now) {
+    const t = now || Date.now();
+    const byId = new Map((records || []).map((r) => [r.id, r]));
+    const out = [];
+    const consider = (task, rec) => {
+      if (!rec) return;
+      const v = view(task, rec, null, t);
+      if (v.state === "done" && v.renew) out.push({ id: task.id, title: task.title, at: v.dueAt, kind: "renew" });
+      else if (v.state === "open" && v.overdue) out.push({ id: task.id, title: task.title, at: v.plan, kind: "plan" });
+    };
+    data.tasks.forEach((task) => consider(task, byId.get(task.id)));
+    (records || []).filter((r) => r.goalId).forEach((rec) => consider(taskOfRecord(rec), rec));
+    return out.sort((a, b) => a.at - b.at);
+  }
+
   // ---- changes a person can make (return the updated record) ---------------------------------
   const nowIso = (now) => new Date(now || Date.now()).toISOString();
   const markDone = (rec, now) => Object.assign({}, rec, { status: "done", doneAt: nowIso(now), snoozedUntil: "", planOn: "", nextOn: "" });
@@ -164,5 +184,5 @@
     };
   }
 
-  root.KYF_PATH = { build, view, hintCount, schedule, taskOfRecord, merge, markDone, reopen, planFor, snooze, notForMe, setEvery, setNextOn, LATER_DAYS, SOON_DAYS };
+  root.KYF_PATH = { build, view, overdue, hintCount, schedule, taskOfRecord, merge, markDone, reopen, planFor, snooze, notForMe, setEvery, setNextOn, LATER_DAYS, SOON_DAYS };
 })(typeof window !== "undefined" ? window : globalThis);

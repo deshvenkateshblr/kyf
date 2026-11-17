@@ -33,6 +33,7 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(file).pipe(res);
 });
 await new Promise((r) => server.listen(0, r));
+const SAMPLE = JSON.parse(fs.readFileSync(path.join(root, "tests/fixtures/sample-family.json"), "utf8"));
 const base = `http://127.0.0.1:${server.address().port}/portfolio.html`;
 
 let passed = 0;
@@ -63,7 +64,7 @@ try {
   await page.goto(base);
   await page.waitForSelector("#empty-omni-search-input");
   check(true, "fresh visit shows the empty state with the search box");
-  check(await page.isChecked("#demo-data-toggle") === false, "demo mode is off by default");
+  check((await page.locator("#demo-data-toggle").count()) === 0 && (await page.locator("#empty-state-demo-link").count()) === 0, "there is no demo data switch or link");
   check((await page.locator(".quick-pick-tile").count()) >= 5, "quick-pick tiles are shown");
 
   console.log("[2] Add five holdings");
@@ -173,23 +174,17 @@ try {
   await page.waitForFunction(() => document.querySelectorAll(".btn-edit-leaf").length === 5);
   check((await netWorth()) === before, "Undo restores the holding and the net worth");
 
-  console.log("[7] Demo mode is a read-only sandbox");
+  console.log("[7] A fresh portfolio starts empty");
   const demoPage = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   const demoErrors = [];
   demoPage.on("pageerror", (e) => demoErrors.push(e.message));
   await demoPage.goto(base);
-  await demoPage.waitForSelector("#empty-state-demo-link");
-  await demoPage.click("#empty-state-demo-link");
-  await demoPage.waitForSelector(".btn-edit-leaf", { state: "attached" });
-  const demoRows = await demoPage.locator(".btn-edit-leaf").count();
-  check(demoRows > 0, `demo family loads (${demoRows} holdings)`);
-  check(!(await demoPage.locator(".btn-edit-leaf").first().isVisible()), "edit/delete buttons are hidden on demo rows");
+  await demoPage.waitForSelector("#empty-omni-search-input");
+  check((await demoPage.locator(".btn-edit-leaf").count()) === 0, "no pre-filled holdings");
   await demoPage.click("#btn-open-holding-modal");
   await demoPage.waitForSelector("#holding-modal", { state: "visible" });
-  check((await demoPage.isChecked("#demo-data-toggle")) === false, "Add leaves demo mode");
-  check((await demoPage.locator(".btn-edit-leaf").count()) === 0, "demo holdings are not copied into the new portfolio");
   const memberOptions = await demoPage.locator("#select-holding-member option").allTextContents();
-  check(!memberOptions.some((t) => /rajesh|priya/i.test(t)), `demo members are not offered (${memberOptions.join(", ")})`);
+  check(!memberOptions.some((t) => /rajesh|priya/i.test(t)), `only your own member is offered (${memberOptions.join(", ")})`);
   await demoPage.fill("#modal-omni-search-input", "My FD");
   await demoPage.fill("#input-holding-curval", "50000");
   await demoPage.click("#btn-save-holding");
@@ -197,7 +192,7 @@ try {
   check((await demoPage.locator(".btn-edit-leaf").count()) === 1, "only the one new holding exists");
   await demoPage.reload();
   await demoPage.waitForSelector(".btn-edit-leaf");
-  check((await demoPage.locator(".btn-edit-leaf").count()) === 1, "your holding survives a reload (demo stays off)");
+  check((await demoPage.locator(".btn-edit-leaf").count()) === 1, "your holding survives a reload");
 
   console.log("[8] Loans subtract from net worth");
   const nwBefore = (await demoPage.textContent("#kpi-net-worth")).trim();
@@ -221,9 +216,9 @@ try {
   qa.on("pageerror", (e) => qaErrors.push(e.message));
   await qa.goto(base);
   await qa.waitForSelector("#empty-omni-search-input");
-  await qa.evaluate(async () => {
+  await qa.evaluate(async (SAMPLE) => {
     const D = window.KYF_PORTFOLIO_DATA;
-    const goals = D.getDemoGoals();
+    const goals = SAMPLE.goals;
     const holdings = [{
       id: "h_split", name: "Split Stock", member: "Self", custodian: "Zerodha", assetClass: "Equities", subCategory: "",
       pricingMode: "MANUAL", units: 10, investedValue: 80000, currentValue: 100000, manualCurrentValue: 100000,
@@ -232,7 +227,7 @@ try {
     await D.saveHoldingsToDB(holdings); await D.saveGoalsToDB(goals);
     localStorage.setItem("kyf_user_holdings", JSON.stringify(holdings));
     localStorage.setItem("kyf_user_goals", JSON.stringify(goals));
-  });
+  }, SAMPLE);
   await qa.reload();
   await qa.waitForSelector(".btn-edit-leaf");
 

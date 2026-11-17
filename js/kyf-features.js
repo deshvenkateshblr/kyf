@@ -47,8 +47,7 @@
         "View by asset class, goal or institution, for the whole family or one member",
         "Spot Regular-plan funds that cost more than their Direct twin"
       ],
-      cta: "Open Portfolio",
-      secondary: { label: "Try it with demo data", href: "portfolio.html?demo=1" }
+      cta: "Open Portfolio"
     },
     {
       id: "market", topOrder: 1, group: "research", icon: "📊", name: "Market Benchmarks", short: "Markets", href: "market-performance.html", topBar: true,

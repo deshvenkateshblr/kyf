@@ -26,3 +26,8 @@
   .jr-steps { grid-template-columns: 1fr; gap: 8px; }
   .journey--compact .jr-body small { display: block; }
 }
+
+/* Quiet line on Home when a check-in is overdue */
+.overdue-note { margin: 16px 0 0; padding: 10px 14px; border: 1px solid var(--amber, #c97a2b); border-radius: 12px; background: var(--amber-soft, #fbf1e3); font-size: 14px; color: var(--ink, #1b2a24); }
+.overdue-note a { color: var(--teal, #0b6b6d); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.overdue-note[hidden] { display: none; }

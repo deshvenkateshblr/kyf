@@ -9,6 +9,7 @@ const srv = http.createServer((q, r) => {
   if (!fs.existsSync(p) || fs.statSync(p).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": mime[path.extname(p)] || "application/octet-stream" }); r.end(fs.readFileSync(p));
 }).listen(0);
+const SAMPLE = JSON.parse(fs.readFileSync(path.join(path.resolve(new URL("..", import.meta.url).pathname), "tests/fixtures/sample-family.json"), "utf8"));
 const base = `http://127.0.0.1:${srv.address().port}`;
 let pass = 0, fail = 0;
 const ok = (c, m) => { c ? pass++ : (fail++, console.log("FAIL", m)); };
@@ -30,9 +31,9 @@ async function audit(page, label) {
 for (const vp of [{ width: 390, height: 844 }, { width: 1200, height: 800 }]) {
   const page = await b.newPage({ viewport: vp });
   const errs = []; page.on("pageerror", e => errs.push(e.message));
-  await page.addInitScript(() => { try { localStorage.setItem("kyf_demo_mode", "true"); } catch (e) {} });
+  await page.addInitScript((f) => { try { localStorage.setItem("kyf_user_holdings", JSON.stringify(f.holdings)); localStorage.setItem("kyf_user_goals", JSON.stringify(f.goals)); localStorage.setItem("kyf_user_members", JSON.stringify(f.members)); } catch (e) {} }, SAMPLE);
 
-  // ---- Portfolio (demo data) ----
+  // ---- Portfolio (sample family seeded from tests/fixtures) ----
   await page.goto(base + "/portfolio.html");
   await page.waitForSelector("button.kyf-term", { timeout: 8000 });
   await audit(page, `portfolio ${vp.width}`);

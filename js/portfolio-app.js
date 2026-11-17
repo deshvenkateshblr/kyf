@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.21.0
+ * Version: v1.22.0
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -12,11 +12,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let rawHoldings = [];
   let rawGoals = [];
   let rawMembers = [];
-  // Home page "Try it with demo data" link: portfolio.html?demo=1
-  try {
-    if (new URLSearchParams(location.search).get("demo") === "1") localStorage.setItem("kyf_demo_mode", "true");
-  } catch (e) { /* storage blocked: fall through to normal mode */ }
-  let isDemoMode = localStorage.getItem("kyf_demo_mode") === "true";
+  // The sample-data mode is gone; clear its leftover switch so older browsers start clean
+  try { localStorage.removeItem("kyf_demo_mode"); } catch (e) { /* storage blocked */ }
   let userHoldings = [];
   let userGoals = [];
   let userMembers = [];
@@ -49,7 +46,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const els = {
     treegrid: document.getElementById("portfolio-treegrid"),
     heroMemberChips: document.getElementById("hero-member-chips"),
-    demoDataToggle: document.getElementById("demo-data-toggle"),
     kpiNetWorth: document.getElementById("kpi-net-worth"),
     kpiNetWorthSub: document.getElementById("kpi-net-worth-sub"),
     kpiInvested: document.getElementById("kpi-invested"),
@@ -371,9 +367,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const baseList = (rawMembers && rawMembers.length > 0)
       ? rawMembers
-      : (isDemoMode
-          ? (window.KYF_PORTFOLIO_DATA && window.KYF_PORTFOLIO_DATA.getDemoMembers ? window.KYF_PORTFOLIO_DATA.getDemoMembers() : [])
-          : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }]);
+      : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }];
 
     for (const m of baseList) {
       if (!knownNames.has(m.name)) {
@@ -635,8 +629,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderAssignBanner(enriched);
     const jr = document.getElementById("journeyStrip");
     if (jr && window.KYF_JOURNEY) {
-      if (isDemoMode) jr.innerHTML = "";
-      else window.KYF_JOURNEY.render(jr, window.KYF_JOURNEY.compute(rawGoals, rawHoldings), { compact: true, current: "portfolio" });
+      window.KYF_JOURNEY.render(jr, window.KYF_JOURNEY.compute(rawGoals, rawHoldings), { compact: true, current: "portfolio" });
     }
 
     // 2. Render Top-Level Hero Member Chips
@@ -828,9 +821,6 @@ document.addEventListener("DOMContentLoaded", async () => {
               <button type="button" class="btn-empty-secondary" id="btn-empty-open-vault">
                 <span>📂 Open .kyf Vault</span>
               </button>
-              <button type="button" class="empty-state-demo-link" id="empty-state-demo-link">
-                <span>Try demo family (Rajesh &amp; Priya) &rarr;</span>
-              </button>
             </div>
           </div>
         </div>
@@ -853,15 +843,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
       }
 
-      const demoLink = document.getElementById("empty-state-demo-link");
-      if (demoLink) {
-        demoLink.addEventListener("click", () => {
-          if (els.demoDataToggle) {
-            els.demoDataToggle.checked = true;
-          }
-          handleDemoToggle({ target: { checked: true } });
-        });
-      }
       return;
     }
 
@@ -1044,8 +1025,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <!-- Col 1: Holding / Instrument, Tags & Mobile Subtext -->
                     <div class="leaf-ident-wrap">
                       <div class="leaf-name">
-                        <span class="leaf-name-text${isDemoMode ? "" : " is-editable"}" data-holding-id="${escapeHTML(targetHoldingId)}">${escapeHTML(h.name)}</span>
-                        <div class="leaf-actions"${isDemoMode ? " hidden" : ""}>
+                        <span class="leaf-name-text is-editable" data-holding-id="${escapeHTML(targetHoldingId)}">${escapeHTML(h.name)}</span>
+                        <div class="leaf-actions">
                           <button type="button" class="btn-leaf-action btn-edit-leaf" data-holding-id="${escapeHTML(targetHoldingId)}" title="Edit holding" aria-label="Edit ${escapeHTML(h.name)}">✏️ Edit</button>
                           <button type="button" class="btn-leaf-action btn-delete-leaf" data-holding-id="${escapeHTML(targetHoldingId)}" title="Delete holding" aria-label="Delete ${escapeHTML(h.name)}">🗑️</button>
                         </div>
@@ -1198,14 +1179,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   function openForGoalFromUrl() {
     let gid = "";
     try { gid = new URLSearchParams(window.location.search).get("addFor") || ""; } catch (_) { /* ignore */ }
-    if (!isDemoMode && new URLSearchParams(window.location.search).get("assign")) {
+    if (new URLSearchParams(window.location.search).get("assign")) {
       try { window.history.replaceState({}, "", window.location.pathname); } catch (_) { /* ignore */ }
       openAssign();
       return;
     }
     let addType = "";
     try { addType = new URLSearchParams(window.location.search).get("add") || ""; } catch (_) { /* ignore */ }
-    if (!isDemoMode && addType) {
+    if (addType) {
       try { window.history.replaceState({}, "", window.location.pathname); } catch (_) { /* ignore */ }
       const klass = { equity: "Equities", mf: "Mutual Funds" }[addType];
       if (klass) {
@@ -1214,7 +1195,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else handleQuickPick(addType);
       return;
     }
-    if (!gid || isDemoMode || !rawGoals.some((g) => g.id === gid)) return;
+    if (!gid || !rawGoals.some((g) => g.id === gid)) return;
     returnToGoals = true;
     openHoldingModal(false, null);
     if (els.selectHoldingGoal) els.selectHoldingGoal.value = gid;
@@ -1244,7 +1225,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function bulkTagHTML(holdings) {
-    if (isDemoMode) return "";
     const ids = [...new Set(holdings.filter((h) => !h.isLiability).map((h) => h.originalHoldingId || h.id))];
     if (ids.length < 2) return "";
     return `<div class="bulk-tag-row"><button type="button" class="btn-bulk-tag" data-holding-ids="${escapeHTML(ids.join("|"))}">🎯 Give these ${ids.length} a job…</button></div>`;
@@ -1261,7 +1241,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function renderAssignBanner(enriched) {
     const el = document.getElementById("assign-banner");
     if (!el) return;
-    const un = isDemoMode ? [] : unassignedHoldings(enriched);
+    const un = unassignedHoldings(enriched);
     if (!un.length) { el.hidden = true; return; }
     const total = un.reduce((sum, h) => sum + (Number(h.currentValue) || 0), 0);
     const goalsExist = rawGoals.some((g) => g.kind !== "COVER");
@@ -1272,7 +1252,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function openAssign(ids) {
-    if (blockDemoChange()) return;
     const modal = document.getElementById("assign-modal");
     const body = document.getElementById("assign-body");
     if (!modal || !body) return;
@@ -1366,9 +1345,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const list = (rawMembers && rawMembers.length > 0)
       ? rawMembers
-      : (isDemoMode
-          ? (window.KYF_PORTFOLIO_DATA && window.KYF_PORTFOLIO_DATA.getDemoMembers ? window.KYF_PORTFOLIO_DATA.getDemoMembers() : [])
-          : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }]);
+      : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }];
 
     if (list.length === 0) {
       els.modalMembersList.innerHTML = `
@@ -1404,15 +1381,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       btn.addEventListener("click", async () => {
         const nameToDelete = btn.getAttribute("data-name");
         if (!nameToDelete) return;
-
-        if (isDemoMode) {
-          const switchOwn = window.confirm(`Demo data is read-only. Switch to your own portfolio to manage members?`);
-          if (!switchOwn) return;
-          await leaveDemo();
-          showToast("Demo closed — switched to your portfolio", "info");
-          renderModalMembersList();
-          return;
-        }
 
         const holdingCount = rawHoldings.filter((h) => h.member === nameToDelete).length;
         if (holdingCount > 0) {
@@ -1459,11 +1427,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!name) {
       alert("Please enter a member name.");
       return;
-    }
-
-    if (isDemoMode) {
-      await leaveDemo();
-      showToast("Demo closed — adding to your own portfolio", "info");
     }
 
     if (rawMembers.some((m) => m.name.toLowerCase() === name.toLowerCase())) {
@@ -2297,14 +2260,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================================================
   function openHoldingModal(forEdit = false, holdingData = null) {
     if (!els.holdingModal) return;
-    if (!forEdit && isDemoMode) {
-      // Adding means "my own portfolio": close the demo first, then open a clean form
-      leaveDemo().then(() => {
-        showToast("Demo closed — adding to your own portfolio", "info");
-        openHoldingModal(false, holdingData);
-      });
-      return;
-    }
     populateHoldingModalDropdowns();
     const qp = document.getElementById("modal-quick-picks");
     if (qp) {
@@ -2367,7 +2322,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function openHoldingModalForEdit(holdingId) {
-    if (blockDemoChange()) return;
     const holding = rawHoldings.find((h) => h.id === holdingId || h.originalHoldingId === holdingId);
     if (!holding) {
       showToast("Holding not found", "error");
@@ -2499,8 +2453,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const holding = rawHoldings.find((h) => h.id === holdingId || h.originalHoldingId === holdingId);
     const hName = holding ? holding.name : "this holding";
 
-    if (blockDemoChange()) return;
-
     // Snapshot so the delete can be undone from the toast (no blocking confirm dialog)
     const snapshot = [...rawHoldings];
 
@@ -2555,7 +2507,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const baseList = (rawMembers && rawMembers.length > 0)
         ? rawMembers
-        : (isDemoMode ? window.KYF_PORTFOLIO_DATA.getDemoMembers() : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }]);
+        : [{ id: "mem_self", name: "Self", role: "Self", avatar: "👤" }];
 
       for (const m of baseList) {
         if (m.name && !knownNames.has(m.name)) {
@@ -2579,7 +2531,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (els.selectHoldingGoal) {
       const goalsList = (rawGoals && rawGoals.length > 0)
         ? rawGoals
-        : (isDemoMode ? window.KYF_PORTFOLIO_DATA.getDemoGoals() : []);
+        : [];
 
       let goalOptions = `<option value="">None / General Wealth</option>`;
       goalsList.filter((g) => g.kind !== "COVER").forEach((g) => {
@@ -2625,9 +2577,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       alert("Please enter a valid current live value (₹).");
       return;
     }
-
-    // Safety net: the form is only opened outside demo mode, but never write into demo data
-    if (blockDemoChange()) return;
 
     // Determine pricing mode and instrumentMeta
     let pricingMode = "MANUAL";
@@ -2979,14 +2928,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function openImportModal() {
     if (!els.importModal) return;
-    if (isDemoMode) {
-      leaveDemo().then(() => {
-        showToast("Demo closed — importing to your own portfolio", "info");
-        openImportModal();
-      });
-      return;
-    }
-
     pendingImportHoldings = [];
     pendingImportBrokers = [];
     currentLoadedFile = null;
@@ -3415,7 +3356,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function applyImportedHoldings() {
     if (!pendingImportHoldings || pendingImportHoldings.length === 0) return;
-    if (isDemoMode) await leaveDemo();
 
     const selectedMember = (els.importMemberSelect && els.importMemberSelect.value) ? els.importMemberSelect.value.trim() : "Self";
 
@@ -3448,94 +3388,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================================================
   // Action Handlers
   // ==========================================================================
-  // Demo data is a read-only sandbox: it is never copied into the user's own portfolio.
-  // Leaving it restores the user's real data (or an empty portfolio) before anything is added.
-  async function leaveDemo() {
-    if (!isDemoMode) return;
-    if (els.demoDataToggle) els.demoDataToggle.checked = false;
-    await handleDemoToggle({ target: { checked: false } });
-  }
-
-  // Edit/delete on demo data: explain and offer the way out instead of silently converting it
-  function blockDemoChange() {
-    if (!isDemoMode) return false;
-    showToast("This is demo data (read-only).", "warning", {
-      label: "Start my own",
-      onAction: () => { leaveDemo(); }
-    });
-    return true;
-  }
-
-  async function handleDemoToggle(e) {
-    const isChecked = e.target.checked;
-    isDemoMode = isChecked;
-    localStorage.setItem("kyf_demo_mode", isChecked ? "true" : "false");
-
-    if (isChecked) {
-      // User turned ON Demo Data: stash any current user holdings & members so they are never lost
-      if (rawHoldings && rawHoldings.length > 0 && userHoldings.length === 0) {
-        userHoldings = [...rawHoldings];
-        userGoals = [...rawGoals];
-        userMembers = [...rawMembers];
-        localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
-        localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
-        localStorage.setItem("kyf_user_members", JSON.stringify(userMembers));
-      }
-      // Keep demo data in memory only — DO NOT overwrite user's IndexedDB!
-      rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
-      rawGoals = window.KYF_PORTFOLIO_DATA.getDemoGoals();
-      rawMembers = window.KYF_PORTFOLIO_DATA.getDemoMembers();
-      handleResetSelections();
-      showToast("✓ Filled with demo family data", "success");
-    } else {
-      // User turned OFF Demo Data: restore from IndexedDB or userHoldings cache
-      const storedHoldings = await window.KYF_PORTFOLIO_DATA.loadHoldingsFromDB();
-      const storedGoals = await window.KYF_PORTFOLIO_DATA.loadGoalsFromDB();
-      const storedMembers = await window.KYF_PORTFOLIO_DATA.loadMembersFromDB();
-
-      if (storedHoldings && storedHoldings.length > 0) {
-        rawHoldings = storedHoldings;
-        userHoldings = storedHoldings;
-      } else if (userHoldings && userHoldings.length > 0) {
-        rawHoldings = [...userHoldings];
-        await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
-      } else {
-        rawHoldings = [];
-      }
-
-      if (storedGoals && storedGoals.length > 0) {
-        rawGoals = storedGoals;
-        userGoals = storedGoals;
-      } else if (userGoals && userGoals.length > 0) {
-        rawGoals = [...userGoals];
-        await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
-      } else {
-        rawGoals = [];
-      }
-
-      if (storedMembers && storedMembers.length > 0) {
-        rawMembers = storedMembers;
-        userMembers = storedMembers;
-      } else if (userMembers && userMembers.length > 0) {
-        rawMembers = [...userMembers];
-        await window.KYF_PORTFOLIO_DATA.saveMembersToDB(rawMembers);
-      } else {
-        const inferred = inferMembersFromHoldings(rawHoldings);
-        rawMembers = inferred;
-        userMembers = inferred;
-        await window.KYF_PORTFOLIO_DATA.saveMembersToDB(rawMembers);
-      }
-
-      handleResetSelections();
-      if (rawHoldings.length > 0) {
-        showToast(`✓ Switched to your portfolio (${rawHoldings.length} holdings)`, "success");
-      } else {
-        showToast("✓ Reset to your data (clean slate)", "info");
-      }
-    }
-    renderApp();
-  }
-
   function handleSaveAppData() {
     if (window.KYF_VAULT) {
       window.KYF_VAULT.save({
@@ -3654,11 +3506,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           else g.removeAttribute("open");
         });
       });
-    }
-
-    // 6. Demo Data Checkbox Toggle
-    if (els.demoDataToggle) {
-      els.demoDataToggle.addEventListener("change", handleDemoToggle);
     }
 
     // Member Management Modal Events
@@ -3912,24 +3759,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (window.KYF_VAULT) {
       window.KYF_VAULT.registerPageHook({
         pageName: "portfolio",
-        // Saving while the demo family is on screen must not write the demo into the person's file
-        getLocalData: () => ({
-          portfolio: isDemoMode ? userHoldings : rawHoldings,
-          goals: isDemoMode ? userGoals : rawGoals,
-          members: isDemoMode ? userMembers : rawMembers
-        }),
+        getLocalData: () => ({ portfolio: rawHoldings, goals: rawGoals, members: rawMembers }),
         onAfterOpen: async (vaultData, summary) => {
           // An explicit (even empty) portfolio replaces what is on screen; a missing one leaves it alone
           if (Array.isArray(vaultData.portfolio)) {
-            isDemoMode = false;
-            localStorage.setItem("kyf_demo_mode", "false");
             userHoldings = vaultData.portfolio;
             userGoals = vaultData.goals || [];
             localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
             localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
             rawHoldings = userHoldings;
             rawGoals = userGoals;
-            if (els.demoDataToggle) els.demoDataToggle.checked = false;
             await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
             await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
           } else if (vaultData.goals && vaultData.goals.length) {
@@ -3969,16 +3808,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             const text = await file.text();
             const result = window.KYF_PORTFOLIO_DATA.parseAndExtractKyfData(text);
             if (result.holdings && result.holdings.length) {
-              isDemoMode = false;
-              localStorage.setItem("kyf_demo_mode", "false");
               userHoldings = result.holdings;
               userGoals = result.goals || [];
               localStorage.setItem("kyf_user_holdings", JSON.stringify(userHoldings));
               localStorage.setItem("kyf_user_goals", JSON.stringify(userGoals));
               rawHoldings = userHoldings;
               rawGoals = userGoals;
-              if (els.demoDataToggle) els.demoDataToggle.checked = false;
-              await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
+                await window.KYF_PORTFOLIO_DATA.saveHoldingsToDB(rawHoldings);
               await window.KYF_PORTFOLIO_DATA.saveGoalsToDB(rawGoals);
             } else if (result.goals && result.goals.length) {
               userGoals = result.goals;
@@ -4050,10 +3886,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupEventListeners();
     bindHoldingGoalFlow();
 
-    if (els.demoDataToggle) {
-      els.demoDataToggle.checked = isDemoMode;
-    }
-
     // Always inspect IndexedDB for user's stored holdings, goals & members
     const storedHoldings = await window.KYF_PORTFOLIO_DATA.loadHoldingsFromDB();
     const storedGoals = await window.KYF_PORTFOLIO_DATA.loadGoalsFromDB();
@@ -4069,12 +3901,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       userMembers = storedMembers;
     }
 
-    if (isDemoMode) {
-      // Demo Data mode active: populate demo family dataset strictly in memory (DO NOT overwrite IndexedDB)
-      rawHoldings = window.KYF_PORTFOLIO_DATA.getDemoFamilyHoldings();
-      rawGoals = window.KYF_PORTFOLIO_DATA.getDemoGoals();
-      rawMembers = window.KYF_PORTFOLIO_DATA.getDemoMembers();
-    } else {
+    {
       // User Data mode: restore user's stored holdings or start with clean slate
       if (storedHoldings && storedHoldings.length > 0) {
         rawHoldings = storedHoldings;
