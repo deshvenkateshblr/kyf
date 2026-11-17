@@ -51,10 +51,10 @@
   function render(host, model, opts) {
     const o = opts || {};
     const here = o.current || "";
-    host.className = "plan-strip" + (o.compact ? " plan-strip--compact" : "");
+    host.className = "plan-strip" + (o.compact ? " plan-strip--compact" : "") + (here ? " has-here" : "");
     const head = model.next
-      ? `<p class="jr-head"><strong>Your plan is ${model.overall}% built.</strong> Next: <a href="${esc(model.next.href)}">${esc(model.next.title)} &rarr;</a></p>`
-      : `<p class="jr-head"><strong>Your plan is built.</strong> Keep it alive with the steps in <a href="cadence.html">Cadence</a>.</p>`;
+      ? `<p class="jr-head"><strong>${model.overall}% done.</strong> Next: <a href="${esc(model.next.href)}">${esc(model.next.title)} &rarr;</a></p>`
+      : `<p class="jr-head"><strong>All three steps done.</strong> Keep it alive with the steps in <a href="cadence.html">Cadence</a>.</p>`;
     host.innerHTML = head + `<ol class="jr-steps">` + model.steps.map((s) => {
       const cls = "jr-step" + (s.pct >= 100 ? " is-done" : "") + (model.next && model.next.id === s.id ? " is-next" : "") + (here === s.id ? " is-here" : "");
       return `<li class="${cls}"><a href="${esc(s.href)}"><span class="jr-num">${s.pct >= 100 ? "✓" : s.n}</span>` +

@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.23.1
+ * Version: v1.23.2
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -629,7 +629,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderAssignBanner(enriched);
     const jr = document.getElementById("journeyStrip");
     if (jr && window.KYF_JOURNEY) {
-      window.KYF_JOURNEY.render(jr, window.KYF_JOURNEY.compute(rawGoals, rawHoldings), { compact: true, current: "portfolio" });
+      window.KYF_JOURNEY.render(jr, window.KYF_JOURNEY.compute(rawGoals, rawHoldings), { compact: true, current: /[?&]assign=1/.test(location.search) ? "assign" : "portfolio" });
     }
 
     // 2. Render Top-Level Hero Member Chips

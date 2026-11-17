@@ -8,7 +8,12 @@
 .jr-step a { display: flex; gap: 12px; align-items: flex-start; height: 100%; padding: 12px 14px; border: 1px solid var(--line, #d8e0db); border-radius: 12px; background: var(--panel, #fff); color: inherit; text-decoration: none; }
 .jr-step a:hover, .jr-step a:focus-visible { border-color: var(--teal, #0b6b6d); }
 .jr-step.is-next a { border-color: var(--teal, #0b6b6d); box-shadow: 0 0 0 1px var(--teal, #0b6b6d) inset; }
-.jr-step.is-here a { background: var(--panel-soft, #eef6f2); }
+.jr-step.is-here a { background: var(--panel-soft, #eef6f2); border-color: var(--teal, #0b6b6d); box-shadow: 0 0 0 1px var(--teal, #0b6b6d) inset; }
+/* On a tool page the highlight follows where you are, not what is next */
+.plan-strip.has-here .jr-step.is-next:not(.is-here) a { border-color: var(--line, #d8e0db); box-shadow: none; }
+.plan-strip.has-here .jr-step.is-next:not(.is-here) .jr-num { background: var(--line, #d8e0db); color: var(--ink, #1b2a24); }
+.jr-step.is-here .jr-num { background: var(--teal, #0b6b6d); color: #fff; }
+.jr-step.is-done.is-here .jr-num { background: var(--green, #3b7835); }
 .jr-num { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--line, #d8e0db); color: var(--ink, #1b2a24); }
 .jr-step.is-next .jr-num { background: var(--teal, #0b6b6d); color: #fff; }
 .jr-step.is-done .jr-num { background: var(--green, #3b7835); color: #fff; }

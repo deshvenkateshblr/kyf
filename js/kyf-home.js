@@ -66,7 +66,7 @@
         if (a) a.href = model.next.href;
       });
       var hero = document.getElementById("heroStart");
-      if (hero && model.overall > 0) hero.textContent = "Continue your plan \u2192";
+      if (hero && model.overall > 0) hero.textContent = "Continue \u2192";
     });
   }
 
