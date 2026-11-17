@@ -19,8 +19,10 @@ ok(await p.locator("#journeyStrip .jr-step.is-here strong").innerText() === "Bui
 await p.click("#journeyStrip .jr-step >> nth=1");
 await p.waitForSelector("#journeyStrip .jr-step");
 ok(await p.locator("#journeyStrip .jr-step.is-here strong").innerText() === "Name your goals", "highlight moves to Name your goals");
-await p.click("#journeyStrip .jr-step >> nth=2");
-await p.waitForTimeout(800);
-const here = await p.locator("#journeyStrip .jr-step.is-here strong").allInnerTexts();
-console.log(here);
+ok(await p.locator("#journeyStrip .jr-step.is-locked a").count() === 0, "step 3 is not a link until it can be used");
+await p.goto(base + "/index.html");
+ok(await p.locator("#firstTime").isVisible(), "first-time explainer shows for a new visitor");
+await p.click("#firstTimeClose");
+await p.reload();
+ok(!(await p.locator("#firstTime").isVisible()), "explainer stays dismissed");
 await b.close(); srv.close(); process.exit(fails ? 1 : 0);
