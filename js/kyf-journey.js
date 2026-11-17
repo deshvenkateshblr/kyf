@@ -51,7 +51,7 @@
   function render(host, model, opts) {
     const o = opts || {};
     const here = o.current || "";
-    host.className = "journey" + (o.compact ? " journey--compact" : "");
+    host.className = "plan-strip" + (o.compact ? " plan-strip--compact" : "");
     const head = model.next
       ? `<p class="jr-head"><strong>Your plan is ${model.overall}% built.</strong> Next: <a href="${esc(model.next.href)}">${esc(model.next.title)} &rarr;</a></p>`
       : `<p class="jr-head"><strong>Your plan is built.</strong> Keep it alive with the steps in <a href="cadence.html">Cadence</a>.</p>`;

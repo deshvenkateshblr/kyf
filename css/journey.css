@@ -1,6 +1,6 @@
 /* The three-step plan strip (js/kyf-journey.js) */
-.journey { max-width: 1160px; margin: 0 auto; padding: 14px 28px 4px; }
-.journey:empty { display: none; }
+.plan-strip { max-width: 1160px; margin: 0 auto; padding: 14px 28px 4px; }
+.plan-strip:empty { display: none; }
 .jr-head { margin: 0 0 10px; font-size: 14px; color: var(--ink-soft, var(--muted, #5b6b64)); }
 .jr-head strong { color: var(--ink, var(--text, #1b2a24)); }
 .jr-head a { color: var(--teal, #0b6b6d); font-weight: 600; text-decoration: none; }
@@ -18,16 +18,17 @@
 .jr-bar { display: block; height: 6px; margin-top: 6px; border-radius: 999px; background: var(--line, #d8e0db); overflow: hidden; }
 .jr-bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--teal, #0b6b6d); transition: width .5s ease; }
 .jr-step.is-done .jr-bar i { background: var(--green, #3b7835); }
-.journey--compact .jr-body small { display: none; }
-.journey--compact .jr-step a { padding: 8px 12px; align-items: center; }
-.journey--compact .jr-head { font-size: 13px; }
+.plan-strip--compact .jr-body small { display: none; }
+.plan-strip--compact .jr-step a { padding: 8px 12px; align-items: center; }
+.plan-strip--compact .jr-head { font-size: 13px; }
 @media (max-width: 720px) {
-  .journey { padding: 12px 16px 0; }
+  .plan-strip { padding: 12px 16px 0; }
   .jr-steps { grid-template-columns: 1fr; gap: 8px; }
-  .journey--compact .jr-body small { display: block; }
+  .plan-strip--compact .jr-body small { display: block; }
 }
 
 /* Quiet line on Home when a check-in is overdue */
 .overdue-note { margin: 16px 0 0; padding: 10px 14px; border: 1px solid var(--amber, #c97a2b); border-radius: 12px; background: var(--amber-soft, #fbf1e3); font-size: 14px; color: var(--ink, #1b2a24); }
 .overdue-note a { color: var(--teal, #0b6b6d); font-weight: 700; text-decoration: none; white-space: nowrap; }
 .overdue-note[hidden] { display: none; }
+.wrap .plan-strip { padding-left: 0; padding-right: 0; }

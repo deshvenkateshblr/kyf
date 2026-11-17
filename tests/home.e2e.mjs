@@ -54,6 +54,12 @@ await page.goto(base + "/portfolio.html");
 await page.waitForTimeout(800);
 ok(await page.evaluate(() => document.getElementById("demo-data-toggle")) === null, "no demo-data switch on Portfolio");
 ok(await page.locator("a[href*='demo']").count() === 0, "no demo links anywhere on Home");
+await page.goto(base + "/index.html");
+await page.evaluate(() => { localStorage.setItem("kyf_user_holdings", JSON.stringify([{ id: "a", name: "A", assetClass: "Equities", currentValue: 1, allocations: [] }])); });
+await page.reload(); await page.waitForSelector(".plan-strip .jr-step");
+const wide = await page.evaluate(() => [...document.querySelectorAll(".plan-strip .jr-step")].map((e) => Math.round(e.getBoundingClientRect().width)));
+ok(wide.length === 3 && wide.every((w) => w > 250), "plan strip keeps three wide cards on Home (" + wide.join(",") + ")");
+ok(await page.evaluate(() => getComputedStyle(document.querySelector(".plan-strip"), "::before").content) === "none", "no dashed connector line leaks onto the plan strip");
 ok(errs.length === 0, "no page errors: " + errs.join("|"));
 
 // ---------- Markets page on phones ----------
