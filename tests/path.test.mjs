@@ -8,7 +8,7 @@ const task=(m,id)=>flat(m).find(i=>i.task.id===id);
 const empty={holdings:[],goals:[]};
 let m=P.build(D,[],empty,now);
 ok(m.pct===0&&m.next.task.id==="p-savings"&&m.stages.length===3,"empty: 0%, 3 groups, first task is savings");
-ok(m.stages[0].total===9&&m.stages[1].total===1&&m.stages[2].total===10,"task counts per group");
+ok(m.stages[0].total===8&&m.stages[1].total===1&&m.stages[2].total===10,"task counts per group");
 const hs=[h({assetClass:"Cash & Liquid",subCategory:"Savings Account"}),h({assetClass:"Fixed Income",subCategory:"Bank FD (6.8% p.a.)",name:"Bank Fixed Deposit"}),
  h({assetClass:"Fixed Income",subCategory:"EPF (8.25% Sovereign Rate)",name:"Employees Provident Fund (EPF)"}),
  h({assetClass:"Fixed Income",subCategory:"PPF (7.1%)",name:"Public Provident Fund (PPF)"}),
@@ -24,7 +24,9 @@ ok(task(m,"p-fd").v.hint===1,"a Fixed Income deposit is an FD");
 const rec=(id,o)=>[Object.assign({id},o)];
 m=P.build(D,rec("p-savings",{status:"done",doneAt:new Date(now).toISOString()}),empty,now);
 ok(task(m,"p-savings").v.state==="done"&&m.stages[0].done===1&&m.next.task.id==="p-fd","confirming ticks it and moves on");
-ok(m.stages[0].pct===11,"group progress follows");
+ok(m.stages[0].pct===13,"group progress follows");
+ok(!task(P.build(D,[],empty,now),"house-networth"),"net worth check is hidden until something is added");
+ok(!!task(P.build(D,[],{holdings:[{name:"x",assetClass:"Equities"}],goals:[]},now),"house-networth"),"net worth check appears once a holding exists");
 const goal={id:"g",name:"Home",baseTargetINR:100,targetYear:2040};
 const grec=[{id:"task_g_1",goalId:"g",title:"Confirm the cost",status:"done",doneAt:new Date(now).toISOString()},{id:"task_g_2",goalId:"g",title:"Review progress every 6 months",status:"active"}];
 m=P.build(D,grec,{holdings:[],goals:[goal]},now);
@@ -36,7 +38,7 @@ ok(task(m,"p-term").v.dueAt===now+20*DAY&&!task(m,"p-term").v.renew,"renewal dat
 ok(m.schedule.soon.length===1&&m.schedule.soon[0].item.task.id==="p-term","it shows up in the next 30 days");
 m=P.build(D,rec("p-term",{status:"done",doneAt:new Date(now-400*DAY).toISOString()}),empty,now);
 ok(task(m,"p-term").v.renew&&m.schedule.overdue.length===1&&m.renewals.length===1,"past its date it is overdue");
-m=P.build(D,rec("house-networth",{status:"done",doneAt:new Date(now-40*DAY).toISOString(),everyDays:30}),empty,now);
+m=P.build(D,rec("house-networth",{status:"done",doneAt:new Date(now-40*DAY).toISOString(),everyDays:30}),{holdings:[{name:"x",assetClass:"Equities"}],goals:[]},now);
 ok(task(m,"house-networth").v.renew,"own frequency (monthly) is respected");
 m=P.build(D,rec("p-savings",{status:"active",planOn:new Date(now+3*DAY).toISOString()}),empty,now);
 ok(task(m,"p-savings").v.state==="later"&&m.next.task.id==="p-fd"&&m.schedule.soon.length===1,"a planned date parks the task and is scheduled");
@@ -44,7 +46,7 @@ m=P.build(D,rec("p-savings",{status:"active",planOn:new Date(now-2*DAY).toISOStr
 ok(task(m,"p-savings").v.state==="open"&&task(m,"p-savings").v.overdue&&m.schedule.overdue.length===1,"a passed plan date is overdue");
 ok(m.next.task.id==="p-fd","up next prefers fresh tasks over overdue plans");
 m=P.build(D,rec("p-debts",{status:"not_applicable"}),empty,now);
-ok(task(m,"p-debts").v.state==="na"&&m.stages[0].total===8,"I owe nothing leaves the maths");
+ok(task(m,"p-debts").v.state==="na"&&m.stages[0].total===7,"I owe nothing leaves the maths");
 ok(P.markDone({id:"a",nextOn:"x",planOn:"y"},now).nextOn===""&&P.reopen(P.markDone({id:"a"},now)).status==="active","mark done resets dates, reopen works");
 ok(Date.parse(P.snooze({id:"a"},now).planOn)===now+7*DAY,"snooze is a week");
 const mg=P.merge([{id:"p-term",status:"done",doneAt:"x"},{id:"mine",title:"Mine"},{id:"p-review"},{id:"house-nominees-will"}],D);

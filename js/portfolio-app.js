@@ -1,6 +1,6 @@
 /**
  * KYF Family Portfolio Tracker — Application Controller (`js/portfolio-app.js`)
- * Version: v1.24.0
+ * Version: v1.24.1
  * Pure Vanilla ES6+ | Top-Level Family Scope Selector, View Tabs, Multi-Select Pill Strip,
  * Horizon Toggle (1M, 3M, 6M, 1Y), Goal Envelopes, Macro Inflation Compounding,
  * Virtual Lot Splitting, Mobile-Optimized Aligned TreeGrid
@@ -777,6 +777,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 9. Update Sort Indicators in Header
     updateSortHeadersUI();
+
+    // Controls that only work on holdings stay out of sight until there is one
+    document.body.classList.toggle("portfolio-is-empty", rawHoldings.length === 0);
 
     // 10. Render Aligned TreeGrid
     if (rawHoldings.length === 0) {

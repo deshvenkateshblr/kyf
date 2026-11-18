@@ -85,7 +85,9 @@
     const byId = new Map((records || []).map((r) => [r.id, r]));
     const goals = ((ctx && ctx.goals) || []).filter(isGoal);
     const stages = data.stages.map((s) => {
-      const items = data.tasks.filter((t) => t.stage === s.id).map((task) => {
+      // A step that has nothing to work on yet is not shown (e.g. checking net worth before adding anything)
+      const usable = (t) => !(t.needs === "holdings" && !((ctx && ctx.holdings) || []).some((h) => h && !h.isLiability));
+      const items = data.tasks.filter((t) => t.stage === s.id && usable(t)).map((task) => {
         const rec = byId.get(task.id) || null;
         return { task, rec, v: view(task, rec, ctx, now) };
       });

@@ -26,7 +26,7 @@ ok((await p.textContent("#upNext")).includes("Have you added every savings accou
 ok(await p.locator("#pathTrack .seg").count() === 3, "three segments in the bar");
 ok(await p.locator("#scheduleWrap:visible").count() === 0, "nothing scheduled yet, no Coming up box");
 
-await seed([{ id: "h1", name: "Fund", assetClass: "Mutual Funds", member: "Me", custodian: "X", currentValue: 1000, investedValue: 900, allocations: [] }]);
+await seed([{ id: "h1", name: "Fund", assetClass: "Mutual Funds", member: "Me", custodian: "X", currentValue: 1000, investedValue: 900, allocations: [] }, { id: "h2", name: "Bank", assetClass: "Cash & Liquid", member: "Me", custodian: "X", currentValue: 500, investedValue: 500, allocations: [] }]);
 await p.reload(); await p.waitForSelector("#stages .stage");
 ok(await p.locator("#stages .task.is-done").count() === 0, "adding a fund does not tick anything by itself");
 ok(await p.locator("#stages .task", { hasText: "Mutual funds" }).locator(".badge", { hasText: "1 added so far" }).count() === 1, "but the fund task shows how many it can see");

@@ -21,8 +21,8 @@ for (const h of ["goals.html","cadence.html","portfolio.html","market-performanc
   ok(await page.locator(`.tool-card a[href="${h}"]`).count() === 1, "card link " + h);
 ok(await page.locator("#welcomeBack").count() === 0, "no Welcome back strip on home");
 await page.waitForSelector('.jr-step');
-ok(await page.locator('.jr-step').count() === 3, "3-step plan strip");
-ok((await page.locator('.jr-step strong').allTextContents()).join('|') === 'Build your portfolio|Name your goals|Give money a job', 'steps run portfolio, goals, assign');
+ok(await page.locator('.jr-step').count() === 2, "new visitor sees 2 steps (money-job step appears later)");
+ok((await page.locator('.jr-step strong').allTextContents()).join('|') === 'Build your portfolio|Name your goals', 'steps run portfolio, goals');
 ok((await page.locator('#heroStart').getAttribute('href')) === 'portfolio.html', 'a new visitor is sent to step 1');
 ok(await page.locator("#tools").isVisible(), "tools section visible");
 for (const w of [360, 390, 768]) {

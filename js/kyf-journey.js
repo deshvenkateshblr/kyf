@@ -25,12 +25,12 @@
       pct: gs.length ? Math.round((goalsDone.length / gs.length) * 100) : 0,
       detail: gs.length ? `${goalsDone.length} of ${gs.length} goal${gs.length > 1 ? "s" : ""} have a cost and a year` : "What are you saving for?" };
     const s3 = { id: "assign", n: 3, title: "Give money a job", href: ready ? "portfolio.html?assign=1" : (hs.length ? "goals.html" : "portfolio.html"),
-      locked: !ready,
       pct: ready ? Math.round((assigned.length / hs.length) * 100) : 0,
-      detail: ready ? `${assigned.length} of ${hs.length} holding${hs.length > 1 ? "s" : ""} have a goal` : "Unlocks after steps 1 and 2" };
-    const steps = [s1, s2, s3];
+      detail: ready ? `${assigned.length} of ${hs.length} holding${hs.length > 1 ? "s" : ""} have a goal` : "Match holdings to goals" };
+    // "Give money a job" is not shown at all until there is a holding and a goal to match
+    const steps = ready ? [s1, s2, s3] : [s1, s2];
     const next = steps.find((s) => s.pct < 100) || null;
-    const overall = Math.round(steps.reduce((t, s) => t + s.pct, 0) / 3);
+    const overall = Math.round(steps.reduce((t, s) => t + s.pct, 0) / steps.length);
     return { steps, next, overall };
   }
 
@@ -55,12 +55,8 @@
     host.className = "plan-strip" + (o.compact ? " plan-strip--compact" : "") + (here ? " has-here" : "");
     const head = model.next
       ? `<p class="jr-head"><strong>${model.overall}% done.</strong> Next: <a href="${esc(model.next.href)}">${esc(model.next.title)} &rarr;</a></p>`
-      : `<p class="jr-head"><strong>All three steps done.</strong> Keep it alive with the steps in <a href="cadence.html">Cadence</a>.</p>`;
+      : `<p class="jr-head"><strong>All steps done.</strong> Keep it alive with the steps in <a href="cadence.html">Cadence</a>.</p>`;
     host.innerHTML = head + `<ol class="jr-steps">` + model.steps.map((s) => {
-      if (s.locked) {
-        return `<li class="jr-step is-locked"><div class="jr-locked"><span class="jr-num">${s.n}</span>` +
-          `<span class="jr-body"><strong>${esc(s.title)}</strong><small>${esc(s.detail)}</small></span></div></li>`;
-      }
       const cls = "jr-step" + (s.pct >= 100 ? " is-done" : "") + (model.next && model.next.id === s.id ? " is-next" : "") + (here === s.id ? " is-here" : "");
       return `<li class="${cls}"><a href="${esc(s.href)}"><span class="jr-num">${s.pct >= 100 ? "✓" : s.n}</span>` +
         `<span class="jr-body"><strong>${esc(s.title)}</strong><small>${esc(s.detail)}</small>` +

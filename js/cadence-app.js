@@ -125,7 +125,9 @@
     const out = [];
     if (t.href && v.state !== "na") out.push(`<a class="btn-action primary${sz}" href="${esc(t.href)}">${esc(t.cta || "Open")} &rarr;</a>`);
     if (v.state === "open" || v.state === "later") {
-      out.push(`<button type="button" class="btn-action${sz}${t.href ? "" : " primary"}" data-act="done" data-id="${esc(id)}">${esc(t.doneLabel || "I’ve done this")} ✓</button>`);
+      // "That's all of them" makes no sense while nothing has been added; "I don't have any" is the honest answer then
+      const nothingYet = t.hint && t.naLabel && !v.hint;
+      if (!nothingYet) out.push(`<button type="button" class="btn-action${sz}${t.href ? "" : " primary"}" data-act="done" data-id="${esc(id)}">${esc(t.doneLabel || "I’ve done this")} ✓</button>`);
       if (t.naLabel) out.push(`<button type="button" class="btn-action quiet${sz}" data-act="na" data-id="${esc(id)}">${esc(t.naLabel)}</button>`);
     }
     return out.join("");

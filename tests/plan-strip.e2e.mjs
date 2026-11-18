@@ -19,7 +19,9 @@ ok(await p.locator("#journeyStrip .jr-step.is-here strong").innerText() === "Bui
 await p.click("#journeyStrip .jr-step >> nth=1");
 await p.waitForSelector("#journeyStrip .jr-step");
 ok(await p.locator("#journeyStrip .jr-step.is-here strong").innerText() === "Name your goals", "highlight moves to Name your goals");
-ok(await p.locator("#journeyStrip .jr-step.is-locked a").count() === 0, "step 3 is not a link until it can be used");
+ok(await p.locator("#journeyStrip .jr-step").count() === 2, "step 3 is not shown until there is a holding and a goal");
+await p.goto(base + "/portfolio.html"); await p.waitForTimeout(1200);
+ok(!(await p.locator(".horizon-control").isVisible()) && !(await p.locator(".view-switch-control").isVisible()), "empty portfolio hides horizon and view controls");
 await p.goto(base + "/index.html");
 ok(await p.locator("#firstTime").isVisible(), "first-time explainer shows for a new visitor");
 await p.click("#firstTimeClose");

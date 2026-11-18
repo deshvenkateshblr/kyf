@@ -3252,3 +3252,10 @@ button {
 .new-goal-inline { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .modal-quick-picks .quick-pick-section { margin: 0; }
 .modal-quick-picks .quick-pick-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+
+/* Nothing added yet: hide the controls that have nothing to act on */
+.portfolio-is-empty .currency-control,
+.portfolio-is-empty .horizon-control,
+.portfolio-is-empty .view-switch-control,
+.portfolio-is-empty .toolbar-pill-row,
+.portfolio-is-empty #btn-toggle-expand { display: none; }
