@@ -16,8 +16,8 @@ const b = await chromium.launch();
 const page = await b.newPage({ viewport: { width: 390, height: 800 } });
 const errs = []; page.on("pageerror", e => errs.push(e.message));
 await page.goto(base + "/index.html");
-ok(await page.locator(".tool-card").count() === 6, "6 tool cards");
-for (const h of ["goals.html","cadence.html","portfolio.html","market-performance.html","real-estate-calculator.html"])
+ok(await page.locator(".tool-card").count() === 7, "7 tool cards");
+for (const h of ["goals.html","cadence.html","portfolio.html","market-performance.html","real-estate-calculator.html","loans.html"])
   ok(await page.locator(`.tool-card a[href="${h}"]`).count() === 1, "card link " + h);
 ok(await page.locator("#welcomeBack").count() === 0, "no Welcome back strip on home");
 await page.waitForSelector('.jr-step');

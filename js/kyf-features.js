@@ -18,7 +18,7 @@
 
   var FEATURES = [
     {
-      id: "goals", topOrder: 2, group: "plan", icon: "🎯", name: "Goals", href: "goals.html", topBar: true,
+      id: "goals", benefit: "Know the monthly amount each goal needs, in tomorrow’s rupees.", topOrder: 2, group: "plan", icon: "🎯", name: "Goals", href: "goals.html", topBar: true,
       tagline: "What are you saving for?",
       can: [
         "Start from an idea (home, college, retirement, insurance) or type your own",
@@ -29,7 +29,7 @@
       cta: "Add a goal"
     },
     {
-      id: "cadence", topOrder: 4, group: "plan", icon: "🗓️", name: "Cadence", href: "cadence.html", topBar: true,
+      id: "cadence", benefit: "Never miss a renewal or yearly check. Every goal gets its steps.", topOrder: 4, group: "plan", icon: "🗓️", name: "Cadence", href: "cadence.html", topBar: true,
       tagline: "Money habits and goal steps",
       can: [
         "A checklist for every goal you add",
@@ -39,7 +39,7 @@
       cta: "Open the checklist"
     },
     {
-      id: "portfolio", topOrder: 3, group: "track", icon: "💼", name: "Portfolio", href: "portfolio.html", topBar: true,
+      id: "portfolio", benefit: "See your real net worth and whether your money is working toward your goals.", topOrder: 3, group: "track", icon: "💼", name: "Portfolio", href: "portfolio.html", topBar: true,
       tagline: "Everything you own and owe, in one place",
       can: [
         "Add stocks, mutual funds, gold, property, FDs and loans by searching their name",
@@ -50,7 +50,18 @@
       cta: "Open Portfolio"
     },
     {
-      id: "market", topOrder: 1, group: "research", icon: "📊", name: "Market Benchmarks", short: "Markets", href: "market-performance.html", topBar: true,
+      id: "loans", group: "plan", icon: "🧮", name: "Loan & EMI tools", href: "loans.html", topBar: false,
+      benefit: "See what a loan really costs, and how extra payments shorten it.",
+      tagline: "Cash or loan? Full EMI schedule",
+      can: [
+        "Compare paying cash against taking a loan",
+        "See every EMI split into principal and interest",
+        "Try an extra monthly payment and share the result on WhatsApp"
+      ],
+      cta: "Try the calculator"
+    },
+    {
+      id: "market", benefit: "Know whether a price or return is fair before you decide.", topOrder: 1, group: "research", icon: "📊", name: "Market Benchmarks", short: "Markets", href: "market-performance.html", topBar: true,
       tagline: "Where markets, funds, gold and property stand",
       can: [
         "Inflation, interest rates and government bond yields",
@@ -60,7 +71,7 @@
       cta: "See the benchmarks"
     },
     {
-      id: "realestate", group: "research", icon: "🏙️", name: "Real Estate Calculator", href: "real-estate-calculator.html", topBar: false,
+      id: "realestate", benefit: "Know the real price per sq ft before you negotiate.", group: "research", icon: "🏙️", name: "Real Estate Calculator", href: "real-estate-calculator.html", topBar: false,
       tagline: "Rent vs buy, price per sq ft",
       can: [
         "Convert a builder's super built-up price to the real carpet-area price",
@@ -70,7 +81,7 @@
       cta: "Check a property price"
     },
     {
-      id: "learn", group: "research", icon: "📖", name: "Learn", href: "learn.html", topBar: false,
+      id: "learn", benefit: "Follow your planner’s jargon instead of nodding along.", group: "research", icon: "📖", name: "Learn", href: "learn.html", topBar: false,
       tagline: "Money words in plain language",
       can: [
         "Look up a finance word and what it means in plain words",

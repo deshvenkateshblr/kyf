@@ -23,8 +23,8 @@ ok(await p.locator("#journeyStrip .jr-step").count() === 2, "step 3 is not shown
 await p.goto(base + "/portfolio.html"); await p.waitForTimeout(1200);
 ok(!(await p.locator(".horizon-control").isVisible()) && !(await p.locator(".view-switch-control").isVisible()), "empty portfolio hides horizon and view controls");
 await p.goto(base + "/index.html");
-ok(await p.locator("#firstTime").isVisible(), "first-time explainer shows for a new visitor");
-await p.click("#firstTimeClose");
-await p.reload();
-ok(!(await p.locator("#firstTime").isVisible()), "explainer stays dismissed");
+ok((await p.locator(".gets li").count()) === 3, "hero shows what you get");
+ok((await p.locator(".tool-card .tool-get").count()) >= 6, "every tool card says what you get");
+ok((await p.locator(".tool-card[data-feature=loans]").count()) === 1, "loan tools are listed");
+ok((await p.locator("#dimensions, #journey, .final, .pyramid").count()) === 0, "old long sections are gone");
 await b.close(); srv.close(); process.exit(fails ? 1 : 0);

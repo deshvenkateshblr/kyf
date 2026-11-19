@@ -35,9 +35,12 @@
         names.appendChild(el("p", "tool-tag", f.tagline));
         top.appendChild(names);
         card.appendChild(top);
-        var ul = el("ul", "tool-can");
-        f.can.forEach(function (c) { ul.appendChild(el("li", null, c)); });
-        card.appendChild(ul);
+        if (f.benefit) {
+          var get = el("p", "tool-get");
+          get.appendChild(el("b", null, "You get: "));
+          get.appendChild(document.createTextNode(f.benefit));
+          card.appendChild(get);
+        }
         var actions = el("div", "tool-actions");
         var main = el("a", "btn", f.cta + " \u2192");
         main.href = f.href;
@@ -60,19 +63,6 @@
   // Your plan: three steps with progress. The main buttons always point at the next step.
   if (window.KYF_JOURNEY) {
     window.KYF_JOURNEY.mount("#journeyStrip").then(function (model) {
-      // Brand-new visitors get a 30-second explainer, once
-      var ft = document.getElementById("firstTime");
-      if (ft && model && model.overall === 0) {
-        var gone = false;
-        try { gone = localStorage.getItem("kyf_intro_seen") === "1"; } catch (e) { /* ignore */ }
-        if (!gone) {
-          ft.hidden = false;
-          document.getElementById("firstTimeClose").addEventListener("click", function () {
-            ft.hidden = true;
-            try { localStorage.setItem("kyf_intro_seen", "1"); } catch (e) { /* ignore */ }
-          });
-        }
-      }
       if (!model || !model.next) return;
       ["heroStart", "navStart"].forEach(function (id) {
         var a = document.getElementById(id);

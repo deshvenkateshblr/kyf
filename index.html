@@ -7,9 +7,9 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>KYF — Know Your Finance</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.24.1">
-  <link rel="stylesheet" href="css/home.css?v=1.24.1">
-  <link rel="stylesheet" href="css/journey.css?v=1.24.1">
+  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.25.0">
+  <link rel="stylesheet" href="css/home.css?v=1.25.0">
+  <link rel="stylesheet" href="css/journey.css?v=1.25.0">
 </head>
 <body>
 
@@ -24,8 +24,7 @@
         <div class="nav-dropdown">
           <a href="#framework" class="nav-dropdown-toggle">Framework <span class="caret" aria-hidden="true">▼</span></a>
           <div class="nav-dropdown-menu">
-            <a href="#dimensions">3 Dimensions</a>
-            <a href="#journey">How It Works</a>
+            <a href="#framework">How it fits together</a>
             <a href="#trust">Privacy &amp; Limits</a>
           </div>
         </div>
@@ -39,111 +38,24 @@
     <section class="hero">
       <div class="wrap hero-grid">
         <div>
-          <div class="badge"><span class="dot" aria-hidden="true"></span><span><strong>Privacy first:</strong> runs in your browser. None of your personal financial data stored on a server.</span></div>
-          <h1>
-            We spend years learning how to earn money, but rarely learn how to make money work for us. <em>When money begins to generate more money, freedom follows—bringing the time and space to focus on the people, passions, and purpose that matter most.</em>
-          </h1>
-          <p class="lede">Welcome to your personal, privacy-first financial field guide and pocket-calculator app that empowers you to do exactly that.</p>
+          <h1>Know your money. <em>Talk to a financial planner with confidence.</em></h1>
+          <p class="lede">KYF is a free, private workspace to list what you own, set goals, and learn the language of money, all in your browser.</p>
           <div class="cta-row">
             <a class="btn" id="heroStart" href="portfolio.html" aria-label="Get started">Get started &rarr;</a>
-            <a class="btn secondary" href="#tools">See what&rsquo;s inside</a>
+            <a class="btn secondary" href="#tools">See what you can do</a>
           </div>
-          <div class="first-time" id="firstTime" hidden>
-            <strong>New here? KYF in 30 seconds</strong>
-            <ol>
-              <li>List what you own: stocks, funds, FDs, gold, even loans.</li>
-              <li>Say what you are saving for, like a home, college or retirement.</li>
-              <li>Match your money to those goals, and see if you are on track.</li>
-            </ol>
-            <p>Words you meet along the way are explained in plain language.</p>
-            <button type="button" class="first-time-close" id="firstTimeClose">Got it</button>
-          </div>
-          <p class="micro"><span>No sign-up</span><span>Runs in your browser</span><span>Free</span></p>
+          <p class="micro"><span>No sign-up</span><span>Data stays in your browser</span><span>Free</span></p>
         </div>
-        <div class="hero-art" aria-hidden="false">
-          <div class="halo"></div>
-          <svg class="pyramid" viewBox="0 0 440 400" role="img" aria-label="Pyramid of three layers: Goals at the base, Holdings in the middle, Cadence at the top" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="dL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3cb7a1"/><stop offset="1" stop-color="#1f8f7b"/></linearGradient>
-              <linearGradient id="dR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c8573"/><stop offset="1" stop-color="#125a4e"/></linearGradient>
-              <linearGradient id="dT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fe0cd"/><stop offset="1" stop-color="#58bda8"/></linearGradient>
-              <linearGradient id="rL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3c466"/><stop offset="1" stop-color="#df9c35"/></linearGradient>
-              <linearGradient id="rR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d2902b"/><stop offset="1" stop-color="#a76a1b"/></linearGradient>
-              <linearGradient id="rT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbe0a0"/><stop offset="1" stop-color="#f3c56c"/></linearGradient>
-              <linearGradient id="gL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ec96e"/><stop offset="1" stop-color="#60a24f"/></linearGradient>
-              <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#58a049"/><stop offset="1" stop-color="#3b7835"/></linearGradient>
-              <linearGradient id="gT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b3e095"/><stop offset="1" stop-color="#8cc86a"/></linearGradient>
-              <pattern id="grid" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M12 0H0V12" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width=".8"/></pattern>
-              <filter id="blur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
-              <filter id="tshadow" x="-10%" y="-30%" width="120%" height="160%"><feDropShadow dx="0" dy="1.6" stdDeviation="1.1" flood-color="#0b2a22" flood-opacity=".55"/></filter>
-            </defs>
-            <ellipse cx="220" cy="346" rx="200" ry="30" fill="#182620" opacity=".22" filter="url(#blur)"/>
-            <!-- Background decorative elements: Compounding curve, Pie chart, Rupee coin & Sprout (replaces Heart & ECG) -->
-            <g opacity=".95">
-              <!-- Top-left: Rupee Coin Emblem -->
-              <g transform="translate(48 52)">
-                <circle cx="14" cy="14" r="16" fill="#a9d9cd" opacity=".55"/>
-                <text x="14" y="20" text-anchor="middle" font-size="18" font-weight="700" fill="#145a4f" font-family="ui-monospace, monospace">₹</text>
-              </g>
-              <!-- Top-right: Asset Allocation Pie (kept from original) -->
-              <g transform="translate(378 74)">
-                <circle r="20" fill="#c6e6dd"/>
-                <path d="M3 -3 L3 -23 A23 23 0 0 1 26 -3 Z" fill="#86c8b6"/>
-              </g>
-              <!-- Bottom-left: Compounding Sprout (kept from original) -->
-              <g transform="translate(36 196)" fill="#86c8b6">
-                <path d="M0 40V10" stroke="#86c8b6" stroke-width="3" stroke-linecap="round"/>
-                <path d="M0 18C-16 18 -20 3 -20 3 -5 0 0 9 0 18z"/>
-                <path d="M0 26C14 26 19 12 19 12 5 9 0 17 0 26z"/>
-              </g>
-              <!-- Right background: Smooth Exponential Compounding Curve (replaces Hospital ECG line) -->
-              <path d="M300 184 Q 355 182, 385 156 T 432 108" fill="none" stroke="#1f7a6c" stroke-opacity=".5" stroke-width="3.2" stroke-linecap="round"/>
-              <circle cx="432" cy="108" r="4.5" fill="#1f7a6c" opacity=".6"/>
-            </g>
-            <!-- Pyramid 3D Layers (Unchanged geometry) -->
-            <polygon points="83.8,218.0 220.0,263.4 220.0,362.3 33.0,300.0" fill="url(#gL)"/>
-            <polygon points="220.0,263.4 356.2,218.0 407.0,300.0 220.0,362.3" fill="url(#gR)"/>
-            <polygon points="83.8,218.0 220.0,172.6 356.2,218.0 220.0,263.4" fill="url(#gT)"/>
-            <polyline points="83.8,218.0 220.0,263.4 356.2,218.0" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.4" stroke-linejoin="round"/>
-            <line x1="220" y1="263.4" x2="220" y2="362.3" stroke="#fff" stroke-opacity=".38" stroke-width="1.2"/>
-            <polygon points="83.8,218.0 220.0,263.4 220.0,362.3 33.0,300.0" fill="url(#grid)"/>
-            <polygon points="220.0,263.4 356.2,218.0 407.0,300.0 220.0,362.3" fill="url(#grid)"/>
-            <polygon points="151.3,135.0 220.0,157.9 220.0,258.1 99.8,218.0" fill="url(#rL)"/>
-            <polygon points="220.0,157.9 288.7,135.0 340.2,218.0 220.0,258.1" fill="url(#rR)"/>
-            <polygon points="151.3,135.0 220.0,112.1 288.7,135.0 220.0,157.9" fill="url(#rT)"/>
-            <polyline points="151.3,135.0 220.0,157.9 288.7,135.0" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.4" stroke-linejoin="round"/>
-            <line x1="220" y1="157.9" x2="220" y2="258.1" stroke="#fff" stroke-opacity=".38" stroke-width="1.2"/>
-            <polygon points="220.0,50.0 167.3,135.0 220.0,152.6" fill="url(#dL)"/>
-            <polygon points="220.0,50.0 220.0,152.6 272.7,135.0" fill="url(#dR)"/>
-            <line x1="220" y1="50" x2="220" y2="152.6" stroke="#fff" stroke-opacity=".38" stroke-width="1.2"/>
-            <!-- Layer Labels -->
-            <text x="220" y="113" font-size="22" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Cadence</text>
-            <text x="220" y="192" font-size="24" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Holdings</text>
-            <text x="220" y="301" font-size="27" text-anchor="middle" font-weight="700" fill="#fff" filter="url(#tshadow)" font-family="Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" letter-spacing=".3">Goals</text>
-            <!-- NEW Finance Layer Icons (Replaces Apple, Runner & ECG) -->
-            <!-- Top Icon (Cadence): Clock -->
-            <g transform="translate(220 132) scale(1.15) translate(-12 -12)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <path d="M12 7v5l3.5 2"/>
-            </g>
-            <!-- Middle Icon (Holdings): Briefcase -->
-            <g transform="translate(220 226) scale(1.55) translate(-12 -12)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="7" width="18" height="13" rx="2"/>
-              <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>
-            </g>
-            <!-- Base Icon (Goals): Bullseye Target -->
-            <g transform="translate(220 328) scale(1.75) translate(-12 -12)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <circle cx="12" cy="12" r="4.5"/>
-              <circle cx="12" cy="12" r="1.5" fill="#fff"/>
-            </g>
-          </svg>
-          <span class="chip c1">Discipline &rarr; Freedom</span>
-          <span class="chip c2">Knowledge Base</span>
+        <div class="gets" aria-label="What you get">
+          <p class="gets-title">What you get</p>
+          <ul>
+            <li><span class="gets-do">List what you own and owe</span><span class="gets-get">See your real net worth and how it is spread</span></li>
+            <li><span class="gets-do">Set your goals</span><span class="gets-get">Know the monthly amount each one needs</span></li>
+            <li><span class="gets-do">Follow a simple routine</span><span class="gets-get">Never miss an insurance renewal or yearly check</span></li>
+          </ul>
         </div>
       </div>
     </section>
-
     <div class="wrap"><p class="overdue-note" id="overdueNote" hidden></p></div>
 
 
@@ -153,7 +65,7 @@
 
         <div class="section-head reveal">
           <p class="eyebrow">What you can do here</p>
-          <h2>Five tools, one private profile.</h2>
+          <h2>Pick a tool, see what you get.</h2>
           <p>Start anywhere. What you enter in one tool is available in the others.</p>
         </div>
 
@@ -179,128 +91,39 @@
       </div>
     </section>
 
-    <!-- ==================== THE KYF FRAMEWORK ==================== -->
-    <div id="framework" class="framework-wrapper">
-
-      <!-- Framework Intro Banner -->
-      <section class="framework-intro">
-        <div class="wrap">
-          <div class="section-head section-head--narrow reveal">
-            <p class="eyebrow">The Unified Framework</p>
-            <h2>Three layers. One calm rhythm.</h2>
-            <p class="framework-lede">
-              Most personal finance advice treats goals, savings and habits separately. KYF connects them: <strong>Goals</strong> say what the money is for, <strong>Holdings</strong> show what you have to meet them, and <strong>Cadence</strong> keeps you moving. Freedom is where they lead.
-            </p>
-          </div>
+    <!-- ==================== HOW IT FITS ==================== -->
+    <section id="framework" class="fits">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow">How it fits together</p>
+          <h2>Goals, Holdings, Cadence.</h2>
         </div>
-      </section>
-
-      <!-- 1. THREE DIMENSIONS -->
-      <section id="dimensions" class="alt section-tight">
-        <div class="wrap">
-          <div class="section-head reveal">
-            <p class="eyebrow">The three layers</p>
-            <h2>One profile. Three connected layers.</h2>
-            <p>Generic financial advice is written for nobody. KYF weighs your life stage, family milestones, and money habits across three core dimensions:</p>
-          </div>
-          <div class="dims">
-            <article class="dim d1 reveal">
-              <div class="num">Dimension 01</div>
-              <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div>
-              <h3>Goals</h3>
-              <p>Price your next family milestones against real Indian inflation and calculate your required monthly SIP.</p>
-              <ul>
-                <li>Live CPI, education and medical inflation compounding</li>
-                <li>Monthly SIP calculation &amp; step-up roadmap</li>
-                <li>Timeline matching: Short (&lt;3y), Medium (3-7y), Long (&gt;7y)</li>
-              </ul>
-              <a href="goals.html" class="dim-link dim-link--green">Open Goals Planner &rarr;</a>
-            </article>
-            <article class="dim d2 reveal">
-              <div class="num">Dimension 02</div>
-              <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg></div>
-              <h3>Holdings</h3>
-              <p>See everything you own and owe in one place, and how much of it is already working toward each goal.</p>
-              <ul>
-                <li>Stocks, mutual funds, gold, property, FDs and loans</li>
-                <li>Import from a broker file, view by asset class, goal or family member</li>
-                <li>Spot Regular-plan funds that cost more than their Direct twin</li>
-              </ul>
-              <a href="portfolio.html" class="dim-link dim-link--amber">Open Portfolio &rarr;</a>
-            </article>
-            <article class="dim d3 reveal">
-              <div class="num">Dimension 03</div>
-              <div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
-              <h3>Cadence</h3>
-              <p>Turn plans into habits: a checklist for every goal and the yearly chores that keep you on track.</p>
-              <ul>
-                <li>Steps generated for each goal you add</li>
-                <li>Emergency fund, insurance, tax and rebalancing reminders</li>
-                <li>Tick steps off and set your own dates</li>
-              </ul>
-              <a href="cadence.html" class="dim-link dim-link--teal">Open Cadence &rarr;</a>
-            </article>
-          </div>
+        <div class="fits-row reveal">
+          <a href="goals.html"><strong>Goals</strong><span>say what the money is for</span></a>
+          <a href="portfolio.html"><strong>Holdings</strong><span>show what you have and owe</span></a>
+          <a href="cadence.html"><strong>Cadence</strong><span>keeps you on track, year after year</span></a>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- 2. JOURNEY (HOW IT WORKS) -->
-      <section id="journey">
-        <div class="wrap">
-          <div class="section-head reveal">
-            <p class="eyebrow">How it works</p>
-            <h2>From <em class="accent">Goals</em> to <em class="accent">Freedom</em> in five calm steps.</h2>
-            <p>Modeled on a calm first visit with a fee-only Certified Financial Planner, designed to eliminate anxiety, product bias, and confusion.</p>
-          </div>
-          <ol class="journey">
-            <li class="step start reveal"><div class="pin">1</div><h3>Anchor Goals</h3><p>Define family milestones and price them against real inflation reality.</p><small>Dimension 01 &middot; Goals</small></li>
-            <li class="step reveal"><div class="pin">2</div><h3>Match Containers</h3><p>Select the right vehicles—Liquid, FDs, PPF, Gold &amp; Index Mutual Funds—by horizon.</p><small>Dimension 02 &middot; Holdings</small></li>
-            <li class="step reveal"><div class="pin">3</div><h3>Build Cadence</h3><p>Lock in a 12-month peace buffer, automate monthly SIPs, and shield against unseen risks.</p><small>Dimension 03 &middot; Cadence</small></li>
-            <li class="step reveal"><div class="pin">4</div><h3>Stay Disciplined</h3><p>Review schedules annually, avoid emotional panic during dips, and rebalance calmly.</p><small>Systematic Habits</small></li>
-            <li class="step end reveal"><div class="pin" aria-label="Destination">★</div><h3>True Freedom</h3><p>Attain a work-optional life where money sustainably generates more money than you spend.</p><small>Where it leads</small></li>
-          </ol>
-        </div>
-      </section>
-
-      <!-- 4. TRUST (PRIVACY & HONEST BY DESIGN) -->
-      <section id="trust">
-        <div class="wrap">
-          <div class="section-head reveal">
-            <p class="eyebrow">Honest by design</p>
-            <h2>Private. Zero product selling. Clear limits.</h2>
-            <p>Built on the conviction that personal finance education should have zero conflicts of interest.</p>
-          </div>
-          <div class="trust">
-            <div class="panel reveal">
-              <h3>What KYF is</h3>
-              <ul>
-                <li>A 100% educational simulator and personal finance calculator designed to give you intuition and clarity.</li>
-                <li>Pocket-Calculator Mode: runs strictly in your browser (IndexedDB / localStorage) with zero tracking cookies or remote servers.</li>
-                <li>Equipped with a 1-click portable .kyf vault save/open engine and an instant data wipe reset.</li>
-                <li>Built to empower you to have sharper, confident conversations with fee-only SEBI-registered advisors and your family.</li>
-              </ul>
-            </div>
-            <div class="panel warn reveal">
-              <h3>What it is not</h3>
-              <ul>
-                <li>Not investment, tax, or legal advice, and not a SEBI-registered advisory service or brokerage.</li>
-                <li>Never sells insurance, mutual funds, loans, credit cards, or demat accounts—strictly zero affiliate links or distributor kickbacks.</li>
-                <li>Historical index, stock, and mutual fund benchmarks shown are strictly for educational illustration, never guarantees of future returns.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <!-- FINAL CTA -->
-    <section class="final">
+    <!-- ==================== PRIVACY AND LIMITS ==================== -->
+    <section id="trust" class="trust-lite">
       <div class="wrap reveal">
-        <h2>Ready to build calm money confidence?</h2>
-        <p>Start with your life milestones, establish a disciplined cadence, and create your roadmap to work-optional freedom.</p>
-        <div class="final-actions">
-          <a class="btn light" href="goals.html">Start with Goals &rarr;</a>
-          <a class="btn btn-ghost-light" href="#tools">See everything inside</a>
+        <div class="trust">
+          <div class="panel">
+            <h3>Private by design</h3>
+            <ul>
+              <li>Everything stays in your browser. No account, no tracking, no servers holding your data.</li>
+              <li>Save a .kyf file to keep or move your data; wipe it any time.</li>
+            </ul>
+          </div>
+          <div class="panel warn">
+            <h3>Education, not advice</h3>
+            <ul>
+              <li>Not investment, tax or legal advice, and not a registered advisor.</li>
+              <li>We never sell insurance, funds or loans. No affiliate links.</li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
@@ -315,16 +138,16 @@
   </footer>
 
 
-  <script src="js/kyf-goals.js?v=1.24.1"></script>
-  <script src="js/kyf-vault.js?v=1.24.1"></script>
-  <script src="data/kyf-terms.js?v=1.24.1"></script>
-  <script src="data/kyf-path.js?v=1.24.1"></script>
-  <script src="js/kyf-path.js?v=1.24.1"></script>
-  <script src="js/kyf-journey.js?v=1.24.1"></script>
-  <script src="js/kyf-footer.js?v=1.24.1"></script>
-  <script src="js/kyf-features.js?v=1.24.1"></script>
-  <script src="js/kyf-nav.js?v=1.24.1"></script>
-  <script src="js/kyf-home.js?v=1.24.1"></script>
-  <script src="js/kyf-money-word.js?v=1.24.1"></script>
+  <script src="js/kyf-goals.js?v=1.25.0"></script>
+  <script src="js/kyf-vault.js?v=1.25.0"></script>
+  <script src="data/kyf-terms.js?v=1.25.0"></script>
+  <script src="data/kyf-path.js?v=1.25.0"></script>
+  <script src="js/kyf-path.js?v=1.25.0"></script>
+  <script src="js/kyf-journey.js?v=1.25.0"></script>
+  <script src="js/kyf-footer.js?v=1.25.0"></script>
+  <script src="js/kyf-features.js?v=1.25.0"></script>
+  <script src="js/kyf-nav.js?v=1.25.0"></script>
+  <script src="js/kyf-home.js?v=1.25.0"></script>
+  <script src="js/kyf-money-word.js?v=1.25.0"></script>
 </body>
 </html>
