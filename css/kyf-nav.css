@@ -63,3 +63,13 @@
   .nav .nav-links .nav-btn.secondary { background: transparent; color: var(--teal-deep, #145a4f); }
   .nav .nav-links .nav-btn.primary { background: var(--teal, #1f7a6c); color: #fff; }
 }
+
+/* Top bar "Tools" menu */
+.kyf-dd { position: relative; display: inline-flex; }
+.kyf-dd-btn { border: 0; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--ink-soft, #3d4d46); cursor: pointer; padding: 0; }
+.kyf-dd-btn:hover, .kyf-dd-btn.active, .kyf-dd.open .kyf-dd-btn { color: var(--teal, #1f7a6c); }
+.kyf-dd-menu { display: none; position: absolute; top: calc(100% + 10px); left: -12px; min-width: 260px; z-index: 70; padding: 8px; background: var(--panel, #fff); border: 1px solid var(--line, #d7ddd2); border-radius: 12px; box-shadow: 0 16px 30px rgba(24, 38, 32, .14); text-transform: none; letter-spacing: 0; }
+.kyf-dd.open .kyf-dd-menu, .kyf-dd:hover .kyf-dd-menu, .kyf-dd:focus-within .kyf-dd-menu { display: grid; }
+.kyf-dd-menu a { display: grid; gap: 2px; padding: 10px 12px; border-radius: 8px; color: var(--ink, #182620); text-decoration: none; font-family: var(--sans, inherit); }
+.kyf-dd-menu a:hover, .kyf-dd-menu a.active { background: var(--teal-soft, #e3f0ec); }
+.kyf-dd-menu small { color: var(--ink-soft, #5b6b64); font-size: 12.5px; }

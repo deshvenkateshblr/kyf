@@ -17,7 +17,7 @@
   ];
   var CATALOG = window.KYF_FEATURES;
   var MENU = (CATALOG ? CATALOG.menu() : FALLBACK).map(function (m) {
-    return { href: m.href, label: m.name, short: m.short || "", topOrder: m.topOrder || 99, icon: m.icon, desc: m.tagline || "", topBar: !!m.topBar };
+    return { href: m.href, label: m.name, short: m.short || "", topOrder: m.topOrder || 99, icon: m.icon, desc: m.tagline || "", topBar: !!m.topBar, topGroup: m.topGroup || "" };
   });
 
   function pageName() {
@@ -63,6 +63,39 @@
       if (isCurrent(m)) a.setAttribute("aria-current", "page");
       fragment.appendChild(a);
     });
+    // "Tools" menu: the supporting tools, one click away on every page
+    var tools = MENU.filter(function (m) { return m.topGroup === "tools"; });
+    if (tools.length) {
+      var dd = el("div", "kyf-dd");
+      dd.dataset.order = "6";
+      var here = tools.some(isCurrent);
+      var tbtn = el("button", "kyf-dd-btn" + (here ? " active" : ""), "Tools ");
+      tbtn.type = "button";
+      tbtn.setAttribute("aria-haspopup", "true");
+      tbtn.setAttribute("aria-expanded", "false");
+      tbtn.appendChild(el("span", "kyf-dd-caret", "\u25BE"));
+      var list = el("div", "kyf-dd-menu");
+      tools.forEach(function (m) {
+        var a = el("a", isCurrent(m) ? "active" : "");
+        a.href = m.href;
+        a.appendChild(el("strong", null, m.label));
+        if (m.desc) a.appendChild(el("small", null, m.desc));
+        list.appendChild(a);
+      });
+      dd.append(tbtn, list);
+      tbtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var open = !dd.classList.contains("open");
+        dd.classList.toggle("open", open);
+        tbtn.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+      document.addEventListener("click", function () { dd.classList.remove("open"); tbtn.setAttribute("aria-expanded", "false"); });
+      fragment.appendChild(dd);
+    }
+    // Keep the intended order: links by topOrder, the Tools menu at 6
+    var kids = Array.prototype.slice.call(fragment.childNodes);
+    var orderOf = function (n) { if (n.dataset && n.dataset.order) return Number(n.dataset.order); var m = MENU.filter(function (x) { return (x.short || x.label) === n.textContent && x.topBar; })[0]; return m ? m.topOrder : 50; };
+    kids.sort(function (a, b) { return orderOf(a) - orderOf(b); }).forEach(function (n) { fragment.appendChild(n); });
     nav.insertBefore(fragment, nav.firstChild);
 
     if (!keep.kyfFileInput) {

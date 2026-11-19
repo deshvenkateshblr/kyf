@@ -50,7 +50,7 @@
       cta: "Open Portfolio"
     },
     {
-      id: "loans", group: "plan", icon: "🧮", name: "Loan & EMI tools", href: "loans.html", topBar: false,
+      id: "loans", group: "plan", icon: "🧮", name: "Loan & EMI tools", href: "loans.html", topBar: false, topGroup: "tools",
       benefit: "See what a loan really costs, and how extra payments shorten it.",
       tagline: "Cash or loan? Full EMI schedule",
       can: [
@@ -61,7 +61,7 @@
       cta: "Try the calculator"
     },
     {
-      id: "market", benefit: "See if a price, rate or return is fair before you decide.", topOrder: 1, group: "research", icon: "📊", name: "Market Benchmarks", short: "Markets", href: "market-performance.html", topBar: true,
+      id: "market", benefit: "See if a price, rate or return is fair before you decide.", topOrder: 1, group: "research", icon: "📊", name: "Market Benchmarks", short: "Markets", href: "market-performance.html", topBar: false, topGroup: "tools",
       tagline: "Where markets, funds, gold and property stand",
       can: [
         "Inflation, interest rates and government bond yields",
@@ -71,7 +71,7 @@
       cta: "See the benchmarks"
     },
     {
-      id: "realestate", benefit: "Know the real price per sq ft before you negotiate.", group: "research", icon: "🏙️", name: "Real Estate Calculator", href: "real-estate-calculator.html", topBar: false,
+      id: "realestate", benefit: "Know the real price per sq ft before you negotiate.", group: "research", icon: "🏙️", name: "Real Estate Calculator", href: "real-estate-calculator.html", topBar: false, topGroup: "tools",
       tagline: "Rent vs buy, price per sq ft",
       can: [
         "Convert a builder's super built-up price to the real carpet-area price",
@@ -81,7 +81,7 @@
       cta: "Check a property price"
     },
     {
-      id: "learn", benefit: "Follow your planner’s jargon instead of nodding along.", group: "research", icon: "📖", name: "Learn", href: "learn.html", topBar: false,
+      id: "learn", topOrder: 5, benefit: "Follow your planner’s jargon instead of nodding along.", group: "research", icon: "📖", name: "Learn", href: "learn.html", topBar: true,
       tagline: "Money words in plain language",
       can: [
         "Look up a finance word and what it means in plain words",
@@ -95,7 +95,7 @@
   // Not tools, but places people look for
   var EXTRAS = [
     { id: "home", name: "Home", href: "index.html", icon: "🏠", tagline: "" },
-    { id: "framework", name: "Framework", href: "index.html#framework", icon: "🧭", tagline: "How KYF thinks about money", topBar: false }
+    { id: "framework", name: "How it works", href: "index.html#framework", icon: "🧭", tagline: "Four simple steps to money clarity", topBar: true, topOrder: 9 }
   ];
 
   global.KYF_FEATURES = {
@@ -103,8 +103,10 @@
     features: FEATURES,
     extras: EXTRAS,
     byGroup: function (id) { return FEATURES.filter(function (f) { return f.group === id; }); },
-    /** Menu order: Home, every tool, then Framework. */
+    /** Menu order: Home, every tool, then How it works. */
     menu: function () { return [EXTRAS[0]].concat(FEATURES, [EXTRAS[1]]); },
-    topBar: function () { return FEATURES.concat([EXTRAS[1]]).filter(function (f) { return f.topBar; }); }
+    topBar: function () { return FEATURES.concat([EXTRAS[1]]).filter(function (f) { return f.topBar; }); },
+    /** The tools that sit under the top bar's "Tools" menu. */
+    toolsMenu: function () { return FEATURES.filter(function (f) { return f.topGroup === "tools"; }); }
   };
 })(typeof window !== "undefined" ? window : globalThis);

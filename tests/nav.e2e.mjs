@@ -54,7 +54,7 @@ for (const name of pages) {
   check(await page.locator("#kyfMenuPanel").isVisible(), "tapping ☰ opens the menu");
   check((await page.getAttribute("#kyfMenuBtn", "aria-expanded")) === "true", "aria-expanded reflects the state");
   const labels = await page.locator("#kyfMenuPanel .kyf-menu-label").allTextContents();
-  check(["Home", "Goals", "Cadence", "Portfolio", "Market Benchmarks", "Real Estate Calculator", "Framework"].every((l) => labels.includes(l)), "menu lists every area of the app");
+  check(["Home", "Goals", "Cadence", "Portfolio", "Market Benchmarks", "Real Estate Calculator", "How it works"].every((l) => labels.includes(l)), "menu lists every area of the app");
   const current = await page.locator("#kyfMenuPanel [aria-current=page]").count();
   check(current === (name === "index" ? 1 : 1), `current page is marked (${current})`);
   const box = await page.locator("#kyfMenuPanel").boundingBox();
@@ -81,9 +81,13 @@ for (const name of ["index", "goals", "cadence", "portfolio", "market-performanc
   seenBars.add((await dpage.locator(".nav-links > a, .nav-links > button").allTextContents()).join("|"));
   check(!(await dpage.locator("#kyfMenuBtn").isVisible()), `${name}: no ☰ button on desktop`);
   const links = await dpage.locator(".nav-links > a").allTextContents();
-  check(["Goals", "Cadence", "Portfolio", "Markets"].every((l) => links.includes(l)), `${name}: same primary links on every page`);
+  check(["Goals", "Cadence", "Portfolio", "Learn", "How it works"].every((l) => links.includes(l)), `${name}: same primary links on every page`);
+  await dpage.click(".kyf-dd-btn");
+  const toolLinks = await dpage.locator(".kyf-dd-menu a strong").allTextContents();
+  check(["Market Benchmarks", "Loan & EMI tools", "Real Estate Calculator"].every((l) => toolLinks.includes(l)), `${name}: Tools menu lists the supporting tools`);
+  await dpage.keyboard.press("Escape"); await dpage.mouse.click(5, 300);
 }
-check([...seenBars][0].startsWith("Markets|Goals|Portfolio|Cadence|"), "top bar order is Markets, Goals, Portfolio, Cadence, then Open and Save: " + [...seenBars][0]);
+check([...seenBars][0].startsWith("Goals|Portfolio|Cadence|Learn|How it works|"), "top bar order is Goals, Portfolio, Cadence, Learn, Tools, How it works, then Open and Save: " + [...seenBars][0]);
 check(seenBars.size === 1, "the top bar is identical on every page, home included: " + [...seenBars].join(" // "));
 await dpage.goto(`${base}goals.html`);
 check((await dpage.locator(".nav-links > a.active").textContent()) === "Goals", "the current page's link is highlighted");

@@ -1205,3 +1205,22 @@
 @media (max-width: 600px) {
   .editorial-link { white-space: normal; text-align: left; }
 }
+
+/* ---------- Sections open and close ---------- */
+.mk-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 0; font-size: 14px; color: var(--muted, #5b6b64); }
+.mk-all { border: 1px solid var(--line, #d8e0db); background: var(--panel, #fff); border-radius: 999px; padding: 6px 14px; font: inherit; font-weight: 600; cursor: pointer; color: inherit; }
+.mk-head { cursor: pointer; align-items: center; }
+.mk-toggle { flex: none; border: 1px solid var(--line, #d8e0db); background: var(--panel, #fff); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--teal-deep, #17594f); white-space: nowrap; }
+.mk-toggle:hover { border-color: var(--teal, #1f7a6c); }
+.mk-summary { margin: 10px 0 0; font-weight: 600; color: var(--ink, #1b2a24); font-size: 15.5px; }
+.mk-body[hidden], .mk-summary[hidden], .horizon-toolbar[hidden] { display: none !important; }
+.mk-body { margin-top: 14px; }
+/* the old per-description line is redundant while a headline is showing */
+.mk-head + .mk-summary { margin-bottom: 2px; }
+@media (max-width: 600px) { .mk-bar span { font-size: 13px; } }
+/* Closed sections show only the title and the headline */
+section:not(.mk-open) .mk-head p,
+section:not(.mk-open) .mk-head .spot-rate-badge,
+section:not(.mk-open) .mk-head .re-badge-national,
+section:not(.mk-open) .mk-head .section-badge,
+section:not(.mk-open) .mk-head .section-share-btn { display: none; }
