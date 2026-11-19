@@ -1206,21 +1206,36 @@
   .editorial-link { white-space: normal; text-align: left; }
 }
 
-/* ---------- Sections open and close ---------- */
-.mk-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 0; font-size: 14px; color: var(--muted, #5b6b64); }
-.mk-all { border: 1px solid var(--line, #d8e0db); background: var(--panel, #fff); border-radius: 999px; padding: 6px 14px; font: inherit; font-weight: 600; cursor: pointer; color: inherit; }
-.mk-head { cursor: pointer; align-items: center; }
-.mk-toggle { flex: none; border: 1px solid var(--line, #d8e0db); background: var(--panel, #fff); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--teal-deep, #17594f); white-space: nowrap; }
-.mk-toggle:hover { border-color: var(--teal, #1f7a6c); }
-.mk-summary { margin: 10px 0 0; font-weight: 600; color: var(--ink, #1b2a24); font-size: 15.5px; }
-.mk-body[hidden], .mk-summary[hidden], .horizon-toolbar[hidden] { display: none !important; }
-.mk-body { margin-top: 14px; }
-/* the old per-description line is redundant while a headline is showing */
-.mk-head + .mk-summary { margin-bottom: 2px; }
-@media (max-width: 600px) { .mk-bar span { font-size: 13px; } }
-/* Closed sections show only the title and the headline */
-section:not(.mk-open) .mk-head p,
-section:not(.mk-open) .mk-head .spot-rate-badge,
-section:not(.mk-open) .mk-head .re-badge-national,
-section:not(.mk-open) .mk-head .section-badge,
-section:not(.mk-open) .mk-head .section-share-btn { display: none; }
+/* ---------- Dashboard: one panel at a time, same card look everywhere ---------- */
+.market-hero { padding: clamp(18px, 3vh, 28px) 0 clamp(14px, 2vh, 20px); }
+.market-hero h1 { font-size: clamp(24px, 3vw, 32px); margin: 0 0 6px; }
+.market-hero .lede { font-size: 15px; }
+.macro-section, .re-section { padding: 18px 0 8px; }
+.macro-strip-card, .re-card, main.wrap > .section-wrap {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 22px 24px; box-shadow: 0 4px 16px rgba(0,0,0,.02); margin-bottom: 0;
+}
+main.wrap > .section-wrap { margin: 18px auto 8px; }
+.section-header { border-bottom-width: 1px; }
+.dash-panel[hidden], #dashOverview[hidden], .horizon-toolbar[hidden] { display: none !important; }
+#dashOverview { padding: 18px 0 8px; }
+.dash-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.dash-tile { display: flex; flex-direction: column; gap: 12px; text-align: left; font: inherit; color: inherit; cursor: pointer; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; box-shadow: 0 4px 16px rgba(0,0,0,.02); transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease; }
+.dash-tile:hover, .dash-tile:focus-visible { border-color: var(--teal); transform: translateY(-2px); box-shadow: 0 10px 22px -14px rgba(24,38,32,.35); outline: none; }
+.dt-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.dt-title { font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.dt-open { font-size: 12.5px; font-weight: 700; color: var(--teal-deep, #17594f); white-space: nowrap; }
+.dt-big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.dt-big strong { font-family: var(--serif); font-size: clamp(24px, 2.6vw, 32px); font-weight: 600; line-height: 1.1; }
+.dt-big small { color: var(--muted); font-size: 13px; }
+.dt-delta { font-family: var(--mono); font-size: 12.5px; font-weight: 700; }
+.dt-delta.up { color: var(--green, #2f7d4f); }
+.dt-delta.down { color: #b3402a; }
+.dt-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 14px; margin: 0; padding-top: 10px; border-top: 1px dashed var(--line); }
+.dt-stats div { display: grid; gap: 1px; }
+.dt-stats dt { font-size: 12px; color: var(--muted); }
+.dt-stats dd { margin: 0; font-weight: 700; font-size: 15px; }
+.dash-note { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+@media (max-width: 960px) { .dash-tiles { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .dash-tiles { grid-template-columns: 1fr; gap: 12px; } .macro-strip-card, .re-card, main.wrap > .section-wrap { padding: 16px; } }
+.indices-grid { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }

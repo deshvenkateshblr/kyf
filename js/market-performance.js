@@ -2372,8 +2372,7 @@
           });
         }
 
-        window.addEventListener("scroll", onScroll, { passive: true });
-        onScroll();
+        // Sections are shown one at a time by js/market-dashboard.js, so no scroll tracking here
 
         // Smooth scroll link into view on click in horizontal scroller
         links.forEach(link => {

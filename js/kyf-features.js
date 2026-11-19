@@ -61,7 +61,7 @@
       cta: "Try the calculator"
     },
     {
-      id: "market", benefit: "See if a price, rate or return is fair before you decide.", topOrder: 1, group: "research", icon: "📊", name: "Market Benchmarks", short: "Markets", href: "market-performance.html", topBar: false, topGroup: "tools",
+      id: "market", benefit: "See if a price, rate or return is fair before you decide.", topOrder: 4.5, group: "research", icon: "📊", name: "Market Benchmarks", short: "Markets", href: "market-performance.html", topBar: true,
       tagline: "Where markets, funds, gold and property stand",
       can: [
         "Inflation, interest rates and government bond yields",
