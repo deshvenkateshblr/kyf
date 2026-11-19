@@ -12,49 +12,23 @@
     return n;
   }
 
+  // "Also in KYF": the supporting tools, one line each. The main path is the four steps above.
   function renderTools() {
-    var host = document.getElementById("toolGroups");
+    var host = document.getElementById("alsoTools");
     var cat = window.KYF_FEATURES;
     if (!host || !cat) return;
-    cat.groups.forEach(function (g) {
-      var list = cat.byGroup(g.id);
-      if (!list.length) return;
-      var group = el("section", "tool-group reveal");
-      var head = el("div", "tool-group-head");
-      head.appendChild(el("h3", null, g.label));
-      head.appendChild(el("span", null, g.hint));
-      group.appendChild(head);
-      var grid = el("div", "tool-grid");
-      list.forEach(function (f) {
-        var card = el("article", "tool-card");
-        card.setAttribute("data-feature", f.id);
-        var top = el("div", "tool-top");
-        top.appendChild(el("span", "tool-icon", f.icon));
-        var names = el("div");
-        names.appendChild(el("h4", null, f.name));
-        names.appendChild(el("p", "tool-tag", f.tagline));
-        top.appendChild(names);
-        card.appendChild(top);
-        if (f.benefit) {
-          var get = el("p", "tool-get");
-          get.appendChild(el("b", null, "You get: "));
-          get.appendChild(document.createTextNode(f.benefit));
-          card.appendChild(get);
-        }
-        var actions = el("div", "tool-actions");
-        var main = el("a", "btn", f.cta + " \u2192");
-        main.href = f.href;
-        actions.appendChild(main);
-        if (f.secondary) {
-          var sec = el("a", "tool-secondary", f.secondary.label);
-          sec.href = f.secondary.href;
-          actions.appendChild(sec);
-        }
-        card.appendChild(actions);
-        grid.appendChild(card);
-      });
-      group.appendChild(grid);
-      host.appendChild(group);
+    ["learn", "market", "loans", "realestate"].forEach(function (id) {
+      var f = cat.features.filter(function (x) { return x.id === id; })[0];
+      if (!f) return;
+      var a = el("a", "also-link");
+      a.href = f.href;
+      a.setAttribute("data-feature", f.id);
+      a.appendChild(el("span", "tool-icon", f.icon));
+      var txt = el("span", "also-text");
+      txt.appendChild(el("strong", null, f.name));
+      txt.appendChild(el("small", null, f.benefit || f.tagline));
+      a.appendChild(txt);
+      host.appendChild(a);
     });
   }
 
@@ -63,8 +37,11 @@
   // Your plan: three steps with progress. The main buttons always point at the next step.
   if (window.KYF_JOURNEY) {
     window.KYF_JOURNEY.mount("#journeyStrip").then(function (model) {
+      // New visitors read the four steps below; the progress strip is for people who have started
+      var strip = document.getElementById("journeyStrip");
+      if (strip && model && model.overall === 0) strip.textContent = "";
       if (!model || !model.next) return;
-      ["heroStart", "navStart"].forEach(function (id) {
+      ["heroStart", "navStart", "stepsStart"].forEach(function (id) {
         var a = document.getElementById(id);
         if (a) a.href = model.next.href;
       });

@@ -16,30 +16,21 @@ const b = await chromium.launch();
 const page = await b.newPage({ viewport: { width: 390, height: 800 } });
 const errs = []; page.on("pageerror", e => errs.push(e.message));
 await page.goto(base + "/index.html");
-ok(await page.locator(".tool-card").count() === 7, "7 tool cards");
-for (const h of ["goals.html","cadence.html","portfolio.html","market-performance.html","real-estate-calculator.html","loans.html"])
-  ok(await page.locator(`.tool-card a[href="${h}"]`).count() === 1, "card link " + h);
+ok(await page.locator(".value-steps li").count() === 4, "four value steps");
+for (const h of ["learn.html","market-performance.html","real-estate-calculator.html","loans.html"])
+  ok(await page.locator(`.also-link[href="${h}"]`).count() === 1, "also-in-KYF link " + h);
 ok(await page.locator("#welcomeBack").count() === 0, "no Welcome back strip on home");
-await page.waitForSelector('.jr-step');
-ok(await page.locator('.jr-step').count() === 2, "new visitor sees 2 steps (money-job step appears later)");
-ok((await page.locator('.jr-step strong').allTextContents()).join('|') === 'Build your portfolio|Name your goals', 'steps run portfolio, goals');
+await page.waitForTimeout(500);
+ok(await page.locator('#journeyStrip .jr-step').count() === 0, "a new visitor sees no progress strip (the steps are explained below)");
 ok((await page.locator('#heroStart').getAttribute('href')) === 'portfolio.html', 'a new visitor is sent to step 1');
-ok(await page.locator("#tools").isVisible(), "tools section visible");
+ok((await page.locator(".data-file").innerText()).includes(".kyf"), "the one-file promise is on the page");
+ok(await page.locator("#framework").isVisible(), "how-it-works section visible");
 for (const w of [360, 390, 768]) {
   await page.setViewportSize({ width: w, height: 800 });
   const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   ok(over <= 0, `no sideways scroll at ${w}px (over by ${over})`);
 }
 await page.setViewportSize({ width: 390, height: 800 });
-const styled = await page.evaluate(() => {
-  const li = document.querySelector(".jr-steps");
-  const card = document.querySelector(".tool-card");
-  return { listStyle: getComputedStyle(li).listStyleType, cardBorder: getComputedStyle(card).borderTopWidth, cardRadius: getComputedStyle(card).borderTopLeftRadius };
-});
-ok(styled.listStyle === "none", "plan steps have no default bullets/numbers");
-ok(styled.cardBorder !== "0px" && styled.cardRadius !== "0px", "tool cards are styled");
-const btnBg = await page.evaluate(() => getComputedStyle(document.querySelector(".tool-card .btn")).display);
-ok(btnBg !== "inline", "tool card button styled");
 await page.evaluate(() => { localStorage.setItem("kyf_user_goals", JSON.stringify([{id:"a"},{id:"b"}])); localStorage.setItem("kyf_user_holdings", JSON.stringify([{id:"h"}])); });
 await page.reload();
 ok(await page.locator("#welcomeBack").count() === 0, "still no Welcome back strip with saved data");

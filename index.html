@@ -7,9 +7,9 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>KYF — Know Your Finance</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.25.0">
-  <link rel="stylesheet" href="css/home.css?v=1.25.0">
-  <link rel="stylesheet" href="css/journey.css?v=1.25.0">
+  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.26.0">
+  <link rel="stylesheet" href="css/home.css?v=1.26.0">
+  <link rel="stylesheet" href="css/journey.css?v=1.26.0">
 </head>
 <body>
 
@@ -20,12 +20,12 @@
         <a href="goals.html">Goals</a>
         <a href="cadence.html">Cadence</a>
         <a href="portfolio.html">Portfolio</a>
-        <a href="#tools">All tools</a>
+        <a href="#also">More tools</a>
         <div class="nav-dropdown">
           <a href="#framework" class="nav-dropdown-toggle">Framework <span class="caret" aria-hidden="true">▼</span></a>
           <div class="nav-dropdown-menu">
-            <a href="#framework">How it fits together</a>
-            <a href="#trust">Privacy &amp; Limits</a>
+            <a href="#framework">How it works</a>
+            <a href="#trust">Your data &amp; limits</a>
           </div>
         </div>
         <a class="btn btn-nav" id="navStart" href="portfolio.html">Start &rarr;</a>
@@ -38,83 +38,58 @@
     <section class="hero">
       <div class="wrap hero-grid">
         <div>
-          <h1>Know your money. <em>Talk to a financial planner with confidence.</em></h1>
-          <p class="lede">KYF is a free, private workspace to list what you own, set goals, and learn the language of money, all in your browser.</p>
+          <h1>Every rupee you own, <em>working toward a goal.</em></h1>
+          <p class="lede">Bring your scattered accounts, investments and loans into one place. Give each a purpose, and keep track. Everything is saved in one private file on your own device.</p>
           <div class="cta-row">
             <a class="btn" id="heroStart" href="portfolio.html" aria-label="Get started">Get started &rarr;</a>
-            <a class="btn secondary" href="#tools">See what you can do</a>
+            <a class="btn secondary" href="#framework">See how it works</a>
           </div>
-          <p class="micro"><span>No sign-up</span><span>Data stays in your browser</span><span>Free</span></p>
+          <p class="micro"><span>No sign-up</span><span>Your data never leaves your device</span><span>Free</span></p>
         </div>
-        <div class="gets" aria-label="What you get">
-          <p class="gets-title">What you get</p>
-          <ul>
-            <li><span class="gets-do">List what you own and owe</span><span class="gets-get">See your real net worth and how it is spread</span></li>
-            <li><span class="gets-do">Set your goals</span><span class="gets-get">Know the monthly amount each one needs</span></li>
-            <li><span class="gets-do">Follow a simple routine</span><span class="gets-get">Never miss an insurance renewal or yearly check</span></li>
-          </ul>
+        <div class="gather" role="img" aria-label="Scattered accounts, investments and loans gathered into one file on your device">
+          <div class="gather-chips" aria-hidden="true">
+            <span>Bank savings</span><span>Mutual funds</span><span>Stocks</span><span>FDs</span><span>EPF &amp; PPF</span><span>Gold</span><span>Property</span><span>Home loan</span>
+          </div>
+          <div class="gather-arrow" aria-hidden="true">&darr;</div>
+          <div class="gather-file"><strong>my-family-money.kyf</strong><span>One file. On your device. Only yours.</span></div>
         </div>
       </div>
     </section>
     <div class="wrap"><p class="overdue-note" id="overdueNote" hidden></p></div>
 
 
-    <!-- ==================== WHAT YOU CAN DO HERE ==================== -->
-    <section id="tools" class="tools">
+    <!-- ==================== HOW IT WORKS ==================== -->
+    <section id="framework" class="tools">
       <div class="wrap">
-
         <div class="section-head reveal">
-          <p class="eyebrow">What you can do here</p>
-          <h2>Pick a tool, see what you get.</h2>
-          <p>Start anywhere. What you enter in one tool is available in the others.</p>
+          <p class="eyebrow">How it works</p>
+          <h2>From scattered to sorted, in four steps.</h2>
         </div>
-
-        <div id="journeyStrip" class="reveal">
-          <ol class="start-path" aria-label="Steps to get started">
-            <li><a href="portfolio.html"><span class="sp-num">1</span><span class="sp-text"><strong>Build your portfolio</strong><small>Add what you own, or import it from your broker</small></span></a></li>
-            <li><a href="goals.html"><span class="sp-num">2</span><span class="sp-text"><strong>Name your goals</strong><small>Home, college, retirement: what are you saving for?</small></span></a></li>
-          </ol>
-        </div>
-
-        <div id="toolGroups" class="tool-groups"></div>
-        <noscript>
-          <ul class="tool-fallback">
-            <li><a href="goals.html">Goals</a></li>
-            <li><a href="cadence.html">Cadence</a></li>
-            <li><a href="portfolio.html">Portfolio</a></li>
-            <li><a href="market-performance.html">Market Benchmarks</a></li>
-            <li><a href="real-estate-calculator.html">Real Estate Calculator</a></li>
-          </ul>
-        </noscript>
-
-        <p class="vault-note reveal">🔒 <strong>Your data stays in this browser.</strong> Use <em>Save Data</em> on Goals, Cadence or Portfolio to download a .kyf file, and <em>Open</em> to load it on another device.</p>
+        <div id="journeyStrip" class="reveal"></div>
+        <ol class="value-steps">
+          <li class="reveal"><span class="vs-num">1</span><div><h3>Bring it all together</h3><p>Add stocks, funds, FDs, gold, property, EPF and PPF, and your loans, from every bank and broker, for the whole family.</p><p class="vs-get"><b>You get:</b> one honest net worth, instead of five apps and a spreadsheet.</p></div></li>
+          <li class="reveal"><span class="vs-num">2</span><div><h3>Name your goals</h3><p>Home, college, retirement, insurance, or your own.</p><p class="vs-get"><b>You get:</b> each goal priced in future rupees, with the monthly amount it needs.</p></div></li>
+          <li class="reveal"><span class="vs-num">3</span><div><h3>Give money a job</h3><p>Match what you own to each goal.</p><p class="vs-get"><b>You get:</b> to see which goals are funded, and which money is sitting idle.</p></div></li>
+          <li class="reveal"><span class="vs-num">4</span><div><h3>Stay on track</h3><p>A checklist and dates for every goal, plus the yearly chores that protect your family.</p><p class="vs-get"><b>You get:</b> a habit that turns plans into progress, with a nudge when something is due.</p></div></li>
+        </ol>
+        <div class="vs-cta reveal"><a class="btn" id="stepsStart" href="portfolio.html">Start with step 1 &rarr;</a></div>
       </div>
     </section>
 
-    <!-- ==================== HOW IT FITS ==================== -->
-    <section id="framework" class="fits">
-      <div class="wrap">
-        <div class="section-head reveal">
-          <p class="eyebrow">How it fits together</p>
-          <h2>Goals, Holdings, Cadence.</h2>
-        </div>
-        <div class="fits-row reveal">
-          <a href="goals.html"><strong>Goals</strong><span>say what the money is for</span></a>
-          <a href="portfolio.html"><strong>Holdings</strong><span>show what you have and owe</span></a>
-          <a href="cadence.html"><strong>Cadence</strong><span>keeps you on track, year after year</span></a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== PRIVACY AND LIMITS ==================== -->
-    <section id="trust" class="trust-lite">
+    <!-- ==================== YOUR DATA ==================== -->
+    <section id="trust" class="data-file">
       <div class="wrap reveal">
+        <div class="section-head">
+          <p class="eyebrow">Your data</p>
+          <h2>All of it lives in one file, on your device.</h2>
+        </div>
         <div class="trust">
           <div class="panel">
             <h3>Private by design</h3>
             <ul>
-              <li>Everything stays in your browser. No account, no tracking, no servers holding your data.</li>
-              <li>Save a .kyf file to keep or move your data; wipe it any time.</li>
+              <li><span><b>Save</b> your whole profile as a single .kyf file. <b>Open</b> it on any device to carry on.</span></li>
+              <li>No account, no server, no tracking. Nothing leaves your browser unless you share a file or link.</li>
+              <li>Keep a copy of the file somewhere safe. Nobody else has one, so we cannot recover it for you.</li>
             </ul>
           </div>
           <div class="panel warn">
@@ -125,6 +100,23 @@
             </ul>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ==================== MORE TOOLS ==================== -->
+    <section id="also" class="also">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow">Also in KYF</p>
+          <h2>Handy tools when you need them.</h2>
+        </div>
+        <div id="alsoTools" class="also-grid reveal"></div>
+        <noscript>
+          <ul class="tool-fallback">
+            <li><a href="goals.html">Goals</a></li><li><a href="cadence.html">Cadence</a></li><li><a href="portfolio.html">Portfolio</a></li>
+            <li><a href="learn.html">Learn</a></li><li><a href="market-performance.html">Market Benchmarks</a></li><li><a href="real-estate-calculator.html">Real Estate Calculator</a></li><li><a href="loans.html">Loan &amp; EMI tools</a></li>
+          </ul>
+        </noscript>
       </div>
     </section>
   </main>
@@ -138,16 +130,16 @@
   </footer>
 
 
-  <script src="js/kyf-goals.js?v=1.25.0"></script>
-  <script src="js/kyf-vault.js?v=1.25.0"></script>
-  <script src="data/kyf-terms.js?v=1.25.0"></script>
-  <script src="data/kyf-path.js?v=1.25.0"></script>
-  <script src="js/kyf-path.js?v=1.25.0"></script>
-  <script src="js/kyf-journey.js?v=1.25.0"></script>
-  <script src="js/kyf-footer.js?v=1.25.0"></script>
-  <script src="js/kyf-features.js?v=1.25.0"></script>
-  <script src="js/kyf-nav.js?v=1.25.0"></script>
-  <script src="js/kyf-home.js?v=1.25.0"></script>
-  <script src="js/kyf-money-word.js?v=1.25.0"></script>
+  <script src="js/kyf-goals.js?v=1.26.0"></script>
+  <script src="js/kyf-vault.js?v=1.26.0"></script>
+  <script src="data/kyf-terms.js?v=1.26.0"></script>
+  <script src="data/kyf-path.js?v=1.26.0"></script>
+  <script src="js/kyf-path.js?v=1.26.0"></script>
+  <script src="js/kyf-journey.js?v=1.26.0"></script>
+  <script src="js/kyf-footer.js?v=1.26.0"></script>
+  <script src="js/kyf-features.js?v=1.26.0"></script>
+  <script src="js/kyf-nav.js?v=1.26.0"></script>
+  <script src="js/kyf-home.js?v=1.26.0"></script>
+  <script src="js/kyf-money-word.js?v=1.26.0"></script>
 </body>
 </html>
