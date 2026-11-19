@@ -74,3 +74,5 @@
 .kyf-dd-menu a { display: grid; gap: 2px; padding: 10px 12px; border-radius: 8px; color: var(--ink, #182620); text-decoration: none; font-family: var(--sans, inherit); }
 .kyf-dd-menu a:hover, .kyf-dd-menu a.active { background: var(--teal-soft, #e3f0ec); }
 .kyf-dd-menu small { color: var(--ink-soft, #5b6b64); font-size: 12.5px; }
+
+@media (max-width: 820px) { .kyf-dd { display: none; } }

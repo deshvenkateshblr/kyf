@@ -2396,4 +2396,25 @@
       bindEvents();
       initScrollSpy();
       initCollapsibles();
+
+      // Read-only view for the Overview (js/market-dashboard.js): the same screens as the tables below
+      // (Nifty 500 stocks, penny and corporate-action outliers left out, direct-plan funds), one pick per horizon.
+      window.KYF_MARKET_VIEW = {
+        tops: function (h) {
+          const m = getHorizonMeta(h);
+          let stock = null, fund = null;
+          (equitiesData.stocks || []).forEach(s => {
+            const v = Number(s[m.eqCol]);
+            if (s[m.eqCol] === null || s[m.eqCol] === undefined || isNaN(v) || s[7] !== 1) return;
+            if (getAbnormalReason(s, m.eqCol)) return;
+            if (!stock || v > stock.ret) stock = { symbol: s[0], name: s[1], ret: v };
+          });
+          (mfData.schemes || []).forEach(s => {
+            const v = Number(s[m.mfCol]);
+            if (s[m.mfCol] === null || s[m.mfCol] === undefined || isNaN(v)) return;
+            if (!fund || v > fund.ret) fund = { name: s[1], category: s[2], ret: v };
+          });
+          return { stock: stock, fund: fund };
+        }
+      };
     })();
