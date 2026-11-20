@@ -76,3 +76,11 @@
 .kyf-dd-menu small { color: var(--ink-soft, #5b6b64); font-size: 12.5px; }
 
 @media (max-width: 820px) { .kyf-dd { display: none; } }
+
+/* Open and Save look the same at every width (pages do not style them below the desktop breakpoint) */
+@media (max-width: 820px) {
+  .nav .nav-links .nav-btn { display: inline-flex !important; align-items: center; gap: 4px; padding: 7px 12px; font: 700 12.5px/1 var(--sans, system-ui, sans-serif); letter-spacing: .02em; text-transform: none; border-radius: 999px; cursor: pointer; border: 1px solid var(--teal, #1f7a6c); box-shadow: none; margin: 0; }
+  .nav .nav-links .nav-btn.secondary { background: transparent; color: var(--teal-deep, #145a4f); }
+  .nav .nav-links .nav-btn.primary { background: var(--teal, #1f7a6c); color: #fff; }
+}
+@media (max-width: 560px) { .nav .nav-links .nav-btn.secondary { display: none !important; } }
