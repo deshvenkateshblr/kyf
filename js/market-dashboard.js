@@ -36,7 +36,19 @@
   var pct1 = function (n) { return (n > 0 ? "+" : "") + Number(n).toFixed(1) + "%"; };
   var tone = function (n) { return n == null || isNaN(n) ? "" : n >= 0 ? " up" : " down"; };
 
-  function card(title, links) {
+  function shareBtn(section) {
+    var b = mk("button", "dash-share", "Share");
+    b.type = "button";
+    b.setAttribute("data-share", section);
+    b.setAttribute("aria-label", "Share this card");
+    b.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (window.KYF_MARKET_VIEW && window.KYF_MARKET_VIEW.share) window.KYF_MARKET_VIEW.share(section);
+    });
+    return b;
+  }
+
+  function card(title, links, shareKey) {
     var c = mk("section", "dash-card");
     var head = mk("div", "dc-head");
     head.appendChild(mk("h2", null, title));
@@ -48,17 +60,22 @@
       b.addEventListener("click", function () { show(l[0], true); });
       nav.appendChild(b);
     });
+    if (shareKey) nav.appendChild(shareBtn(shareKey));
     head.appendChild(nav);
     c.appendChild(head);
     return c;
   }
 
   function tile(key, icon, title, bigValue, bigNote, bigDelta, stats) {
-    var b = mk("button", "dash-tile");
-    b.type = "button";
+    var b = mk("div", "dash-tile");
+    b.tabIndex = 0;
+    b.setAttribute("role", "link");
     b.setAttribute("data-open", key);
+    b.setAttribute("aria-label", "Open " + title);
     var head = mk("div", "dt-head");
-    head.append(mk("span", "dt-title", icon + "  " + title), mk("span", "dt-open", "Open →"));
+    var acts = mk("span", "dt-acts");
+    acts.append(shareBtn(key), mk("span", "dt-open", "Open →"));
+    head.append(mk("span", "dt-title", icon + "  " + title), acts);
     var big = mk("div", "dt-big");
     big.appendChild(mk("strong", null, bigValue));
     if (bigDelta != null) big.appendChild(mk("span", "dt-delta" + tone(bigDelta), pct1(bigDelta)));
@@ -71,12 +88,13 @@
     });
     b.append(head, big, line);
     b.addEventListener("click", function () { show(key, true); });
+    b.addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target === b) show(key, true); });
     return b;
   }
 
   // Returns at a glance: every benchmark across the same horizons, short to long
   function returnsCard() {
-    var c = card("Returns at a glance", [["indices", "Indices"], ["metals", "Gold & silver"]]);
+    var c = card("Returns at a glance", [["indices", "Indices"], ["metals", "Gold & silver"]], "indices");
     var wrap = mk("div", "table-wrap");
     var tb = mk("table", "dash-table");
     var th = mk("thead");
@@ -108,7 +126,7 @@
   // Best direct-plan funds and best Nifty 500 stocks, each in a card of its own so they are not confused
   function topsCard(kind) {
     var isFund = kind === "fund";
-    var c = card(isFund ? "Best mutual funds" : "Best stocks", [[isFund ? "mf" : "equities", isFund ? "All funds" : "All stocks"]]);
+    var c = card(isFund ? "Best mutual funds" : "Best stocks", [[isFund ? "mf" : "equities", isFund ? "All funds" : "All stocks"]], isFund ? "mf" : "equities");
     c.classList.add("tops-card");
     var view = window.KYF_MARKET_VIEW;
     var wrap = mk("div", "table-wrap");

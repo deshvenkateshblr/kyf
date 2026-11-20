@@ -2400,6 +2400,7 @@
       // Read-only view for the Overview (js/market-dashboard.js): the same screens as the tables below
       // (Nifty 500 stocks, penny and corporate-action outliers left out, direct-plan funds), one pick per horizon.
       window.KYF_MARKET_VIEW = {
+        share: openShareModal,
         tops: function (h) {
           const m = getHorizonMeta(h);
           let stock = null, fund = null;
