@@ -17,7 +17,7 @@
   ];
   var CATALOG = window.KYF_FEATURES;
   var MENU = (CATALOG ? CATALOG.menu() : FALLBACK).map(function (m) {
-    return { href: m.href, label: m.name, short: m.short || "", topOrder: m.topOrder || 99, icon: m.icon, desc: m.tagline || "", topBar: !!m.topBar, topGroup: m.topGroup || "" };
+    return { href: m.href, label: m.name, short: m.short || "", topOrder: m.topOrder || 99, icon: m.icon, desc: m.tagline || "", topBar: !!m.topBar, topGroup: m.topGroup || "", groupOrder: m.topGroupOrder || 99 };
   });
 
   function pageName() {
@@ -64,12 +64,12 @@
       fragment.appendChild(a);
     });
     // "Tools" menu: the supporting tools, one click away on every page
-    var tools = MENU.filter(function (m) { return m.topGroup === "tools"; });
+    var tools = MENU.filter(function (m) { return m.topGroup === "tools"; }).sort(function (a, b) { return a.groupOrder - b.groupOrder; });
     if (tools.length) {
       var dd = el("div", "kyf-dd");
       dd.dataset.order = "6";
       var here = tools.some(isCurrent);
-      var tbtn = el("button", "kyf-dd-btn" + (here ? " active" : ""), "Tools ");
+      var tbtn = el("button", "kyf-dd-btn" + (here ? " active" : ""), "Learn & tools ");
       tbtn.type = "button";
       tbtn.setAttribute("aria-haspopup", "true");
       tbtn.setAttribute("aria-expanded", "false");

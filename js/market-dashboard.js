@@ -63,13 +63,13 @@
     big.appendChild(mk("strong", null, bigValue));
     if (bigDelta != null) big.appendChild(mk("span", "dt-delta" + tone(bigDelta), pct1(bigDelta)));
     if (bigNote) big.appendChild(mk("small", null, bigNote));
-    var dl = mk("dl", "dt-stats");
+    var line = mk("p", "dt-inline");
     stats.forEach(function (s) {
-      var d = mk("div");
-      d.append(mk("dt", null, s[0]), mk("dd", null, s[1]));
-      dl.appendChild(d);
+      var sp = mk("span");
+      sp.append(document.createTextNode(s[0] + " "), mk("b", null, s[1]));
+      line.appendChild(sp);
     });
-    b.append(head, big, dl);
+    b.append(head, big, line);
     b.addEventListener("click", function () { show(key, true); });
     return b;
   }
@@ -80,12 +80,9 @@
     var wrap = mk("div", "table-wrap");
     var tb = mk("table", "dash-table");
     var th = mk("thead");
-    var g = mk("tr", "grp");
-    g.append(mk("th"), mk("th", "g-short", "Short term"), mk("th", "g-short"), mk("th", "g-mid", "Medium term"), mk("th", "g-mid"), mk("th", "g-long", "Long term"), mk("th"));
-    g.children[1].colSpan = 2; g.children[2].remove(); g.children[2].colSpan = 2; g.children[3].remove();
     var h = mk("tr");
-    ["", "1 month", "3 months", "6 months", "1 year", "5 years a year", "P/E"].forEach(function (x, i) { h.appendChild(mk("th", i ? "num" : "", x)); });
-    th.append(g, h);
+    ["", "1 month", "3 months", "6 months", "1 year", "5 years, per year", "P/E"].forEach(function (x, i) { h.appendChild(mk("th", i ? "num" : "", x)); });
+    th.append(h);
     var body = mk("tbody");
     var rows = [];
     Object.keys(idx).forEach(function (k) {
@@ -104,40 +101,41 @@
     tb.append(th, body);
     wrap.appendChild(tb);
     c.appendChild(wrap);
-    c.appendChild(mk("p", "dc-note", "Returns over the last month, 3 months, 6 months and year. The 5-year figure is per year. Past returns are not a promise."));
+    c.appendChild(mk("p", "dc-note", "Gains or losses over each period up to today. Past returns are not a promise."));
     return c;
   }
 
-  // Top performers: the best direct-plan fund and Nifty 500 stock for each horizon
-  function topsCard() {
-    var c = card("Top performers", [["mf", "Funds"], ["equities", "Stocks"]]);
+  // Best direct-plan funds and best Nifty 500 stocks, each in a card of its own so they are not confused
+  function topsCard(kind) {
+    var isFund = kind === "fund";
+    var c = card(isFund ? "Best mutual funds" : "Best stocks", [[isFund ? "mf" : "equities", isFund ? "All funds" : "All stocks"]]);
+    c.classList.add("tops-card");
     var view = window.KYF_MARKET_VIEW;
     var wrap = mk("div", "table-wrap");
     var tb = mk("table", "dash-table tops");
     var th = mk("thead"), h = mk("tr");
-    ["Over the last", "Best mutual fund", "Best stock"].forEach(function (x) { h.appendChild(mk("th", "", x)); });
+    ["Over the last", isFund ? "Fund" : "Stock", "Return"].forEach(function (x, i) { h.appendChild(mk("th", i === 2 ? "num" : "", x)); });
     th.appendChild(h);
     var body = mk("tbody");
-    [["1m", "1 month", "Short term"], ["3m", "3 months", "Short term"], ["6m", "6 months", "Medium term"], ["1y", "1 year", "Medium term"]].forEach(function (hz) {
+    [["1m", "1 month"], ["3m", "3 months"], ["6m", "6 months"], ["1y", "1 year"]].forEach(function (hz) {
       var r = view ? view.tops(hz[0]) : { fund: null, stock: null };
+      var pick = isFund ? r.fund : r.stock;
       var tr = mk("tr");
-      var first = mk("th", "row");
-      first.append(mk("strong", null, hz[1]), mk("small", null, hz[2]));
-      tr.appendChild(first);
-      [["fund", r.fund, function (x) { return x.name; }], ["stock", r.stock, function (x) { return x.symbol; }]].forEach(function (cell) {
-        var td = mk("td");
-        if (cell[1]) {
-          td.appendChild(mk("span", "pick", cell[2](cell[1])));
-          td.appendChild(mk("b", "num" + tone(cell[1].ret), pct1(cell[1].ret)));
-        } else td.textContent = "—";
-        tr.appendChild(td);
-      });
+      tr.appendChild(mk("th", "row", hz[1]));
+      var td = mk("td");
+      if (pick) {
+        td.appendChild(mk("span", "pick", isFund ? pick.name : pick.symbol));
+        if (!isFund && pick.name) td.appendChild(mk("small", null, pick.name));
+        if (isFund && pick.category) td.appendChild(mk("small", null, pick.category));
+      } else td.textContent = "—";
+      tr.appendChild(td);
+      tr.appendChild(mk("td", "num" + tone(pick && pick.ret), pick ? pct1(pick.ret) : "—"));
       body.appendChild(tr);
     });
     tb.append(th, body);
     wrap.appendChild(tb);
     c.appendChild(wrap);
-    c.appendChild(mk("p", "dc-note", "Direct-plan funds across all categories, and Nifty 500 stocks, with penny stocks and corporate-action distortions left out."));
+    c.appendChild(mk("p", "dc-note", isFund ? "Direct plans, all categories." : "Nifty 500 only. Penny stocks and corporate-action distortions left out."));
     return c;
   }
 
@@ -146,14 +144,18 @@
     if (!host) return;
     host.textContent = "";
     var n50 = idx.NIFTY50 || {};
-    var left = mk("div", "dash-strip");
-    left.appendChild(tile("macro", "🏛️", "Inflation & rates", macro.cpiInflation + "%", "retail inflation (CPI)", null,
-      [["RBI repo rate", macro.rbiRepo + "%"], ["SBI 1-yr FD", macro.sbiFd1Yr + "%"], ["EPF", macro.epfRate + "%"], ["PPF", macro.ppfRate + "%"]]));
-    left.appendChild(tile("realestate", "🏡", "Real estate", nat.carpet_price_sqft ? "₹" + inr(nat.carpet_price_sqft) : "50 cities", nat.carpet_price_sqft ? "per sq ft, 50-city average" : "", null,
-      [["Price change, 1 year", nat.hpi_yoy_pct != null ? pct1(nat.hpi_yoy_pct) : "—"], ["5-year growth a year", nat.hpi_cagr_5y != null ? nat.hpi_cagr_5y.toFixed(1) + "%" : "—"]]));
-    var right = mk("div", "dash-cards");
-    right.append(returnsCard(), topsCard());
-    host.append(left, right);
+    var strip = mk("div", "dash-strip");
+    strip.appendChild(tile("macro", "🏛️", "Inflation & rates", macro.cpiInflation + "%", "retail inflation",  null,
+      [["Repo", macro.rbiRepo + "%"], ["SBI FD", macro.sbiFd1Yr + "%"], ["EPF", macro.epfRate + "%"], ["PPF", macro.ppfRate + "%"]]));
+    strip.appendChild(tile("realestate", "🏡", "Real estate", nat.carpet_price_sqft ? "₹" + inr(nat.carpet_price_sqft) : "50 cities", nat.carpet_price_sqft ? "per sq ft" : "", null,
+      [["1 year", nat.hpi_yoy_pct != null ? pct1(nat.hpi_yoy_pct) : "—"], ["5 years, per year", nat.hpi_cagr_5y != null ? nat.hpi_cagr_5y.toFixed(1) + "%" : "—"]]));
+    strip.appendChild(tile("metals", "🪙", "Gold & silver", metals.gold24kPerGram ? "₹" + inr(metals.gold24kPerGram) : "—", "gold 24K per gram", metals.goldRet1y,
+      [["Silver", metals.silverPerGram ? "₹" + inr(metals.silverPerGram) + "/g" : "—"], ["Silver 1 year", metals.silverRet1y != null ? pct1(metals.silverRet1y) : "—"]]));
+    var rows = mk("div", "dash-rows");
+    var two = mk("div", "dash-two");
+    two.append(topsCard("fund"), topsCard("stock"));
+    rows.append(returnsCard(), two);
+    host.append(strip, rows);
   }
 
   function show(key, scrollTop) {

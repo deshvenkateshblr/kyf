@@ -81,13 +81,13 @@ for (const name of ["index", "goals", "cadence", "portfolio", "market-performanc
   seenBars.add((await dpage.locator(".nav-links > a, .nav-links > button").allTextContents()).join("|"));
   check(!(await dpage.locator("#kyfMenuBtn").isVisible()), `${name}: no ☰ button on desktop`);
   const links = await dpage.locator(".nav-links > a").allTextContents();
-  check(["Goals", "Cadence", "Portfolio", "Markets", "Learn", "How it works"].every((l) => links.includes(l)), `${name}: same primary links on every page`);
+  check(["Goals", "Cadence", "Portfolio", "Markets"].every((l) => links.includes(l)) && !links.includes("Learn"), `${name}: same primary links on every page`);
   await dpage.click(".kyf-dd-btn");
   const toolLinks = await dpage.locator(".kyf-dd-menu a strong").allTextContents();
-  check(["Loan & EMI tools", "Real Estate Calculator"].every((l) => toolLinks.includes(l)), `${name}: Tools menu lists the supporting tools`);
+  check(["Learn", "How it works", "Loan & EMI tools", "Real Estate Calculator"].every((l) => toolLinks.includes(l)), `${name}: Learn & tools menu holds Learn, How it works and the tools`);
   await dpage.keyboard.press("Escape"); await dpage.mouse.click(5, 300);
 }
-check([...seenBars][0].startsWith("Goals|Portfolio|Cadence|Markets|Learn|How it works|"), "top bar order is Goals, Portfolio, Cadence, Markets, Learn, Tools, How it works, then Open and Save: " + [...seenBars][0]);
+check([...seenBars][0].startsWith("Goals|Portfolio|Cadence|Markets|"), "top bar order is Goals, Portfolio, Cadence, Markets, then the Learn & tools menu, then Open and Save: " + [...seenBars][0]);
 check(seenBars.size === 1, "the top bar is identical on every page, home included: " + [...seenBars].join(" // "));
 await dpage.goto(`${base}goals.html`);
 check((await dpage.locator(".nav-links > a.active").textContent()) === "Goals", "the current page's link is highlighted");

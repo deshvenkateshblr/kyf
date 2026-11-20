@@ -50,7 +50,7 @@
       cta: "Open Portfolio"
     },
     {
-      id: "loans", group: "plan", icon: "🧮", name: "Loan & EMI tools", href: "loans.html", topBar: false, topGroup: "tools",
+      id: "loans", group: "plan", icon: "🧮", name: "Loan & EMI tools", href: "loans.html", topBar: false, topGroup: "tools", topGroupOrder: 3,
       benefit: "See what a loan really costs, and how extra payments shorten it.",
       tagline: "Cash or loan? Full EMI schedule",
       can: [
@@ -71,7 +71,7 @@
       cta: "See the benchmarks"
     },
     {
-      id: "realestate", benefit: "Know the real price per sq ft before you negotiate.", group: "research", icon: "🏙️", name: "Real Estate Calculator", href: "real-estate-calculator.html", topBar: false, topGroup: "tools",
+      id: "realestate", benefit: "Know the real price per sq ft before you negotiate.", group: "research", icon: "🏙️", name: "Real Estate Calculator", href: "real-estate-calculator.html", topBar: false, topGroup: "tools", topGroupOrder: 4,
       tagline: "Rent vs buy, price per sq ft",
       can: [
         "Convert a builder's super built-up price to the real carpet-area price",
@@ -81,7 +81,7 @@
       cta: "Check a property price"
     },
     {
-      id: "learn", topOrder: 5, benefit: "Follow your planner’s jargon instead of nodding along.", group: "research", icon: "📖", name: "Learn", href: "learn.html", topBar: true,
+      id: "learn", topOrder: 5, benefit: "Follow your planner’s jargon instead of nodding along.", group: "research", icon: "📖", name: "Learn", href: "learn.html", topBar: false, topGroup: "tools", topGroupOrder: 1,
       tagline: "Money words in plain language",
       can: [
         "Look up a finance word and what it means in plain words",
@@ -95,7 +95,7 @@
   // Not tools, but places people look for
   var EXTRAS = [
     { id: "home", name: "Home", href: "index.html", icon: "🏠", tagline: "" },
-    { id: "framework", name: "How it works", href: "index.html#framework", icon: "🧭", tagline: "Four simple steps to money clarity", topBar: true, topOrder: 9 }
+    { id: "framework", name: "How it works", href: "index.html#framework", icon: "🧭", tagline: "Four simple steps to money clarity", topBar: false, topGroup: "tools", topGroupOrder: 2 }
   ];
 
   global.KYF_FEATURES = {
