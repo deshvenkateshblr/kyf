@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#1f7a6c">
   <title>Review Market Performance &amp; Benchmarks | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.32.1">
-  <link rel="stylesheet" href="css/market-performance.css?v=1.32.1">
+  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.33.0">
+  <link rel="stylesheet" href="css/market-performance.css?v=1.33.0">
 </head>
 <body>
 
@@ -24,7 +24,7 @@
         <a href="cadence.html">Cadence</a>
         <a href="portfolio.html">Portfolio</a>
         <a href="index.html#framework">How it works</a>
-        <input type="file" id="kyfFileInput" accept=".kyf,.json" style="display:none;">
+        <input class="is-hidden" type="file" id="kyfFileInput" accept=".kyf,.json">
         <button type="button" class="nav-btn secondary" id="navOpenFileBtn" title="Open saved .kyf data file">📂 Open</button>
         <button type="button" class="nav-btn primary" id="navSaveDataBtn" title="Save data as .kyf file">💾 Save Data</button>
       </nav>
@@ -110,9 +110,9 @@
         <div class="rates-list" id="ratesList">
           <!-- Rendered via JS -->
         </div>
-        <div class="cagr-anchor" style="margin-top: 14px;">
+        <div class="cagr-anchor mt-14">
           <span>Real EPF Spread over CPI:</span>
-          <b id="realSpreadVal" style="color:var(--green)">+2.85% tax-free real yield over CPI</b>
+          <b class="text-green" id="realSpreadVal">+2.85% tax-free real yield over CPI</b>
         </div>
         <div class="section-editorial-caption">
           <span>🏛️ Tax-free sovereign yields establish the empirical hurdle rate for debt allocation.</span>
@@ -147,12 +147,12 @@
         </div>
 
         <!-- City & Historical Growth Chart Subsection Header -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:28px; margin-bottom:12px; flex-wrap:wrap; gap:8px;" id="reChartSection">
-          <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
-            <h3 style="font-family: var(--serif); font-size: 19px; font-weight: 600; margin: 0; color: var(--ink);">
+        <div class="mp-head-row mp-head-row--spaced" id="reChartSection">
+          <div class="mp-head-title">
+            <h3 class="mp-h3">
               📈 City Explorer &amp; 33-Quarter Growth Chart
             </h3>
-            <span style="font-family: var(--mono); font-size: 11px; color: var(--muted);">Interactive spliced HPI curves &amp; carpet price tiers</span>
+            <span class="mp-meta">Interactive spliced HPI curves &amp; carpet price tiers</span>
           </div>
           <button type="button" class="re-collapse-btn" id="reChartCollapseBtn" aria-expanded="true" aria-controls="reChartBody" title="Toggle Chart View">
             <span class="re-collapse-icon">▾</span>
@@ -192,7 +192,7 @@
                 <!-- Populated via JS -->
               </div>
             </div>
-            <div id="reSvgContainer" style="position: relative; width: 100%; min-height: 280px;">
+            <div class="re-svg-box" id="reSvgContainer">
               <!-- SVG rendered via JS -->
             </div>
             <div id="reChartTooltip" class="re-chart-tooltip" role="tooltip"></div>
@@ -200,13 +200,13 @@
         </div>
 
         <!-- Multi-City Leaderboard Table -->
-        <div style="margin-top: 28px;" id="reLeaderboardSection">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
-              <h3 style="font-family: var(--serif); font-size: 19px; font-weight: 600; margin: 0; color: var(--ink);">
+        <div class="mt-28" id="reLeaderboardSection">
+          <div class="mp-head-row">
+            <div class="mp-head-title">
+              <h3 class="mp-h3">
                 📊 Multi-City Real Estate Leaderboard &amp; Comp Table
               </h3>
-              <span style="font-family: var(--mono); font-size: 11px; color: var(--muted);">Click any city row to view historical chart</span>
+              <span class="mp-meta">Click any city row to view historical chart</span>
             </div>
             <button type="button" class="re-collapse-btn" id="reTableCollapseBtn" aria-expanded="true" aria-controls="reTableBody" title="Toggle Table View">
               <span class="re-collapse-icon">▾</span>
@@ -218,14 +218,14 @@
               <table class="data-table re-table-interactive" id="reLeaderboardTable">
                 <thead>
                   <tr>
-                    <th style="width: 40px; text-align: center;">#</th>
+                    <th class="th-center-40">#</th>
                     <th>City &amp; State</th>
-                    <th style="text-align: right;" class="re-sortable-th" data-sort="hpi_index" title="Sort by Latest HPI">Latest HPI <span class="re-sort-arrow"></span></th>
-                    <th style="text-align: right;" class="re-sortable-th" data-sort="hpi_yoy_pct" title="Sort by 1Y YoY %">1Y YoY % <span class="re-sort-arrow"></span></th>
-                    <th style="text-align: right;" class="re-sortable-th" data-sort="hpi_cagr_3y" title="Sort by 3Y CAGR">3Y CAGR <span class="re-sort-arrow"></span></th>
-                    <th style="text-align: right;" class="re-sortable-th" data-sort="hpi_cagr_5y" title="Sort by 5Y CAGR">5Y CAGR <span class="re-sort-arrow"></span></th>
-                    <th style="text-align: right;" class="re-sortable-th" data-sort="hpi_total_growth_8y" title="Sort by 8Y Total Growth">8Y Total Growth <span class="re-sort-arrow"></span></th>
-                    <th style="text-align: right;" class="re-sortable-th" data-sort="carpet_price_sqft" title="Sort by Carpet Price">Carpet Price (₹/sq.ft.) <span class="re-sort-arrow"></span></th>
+                    <th class="re-sortable-th th-right" data-sort="hpi_index" title="Sort by Latest HPI">Latest HPI <span class="re-sort-arrow"></span></th>
+                    <th class="re-sortable-th th-right" data-sort="hpi_yoy_pct" title="Sort by 1Y YoY %">1Y YoY % <span class="re-sort-arrow"></span></th>
+                    <th class="re-sortable-th th-right" data-sort="hpi_cagr_3y" title="Sort by 3Y CAGR">3Y CAGR <span class="re-sort-arrow"></span></th>
+                    <th class="re-sortable-th th-right" data-sort="hpi_cagr_5y" title="Sort by 5Y CAGR">5Y CAGR <span class="re-sort-arrow"></span></th>
+                    <th class="re-sortable-th th-right" data-sort="hpi_total_growth_8y" title="Sort by 8Y Total Growth">8Y Total Growth <span class="re-sort-arrow"></span></th>
+                    <th class="re-sortable-th th-right" data-sort="carpet_price_sqft" title="Sort by Carpet Price">Carpet Price (₹/sq.ft.) <span class="re-sort-arrow"></span></th>
                   </tr>
                 </thead>
                 <tbody id="reLeaderboardBody">
@@ -237,7 +237,7 @@
         </div>
 
         <!-- Educational Editorial Caption Link -->
-        <div class="section-editorial-caption" style="margin-top: 24px; padding-top: 14px;">
+        <div class="section-editorial-caption mp-caption-top">
           <span>🏡 NHB RESIDEX tracks registered RERA carpet prices across 50 cities. Beware brochure super built-up loading.</span>
           <a href="real-estate-calculator.html" id="reCalcLink" class="editorial-link editorial-link-primary">📐 Open "Carpet vs. Super Built-Up" Reality Check Calculator &rarr;</a>
         </div>
@@ -392,7 +392,7 @@
             <span>🟢 Top Gainers</span>
           </button>
 
-          <label style="font-family:var(--mono); font-size:11.5px; color:var(--muted); display:inline-flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="includeAllNseToggle" style="accent-color:var(--teal);"> Expand to all 2,700+ NSE stocks</label>
+          <label class="mp-check-label"><input class="accent-teal" type="checkbox" id="includeAllNseToggle"> Expand to all 2,700+ NSE stocks</label>
         </div>
 
         <div class="search-input-wrap">
@@ -429,19 +429,19 @@
   <div class="outlier-modal-overlay" id="outliersModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="outlier-modal-box">
       <div class="outlier-modal-head">
-        <h3 id="modalTitle" style="margin:0; font-family:var(--serif); font-size:20px;">🛡️ Filtered Outlier &amp; Corporate Action Anomalies</h3>
+        <h3 class="mp-modal-title" id="modalTitle">🛡️ Filtered Outlier &amp; Corporate Action Anomalies</h3>
         <button type="button" class="outlier-modal-close" id="closeOutliersModalBtn" aria-label="Close dialog">&times;</button>
       </div>
-      <p style="font-size:13px; color:var(--ink-soft); line-height:1.5; margin:0 0 14px;">
+      <p class="mp-modal-lead">
         Raw exchange bhavcopies do not adjust historical prices for corporate actions (e.g. reverse splits / share consolidations like <strong>CCAVENUE +697%</strong>, stock splits, demergers), creating artificial percentage spikes. KYF automatically detects and isolates these distortions along with microcap penny stocks (&lt; ₹10) to keep your momentum rankings authentic and reliable.
       </p>
-      <div class="table-container" style="max-height: 360px; overflow-y:auto;">
-        <table class="data-table" style="font-size:12.5px;">
+      <div class="table-container mp-scroll-360">
+        <table class="data-table mp-table-sm">
           <thead>
             <tr>
               <th>Symbol &amp; Company</th>
-              <th style="text-align:right;">Price</th>
-              <th style="text-align:right;">Raw %</th>
+              <th class="th-right">Price</th>
+              <th class="th-right">Raw %</th>
               <th>Detected Anomaly Reason</th>
             </tr>
           </thead>
@@ -458,10 +458,10 @@
     <div class="share-modal-box">
       <div class="share-modal-head">
         <div>
-          <h3 id="shareModalTitle" style="margin:0; font-family:var(--serif); font-size:20px; display:flex; align-items:center; gap:8px;">
+          <h3 class="mp-modal-title mp-modal-title--flex" id="shareModalTitle">
             <span>📤 Share Section Insights</span>
           </h3>
-          <p id="shareModalSubtitle" style="font-size:12.5px; color:var(--muted); margin:4px 0 0; font-family:var(--mono);">...</p>
+          <p class="mp-modal-sub" id="shareModalSubtitle">...</p>
         </div>
         <button type="button" class="outlier-modal-close" id="closeShareModalBtn" aria-label="Close share dialog">&times;</button>
       </div>
@@ -481,7 +481,7 @@
         <button type="button" class="share-action-btn secondary" id="downloadShareImgBtn">
           <span>💾 Download PNG</span>
         </button>
-        <button type="button" class="share-action-btn primary" id="nativeShareBtn" style="display:none;">
+        <button type="button" class="share-action-btn primary is-hidden" id="nativeShareBtn">
           <span>📲 Share to Apps...</span>
         </button>
       </div>
@@ -490,14 +490,14 @@
       <div class="share-toast" id="shareToast"></div>
 
       <!-- Message Text Preview -->
-      <div style="margin:14px 0 10px;">
-        <label style="font-family:var(--mono); font-size:11px; text-transform:uppercase; color:var(--muted); font-weight:700;">📝 Post Message Preview</label>
+      <div class="mp-field-gap">
+        <label class="mp-field-label">📝 Post Message Preview</label>
         <textarea id="shareTextPreview" rows="5" class="share-textarea"></textarea>
       </div>
 
       <!-- Generated Image Card Preview -->
       <div>
-        <label style="font-family:var(--mono); font-size:11px; text-transform:uppercase; color:var(--muted); font-weight:700;">🖼️ Image Card Preview (Ready to Paste/Upload)</label>
+        <label class="mp-field-label">🖼️ Image Card Preview (Ready to Paste/Upload)</label>
         <div class="share-img-preview-wrap">
           <img id="shareImgPreview" src="" alt="Section Card Preview">
         </div>
@@ -508,22 +508,22 @@
   <!-- STICKY FEEDBACK FOOTER -->
 
   <!-- DATASETS -->
-  <script src="data/market-pulse.js?v=1.32.1"></script>
-  <script src="data/market-corporate-actions.js?v=1.32.1"></script>
-  <script src="data/market-equities.js?v=1.32.1"></script>
-  <script src="data/market-mf.js?v=1.32.1"></script>
-  <script src="data/market-realestate.js?v=1.32.1"></script>
+  <script src="data/market-pulse.js?v=1.33.0"></script>
+  <script src="data/market-corporate-actions.js?v=1.33.0"></script>
+  <script src="data/market-equities.js?v=1.33.0"></script>
+  <script src="data/market-mf.js?v=1.33.0"></script>
+  <script src="data/market-realestate.js?v=1.33.0"></script>
 
   <!-- VAULT ENGINE -->
-  <script src="js/kyf-goals.js?v=1.32.1"></script>
-  <script src="js/kyf-vault.js?v=1.32.1"></script>
+  <script src="js/kyf-goals.js?v=1.33.0"></script>
+  <script src="js/kyf-vault.js?v=1.33.0"></script>
 
   <!-- APP SCRIPT -->
-  <script src="js/market-performance.js?v=1.32.1"></script>
-  <script src="js/market-dashboard.js?v=1.32.1"></script>
-  <script src="js/kyf-footer.js?v=1.32.1"></script>
-  <script src="js/kyf-features.js?v=1.32.1"></script>
-  <script src="js/kyf-nav.js?v=1.32.1"></script>
+  <script src="js/market-performance.js?v=1.33.0"></script>
+  <script src="js/market-dashboard.js?v=1.33.0"></script>
+  <script src="js/kyf-footer.js?v=1.33.0"></script>
+  <script src="js/kyf-features.js?v=1.33.0"></script>
+  <script src="js/kyf-nav.js?v=1.33.0"></script>
 </body>
 </html>
 

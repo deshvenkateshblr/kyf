@@ -84,3 +84,6 @@
   .nav .nav-links .nav-btn.primary { background: var(--teal, #1f7a6c); color: #fff; }
 }
 @media (max-width: 560px) { .nav .nav-links .nav-btn.secondary { display: none !important; } }
+
+/* One nav surface everywhere (pages used slightly different translucency) */
+.nav { background: rgba(238, 241, 234, .92); }

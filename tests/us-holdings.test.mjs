@@ -90,7 +90,7 @@ const val = (h) => E.enrichHoldingsWithLiveMarket([h])[0];
   const chase = run("Symbol,Description,Quantity,Price,Value,Cost Basis\nVOO,VANGUARD S&P 500 ETF,10,690,6900,6000\nGLD,SPDR GOLD SHARES,5,350,1750,1500\nAGG,ISHARES CORE US AGGREGATE BOND ETF,20,100,2000,2100\nSPAXX,FIDELITY GOVERNMENT CASH RESERVES,1500,1,1500,1500", "chase");
   const en = E.enrichHoldingsWithLiveMarket(chase);
   const by = (n) => en.find((x) => new RegExp(n, "i").test(x.name));
-  ok(by("S&P 500").investedValueUSD === 6000 && by("S&P 500").totalReturnPct > 10, "imported cost basis is kept, not replaced by the price column");
+  ok(by("S&P 500").investedValueUSD === 6000 && by("S&P 500").totalReturnPct > 0 && Math.abs(by("S&P 500").totalReturnPct - (by("S&P 500").currentValueUSD / 6000 - 1) * 100) < 0.5, "imported cost basis is kept, not replaced by the price column");
   ok(by("Gold").assetClass === "Commodities & Gold" && by("Aggregate").assetClass === "Fixed Income", "imported gold and bond ETFs land in their own classes");
   ok(by("CASH RESERVES").assetClass === "Cash & Liquid", "a cash sweep uses the app's cash class");
   const fid = run("Symbol,Description,Quantity,Last Price,Current Value,Total Cost Basis,Average Cost Basis\nVOO,VANGUARD S&P 500 ETF,10,690,6900,6000,600", "fidelity");

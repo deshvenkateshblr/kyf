@@ -12,13 +12,13 @@
 
   <title>Family Portfolio Tracker | Know Your Finance (KYF)</title>
   <link rel="icon" href="css/kyf_logo.png">
-  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.32.1">
+  <link rel="stylesheet" href="css/kyf-unsaved.css?v=1.33.0">
 
   <!-- Application Stylesheet with v1.4.8 Cache-Busting -->
-  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.32.1">
-  <link rel="stylesheet" href="css/portfolio.css?v=1.32.1">
-  <link rel="stylesheet" href="css/journey.css?v=1.32.1">
-  <link rel="stylesheet" href="css/assign.css?v=1.32.1">
+  <link rel="stylesheet" href="css/kyf-drawer.css?v=1.33.0">
+  <link rel="stylesheet" href="css/portfolio.css?v=1.33.0">
+  <link rel="stylesheet" href="css/journey.css?v=1.33.0">
+  <link rel="stylesheet" href="css/assign.css?v=1.33.0">
 </head>
 <body>
 
@@ -38,7 +38,7 @@
         <a href="portfolio.html" class="active">Portfolio</a>
         <a href="market-performance.html">Market Benchmarks</a>
         <a href="index.html#framework">How it works</a>
-        <input type="file" id="kyfFileInput" accept=".kyf,.json" style="display:none;">
+        <input class="is-hidden" type="file" id="kyfFileInput" accept=".kyf,.json">
         <button type="button" class="nav-btn secondary" id="navOpenFileBtn" title="Open saved .kyf data file">📂 Open</button>
         <button type="button" class="nav-btn primary" id="navSaveDataBtn" title="Save data as .kyf file">💾 Save Data</button>
       </nav>
@@ -80,7 +80,7 @@
     <div class="wrap market-pulse-inner">
       <div class="pulse-items" id="pulse-ticker">
         <!-- Injected dynamically by js/portfolio-app.js -->
-        <span style="color:var(--muted);">Loading live market benchmarks...</span>
+        <span class="text-muted">Loading live market benchmarks...</span>
       </div>
     </div>
   </div>
@@ -332,9 +332,9 @@
               <div class="omni-search-input-box">
                 <span class="omni-search-icon">🔍</span>
                 <input type="text" id="modal-omni-search-input" class="omni-search-input" placeholder="Search a stock, fund or city &mdash; or type any name" autocomplete="off" required>
-                <button type="button" class="omni-search-clear" id="modal-omni-search-clear" style="display:none;" aria-label="Clear">✕</button>
+                <button type="button" class="omni-search-clear is-hidden" id="modal-omni-search-clear" aria-label="Clear">✕</button>
               </div>
-              <div id="modal-omni-search-results" class="omni-search-results" style="display:none;"></div>
+              <div id="modal-omni-search-results" class="omni-search-results is-hidden"></div>
             </div>
           </div>
 
@@ -362,7 +362,7 @@
           </div>
 
           <!-- Mutual Fund Variant Selector (Appears for Mutual Funds) -->
-          <div id="holding-mf-variant-box" class="holding-variant-box form-field full" style="display:none;">
+          <div id="holding-mf-variant-box" class="holding-variant-box form-field full is-hidden">
             <div class="variant-box-header">
               <span class="variant-box-title">Mutual Fund Plan Variant</span>
               <span class="variant-box-tag">Growth Option</span>
@@ -462,7 +462,7 @@
 
         <div class="modal-actions drawer-actions">
           <div>
-            <button type="button" class="btn-pill btn-pill--danger" id="btn-delete-holding" style="display:none;">🗑️ Delete</button>
+            <button type="button" class="btn-pill btn-pill--danger is-hidden" id="btn-delete-holding">🗑️ Delete</button>
           </div>
           <div class="modal-actions-right">
             <button type="button" class="btn-pill btn-pill--ghost" id="btn-cancel-holding">Cancel</button>
@@ -476,7 +476,7 @@
   <!-- ==========================================================================
        IMPORT BROKER HOLDINGS MODAL (CSV / XLSX / HTML Table)
        ========================================================================== -->
-  <div id="import-modal" class="drawer-overlay" role="dialog" aria-modal="true" aria-labelledby="import-modal-title" style="display:none;">
+  <div id="import-modal" class="drawer-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
     <div class="drawer-panel import-drawer-panel">
       <div class="drawer-head">
         <h3 id="import-modal-title">📥 Import Broker Portfolio</h3>
@@ -522,7 +522,7 @@
         </div>
 
         <!-- Step 2: Dropzone with Rich Visual Feedback -->
-        <input type="file" id="broker-file-input" accept=".csv,.tsv,.txt,.xlsx,.xls" style="display:none;" aria-hidden="true">
+        <input class="is-hidden" type="file" id="broker-file-input" accept=".csv,.tsv,.txt,.xlsx,.xls" aria-hidden="true">
         <div class="import-dropzone" id="import-dropzone" tabindex="0" role="button" aria-label="Drop files here or click to browse">
           <div id="import-dropzone-content">
             <div class="import-dropzone-icon">📄</div>
@@ -534,7 +534,7 @@
         </div>
 
         <!-- Inline Error Banner -->
-        <div class="import-error-banner" id="import-error-banner" style="display:none;" role="alert">
+        <div class="import-error-banner is-hidden" id="import-error-banner" role="alert">
           <span class="import-error-icon" aria-hidden="true">⚠️</span>
           <div class="import-error-content">
             <strong class="import-error-title" id="import-error-title">Unable to process file</strong>
@@ -543,10 +543,10 @@
         </div>
 
         <!-- Stats summary pill -->
-        <div class="import-stats-summary" id="import-stats-summary" style="display:none;"></div>
+        <div class="import-stats-summary is-hidden" id="import-stats-summary"></div>
 
         <!-- Preview Wrap -->
-        <div class="import-preview-wrap" id="import-preview-wrap" style="display:none;">
+        <div class="import-preview-wrap is-hidden" id="import-preview-wrap">
           <div class="import-preview-header">
             <span class="import-preview-title" id="import-preview-title">Holdings to Import</span>
             <span class="import-preview-count" id="import-preview-count"></span>
@@ -558,9 +558,9 @@
                   <th>Holding / Instrument</th>
                   <th>Type</th>
                   <th>Custodian</th>
-                  <th style="text-align:right;">Qty / Units</th>
-                  <th style="text-align:right;">Invested (₹)</th>
-                  <th style="text-align:right;">Live Value (₹)</th>
+                  <th class="th-right">Qty / Units</th>
+                  <th class="th-right">Invested (₹)</th>
+                  <th class="th-right">Live Value (₹)</th>
                 </tr>
               </thead>
               <tbody id="import-preview-tbody">
@@ -585,7 +585,7 @@
   <!-- ==========================================================================
        DATA HEALTH & AS-OF STATUS MODAL
        ========================================================================== -->
-  <div id="data-status-modal" class="drawer-overlay" role="dialog" aria-modal="true" aria-labelledby="data-status-modal-title" style="display:none;">
+  <div id="data-status-modal" class="drawer-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="data-status-modal-title">
     <div class="drawer-panel data-status-drawer-panel">
       <div class="drawer-head">
         <h3 id="data-status-modal-title">📊 Market Data Health &amp; As-Of Dates</h3>
@@ -624,31 +624,31 @@
   <!-- ==========================================================================
        DATASETS (Auto-Generated Daily by admin/sync_market_data.py)
        ========================================================================== -->
-  <script src="data/market-status.js?v=1.32.1"></script>
-  <script src="data/market-pulse.js?v=1.32.1"></script>
-  <script src="data/market-corporate-actions.js?v=1.32.1"></script>
-  <script src="data/market-equities.js?v=1.32.1"></script>
-  <script src="data/market-mf.js?v=1.32.1"></script>
-  <script src="data/market-us.js?v=1.32.1"></script>
-  <script src="data/market-realestate.js?v=1.32.1"></script>
-  <script src="data/market-holidays.js?v=1.32.1"></script>
+  <script src="data/market-status.js?v=1.33.0"></script>
+  <script src="data/market-pulse.js?v=1.33.0"></script>
+  <script src="data/market-corporate-actions.js?v=1.33.0"></script>
+  <script src="data/market-equities.js?v=1.33.0"></script>
+  <script src="data/market-mf.js?v=1.33.0"></script>
+  <script src="data/market-us.js?v=1.33.0"></script>
+  <script src="data/market-realestate.js?v=1.33.0"></script>
+  <script src="data/market-holidays.js?v=1.33.0"></script>
 
   <!-- ==========================================================================
-       PORTFOLIO MODULE SCRIPTS (with ?v=1.32.1 Cache-Busting)
+       PORTFOLIO MODULE SCRIPTS (with ?v=1.33.0 Cache-Busting)
        ========================================================================== -->
-  <script src="js/kyf-goals.js?v=1.32.1"></script>
-  <script src="js/kyf-vault.js?v=1.32.1"></script>
-  <script src="js/portfolio-data.js?v=1.32.1"></script>
-  <script src="js/portfolio-engine.js?v=1.32.1"></script>
-  <script src="js/kyf-assign.js?v=1.32.1"></script>
-  <script src="js/portfolio-importer.js?v=1.32.1"></script>
-  <script src="js/portfolio-app.js?v=1.32.1"></script>
-  <script src="js/kyf-journey.js?v=1.32.1"></script>
-  <script src="js/kyf-footer.js?v=1.32.1"></script>
-  <script src="js/kyf-features.js?v=1.32.1"></script>
-  <script src="data/kyf-terms.js?v=1.32.1"></script>
-  <script src="js/kyf-nav.js?v=1.32.1"></script>
-  <script src="js/kyf-terms.js?v=1.32.1"></script>
+  <script src="js/kyf-goals.js?v=1.33.0"></script>
+  <script src="js/kyf-vault.js?v=1.33.0"></script>
+  <script src="js/portfolio-data.js?v=1.33.0"></script>
+  <script src="js/portfolio-engine.js?v=1.33.0"></script>
+  <script src="js/kyf-assign.js?v=1.33.0"></script>
+  <script src="js/portfolio-importer.js?v=1.33.0"></script>
+  <script src="js/portfolio-app.js?v=1.33.0"></script>
+  <script src="js/kyf-journey.js?v=1.33.0"></script>
+  <script src="js/kyf-footer.js?v=1.33.0"></script>
+  <script src="js/kyf-features.js?v=1.33.0"></script>
+  <script src="data/kyf-terms.js?v=1.33.0"></script>
+  <script src="js/kyf-nav.js?v=1.33.0"></script>
+  <script src="js/kyf-terms.js?v=1.33.0"></script>
 </body>
 </html>
 

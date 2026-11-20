@@ -388,7 +388,7 @@ button {
 
 .market-hero h1 {
   font-family: var(--serif);
-  font-weight: 100;
+  font-weight: 400;
   font-size: clamp(28px, 3.8vw, 42px);
   line-height: 1.18;
   margin: 0 0 10px;
@@ -636,7 +636,7 @@ button {
 .kpi-val {
   font-family: var(--serif);
   font-size: clamp(22px, 2.2vw, 30px);
-  font-weight: 100;
+  font-weight: 400;
   color: var(--ink);
   margin: 0 0 4px;
   line-height: 1.15;
@@ -3259,3 +3259,9 @@ button {
 .portfolio-is-empty .view-switch-control,
 .portfolio-is-empty .toolbar-pill-row,
 .portfolio-is-empty #btn-toggle-expand { display: none; }
+
+
+/* Utilities replacing inline styles */
+.is-hidden { display: none; }
+th.th-right { text-align: right; }
+.text-muted { color:var(--muted); }

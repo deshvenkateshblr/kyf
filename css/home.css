@@ -43,7 +43,7 @@ img { max-width: 100%; display: block; }
   color: var(--teal);
   margin: 0 0 14px;
 }
-h1, h2, h3 { font-family: var(--serif); font-weight: 100; letter-spacing: -0.015em; margin: 0; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.015em; margin: 0; }
 h2 { font-size: clamp(28px, 4vw, 42px); line-height: 1.15; }
 .section-head { max-width: 640px; margin-bottom: 48px; }
 .section-head p { color: var(--ink-soft); font-size: 17px; margin: 14px 0 0; }

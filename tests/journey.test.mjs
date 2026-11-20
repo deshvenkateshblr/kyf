@@ -8,7 +8,7 @@ const J = sb.KYF_JOURNEY;
 
 let m = J.compute([], []);
 ok(m.overall === 0 && m.next.id === "portfolio", "a new visitor starts at step 1");
-ok(m.steps[2].pct === 0 && /Opens once/.test(m.steps[2].detail), "step 3 waits until there is a holding and a goal");
+ok(m.steps.length === 2, "step 3 stays hidden until there is a holding and a goal");
 
 m = J.compute([{ id: "g", name: "Home", status: "ACTIVE", baseTargetINR: 5000000, targetYear: 2035 }], []);
 ok(m.steps[1].pct === 100 && m.next.id === "portfolio", "a goal with a cost and a year completes step 2; step 1 is next");
