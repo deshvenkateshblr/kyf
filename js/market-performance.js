@@ -1943,6 +1943,98 @@
       }
 
       // ==========================================
+      // SUMMARY SHARE: the Overview cards share exactly what they show (all horizons together)
+      // spec = { key, title, subtitle, text, columns: [label...], rows: [[{t, tone}...]...], footnote }
+      // ==========================================
+      function generateSummaryCard(spec, callback) {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const width = 1200;
+        const rowH = 46, top = 196;
+        const height = top + 44 + spec.rows.length * rowH + 110;
+        canvas.width = width;
+        canvas.height = height;
+        const F = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        const M = "'SF Mono', Cascadia Code, Consolas, monospace";
+
+        const bg = ctx.createLinearGradient(0, 0, 0, height);
+        bg.addColorStop(0, "#162720"); bg.addColorStop(1, "#0d1712");
+        ctx.fillStyle = bg; ctx.fillRect(0, 0, width, height);
+        ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 2;
+        drawCanvasRoundedRect(ctx, 16, 16, width - 32, height - 32, 20); ctx.stroke();
+
+        ctx.fillStyle = "#c97a2b"; drawCanvasRoundedRect(ctx, 48, 44, 48, 24, 6); ctx.fill();
+        ctx.fillStyle = "#ffffff"; ctx.font = "bold 12px " + M; ctx.fillText("KYF", 59, 60);
+        ctx.fillStyle = "#eef1ea"; ctx.font = "bold 16px " + F; ctx.fillText("KNOW YOUR FINANCE", 108, 62);
+        ctx.fillStyle = "#8ea89d"; ctx.font = "14px " + F; ctx.fillText("• Market summary", 295, 62);
+        ctx.font = "bold 12.5px " + M;
+        const dateStr = getFormattedAsOf();
+        const dateW = ctx.measureText(dateStr).width + 24;
+        ctx.fillStyle = "rgba(255,255,255,0.08)"; drawCanvasRoundedRect(ctx, width - 48 - dateW, 42, dateW, 26, 13); ctx.fill();
+        ctx.fillStyle = "#8fe0cd"; ctx.fillText(dateStr, width - 48 - dateW + 12, 59);
+
+        ctx.fillStyle = "#ffffff"; ctx.font = "bold 25px " + F; ctx.fillText(spec.title, 48, 116);
+        ctx.fillStyle = "#8ea89d"; ctx.font = "14px " + F; ctx.fillText(spec.subtitle, 48, 140);
+        ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.beginPath(); ctx.moveTo(48, 158); ctx.lineTo(width - 48, 158); ctx.stroke();
+
+        // Column positions: first column left-aligned, the rest right-aligned across the card
+        const cols = spec.columns.length, left = 48, right = width - 48;
+        const firstW = cols > 4 ? 250 : cols === 3 ? 520 : 360;
+        const step = cols > 1 ? (right - left - firstW) / (cols - 1) : 0;
+        const colX = (i) => spec.xs ? spec.xs[i] : (i === 0 ? left : left + firstW + step * i);
+        const alignOf = (i) => spec.aligns ? spec.aligns[i] : (i === 0 ? "left" : "right");
+        const maxW = (i) => spec.xs ? (i + 1 < cols ? spec.xs[i + 1] - spec.xs[i] - 20 : 140) : (i === 0 ? firstW - 20 : step - 12);
+        ctx.fillStyle = "#8ea89d"; ctx.font = "bold 12px " + M;
+        spec.columns.forEach((c, i) => { ctx.textAlign = alignOf(i); ctx.fillText(c.toUpperCase(), colX(i), top); });
+        spec.rows.forEach((row, r) => {
+          const y = top + 22 + r * rowH;
+          if (r % 2 === 0) { ctx.fillStyle = "rgba(255,255,255,0.04)"; ctx.fillRect(left - 12, y, right - left + 24, rowH - 4); }
+          row.forEach((cell, i) => {
+            ctx.textAlign = alignOf(i);
+            ctx.fillStyle = cell.tone === "up" ? "#6fd39a" : cell.tone === "down" ? "#ff8a73" : i === 0 ? "#ffffff" : "#cfe0d8";
+            ctx.font = (alignOf(i) === "left" ? "600 17px " + F : "bold 16px " + M);
+            let s = String(cell.t);
+            while (ctx.measureText(s).width > maxW(i) && s.length > 4) s = s.slice(0, -2);
+            if (s !== String(cell.t)) s += "…";
+            ctx.fillText(s, colX(i), y + 28);
+          });
+        });
+        ctx.textAlign = "left";
+        const fy = top + 22 + spec.rows.length * rowH + 22;
+        ctx.fillStyle = "#8ea89d"; ctx.font = "13px " + F; ctx.fillText(spec.footnote || "", 48, fy);
+        ctx.fillStyle = "#8ea89d"; ctx.font = "12px " + F;
+        ctx.fillText("🛡️ Verified empirical data • vividnova.com/kyf", 48, height - 36);
+        ctx.fillStyle = "#8fe0cd"; ctx.font = "bold 13px " + M; ctx.fillText("@KnowYourFinance", width - 48 - 140, height - 36);
+
+        canvas.toBlob(function (blob) { callback({ canvas, blob, dataUrl: canvas.toDataURL("image/png") }); }, "image/png");
+      }
+
+      function openSummaryShare(spec) {
+        currentShareSection = spec.key;
+        currentShareFileName = `KYF-summary-${spec.key}.png`;
+        currentShareText = spec.title + " (" + getFormattedAsOf() + "):\n" + spec.text + "\n\nMore at vividnova.com/kyf/market-performance.html";
+        const modal = document.getElementById("shareModal");
+        const titleEl = document.getElementById("shareModalTitle");
+        const subEl = document.getElementById("shareModalSubtitle");
+        const textPreview = document.getElementById("shareTextPreview");
+        const imgPreview = document.getElementById("shareImgPreview");
+        const nativeBtn = document.getElementById("nativeShareBtn");
+        if (titleEl) titleEl.innerHTML = `<span>📤 Share: ${escapeHtml(spec.title)}</span>`;
+        if (subEl) subEl.textContent = `Summary • Benchmark Date: ${getFormattedAsOf()}`;
+        if (textPreview) textPreview.value = currentShareText;
+        if (imgPreview) { imgPreview.alt = "Generating card..."; imgPreview.src = ""; }
+        generateSummaryCard(spec, function (res) {
+          currentShareBlob = res.blob;
+          if (imgPreview) { imgPreview.src = res.dataUrl; imgPreview.alt = spec.title; }
+          if (nativeBtn && navigator.canShare && res.blob) {
+            const f = new File([res.blob], currentShareFileName, { type: "image/png" });
+            nativeBtn.style.display = navigator.canShare({ files: [f] }) ? "inline-flex" : "none";
+          }
+        });
+        if (modal) modal.classList.add("open");
+      }
+
+      // ==========================================
       // EVENT BINDINGS
       // ==========================================
       function bindEvents() {
@@ -2401,6 +2493,7 @@
       // (Nifty 500 stocks, penny and corporate-action outliers left out, direct-plan funds), one pick per horizon.
       window.KYF_MARKET_VIEW = {
         share: openShareModal,
+        shareSummary: openSummaryShare,
         tops: function (h) {
           const m = getHorizonMeta(h);
           let stock = null, fund = null;

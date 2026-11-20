@@ -36,16 +36,87 @@
   var pct1 = function (n) { return (n > 0 ? "+" : "") + Number(n).toFixed(1) + "%"; };
   var tone = function (n) { return n == null || isNaN(n) ? "" : n >= 0 ? " up" : " down"; };
 
-  function shareBtn(section) {
-    var b = mk("button", "dash-share", "Share");
+  // Same Share button as every detail section; it shares what the card shows (all periods together)
+  function shareBtn(spec) {
+    var b = mk("button", "section-share-btn dash-share");
     b.type = "button";
-    b.setAttribute("data-share", section);
-    b.setAttribute("aria-label", "Share this card");
+    b.setAttribute("aria-label", "Share this summary");
+    b.title = "Share on X / Social";
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", "12"); svg.setAttribute("height", "12"); svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none"); svg.setAttribute("stroke", "currentColor"); svg.setAttribute("stroke-width", "2.2");
+    svg.setAttribute("stroke-linecap", "round"); svg.setAttribute("stroke-linejoin", "round");
+    [["circle", { cx: 18, cy: 5, r: 3 }], ["circle", { cx: 6, cy: 12, r: 3 }], ["circle", { cx: 18, cy: 19, r: 3 }],
+     ["line", { x1: 8.59, y1: 13.51, x2: 15.42, y2: 17.49 }], ["line", { x1: 15.41, y1: 6.51, x2: 8.59, y2: 10.49 }]].forEach(function (s) {
+      var n = document.createElementNS("http://www.w3.org/2000/svg", s[0]);
+      Object.keys(s[1]).forEach(function (k) { n.setAttribute(k, s[1][k]); });
+      svg.appendChild(n);
+    });
+    b.append(svg, mk("span", null, "Share"));
     b.addEventListener("click", function (e) {
       e.stopPropagation();
-      if (window.KYF_MARKET_VIEW && window.KYF_MARKET_VIEW.share) window.KYF_MARKET_VIEW.share(section);
+      var v = window.KYF_MARKET_VIEW;
+      if (!v || !v.shareSummary) return;
+      var s = typeof spec === "function" ? spec() : spec;
+      s.text = s.rows.map(function (r) {
+        if (s.aligns) return "• " + r[0].t + ": " + r[1].t + " (" + r[2].t + ")";
+        return "• " + r[0].t + ": " + r.slice(1).map(function (c, i) { return (s.columns.length > 2 ? s.columns[i + 1] + " " : "") + c.t; }).join(", ");
+      }).join("\n");
+      v.shareSummary(s);
     });
     return b;
+  }
+
+  var cell = function (t, n) { return { t: t, tone: n == null || isNaN(n) ? null : n >= 0 ? "up" : "down" }; };
+  var plain = function (t) { return { t: t }; };
+  var fmt = function (n) { return n == null || isNaN(n) ? "—" : pct1(n); };
+
+  var SPECS = {
+    macro: function () {
+      return { key: "macro", title: "Inflation & interest rates", subtitle: "Key rates in India today",
+        columns: ["Benchmark", "Rate"],
+        rows: [["Retail inflation (CPI)", macro.cpiInflation], ["RBI repo rate", macro.rbiRepo], ["SBI 1-year FD", macro.sbiFd1Yr], ["EPF", macro.epfRate], ["PPF", macro.ppfRate]].map(function (r) { return [plain(r[0]), plain(r[1] + "%")]; }),
+        footnote: "Rates are per year." };
+    },
+    realestate: function () {
+      return { key: "realestate", title: "Real estate: 50-city average", subtitle: "National Housing Bank housing price index",
+        columns: ["Measure", "Value"],
+        rows: [[plain("Price per sq ft"), plain(nat.carpet_price_sqft ? "₹" + inr(nat.carpet_price_sqft) : "—")], [plain("Price change, 1 year"), cell(fmt(nat.hpi_yoy_pct), nat.hpi_yoy_pct)], [plain("Growth over 5 years, per year"), cell(nat.hpi_cagr_5y != null ? nat.hpi_cagr_5y.toFixed(1) + "%" : "—", nat.hpi_cagr_5y)]],
+        footnote: "Average across 50 cities. Your city may differ." };
+    },
+    metals: function () {
+      return { key: "metals", title: "Gold & silver", subtitle: "Price per gram and returns over each period",
+        columns: ["Metal", "Per gram", "1 month", "3 months", "6 months", "1 year"],
+        rows: [
+          [plain("Gold 24K"), plain(metals.gold24kPerGram ? "₹" + inr(metals.gold24kPerGram) : "—"), cell(fmt(metals.goldRet1m), metals.goldRet1m), cell(fmt(metals.goldRet3m), metals.goldRet3m), cell(fmt(metals.goldRet6m), metals.goldRet6m), cell(fmt(metals.goldRet1y), metals.goldRet1y)],
+          [plain("Silver"), plain(metals.silverPerGram ? "₹" + inr(metals.silverPerGram) : "—"), cell(fmt(metals.silverRet1m), metals.silverRet1m), cell(fmt(metals.silverRet3m), metals.silverRet3m), cell(fmt(metals.silverRet6m), metals.silverRet6m), cell(fmt(metals.silverRet1y), metals.silverRet1y)]],
+        footnote: "Returns via gold and silver ETFs." };
+    },
+    returns: function () {
+      var rows = [];
+      Object.keys(idx).forEach(function (k) {
+        var i = idx[k]; if (!i) return;
+        var y1 = i.ret1y != null ? i.ret1y : i.cagr1y;
+        rows.push([plain(i.name), cell(fmt(i.ret1m), i.ret1m), cell(fmt(i.ret3m), i.ret3m), cell(fmt(i.ret6m), i.ret6m), cell(fmt(y1), y1), cell(fmt(i.cagr5y), i.cagr5y), plain(i.pe != null ? Number(i.pe).toFixed(1) : "—")]);
+      });
+      return { key: "indices", title: "Returns at a glance", subtitle: "Indian market indices over each period",
+        columns: ["Index", "1 month", "3 months", "6 months", "1 year", "5 yrs, per yr", "P/E"], rows: rows,
+        footnote: "Past returns are not a promise." };
+    },
+    funds: function () { return topsSpec("fund"); },
+    stocks: function () { return topsSpec("stock"); }
+  };
+
+  function topsSpec(kind) {
+    var isFund = kind === "fund", v = window.KYF_MARKET_VIEW;
+    var rows = [["1m", "1 month"], ["3m", "3 months"], ["6m", "6 months"], ["1y", "1 year"]].map(function (hz) {
+      var r = v ? v.tops(hz[0]) : {};
+      var p = isFund ? r.fund : r.stock;
+      return [plain(hz[1]), plain(p ? (isFund ? p.name : p.symbol + " · " + (p.name || "")) : "—"), cell(p ? fmt(p.ret) : "—", p ? p.ret : null)];
+    });
+    return { key: isFund ? "mf" : "equities", title: isFund ? "Best mutual funds" : "Best stocks", subtitle: isFund ? "Top direct-plan fund over each period" : "Top Nifty 500 stock over each period",
+      columns: ["Over the last", isFund ? "Fund" : "Stock", "Return"], aligns: ["left", "left", "right"], xs: [48, 250, 1152], rows: rows,
+      footnote: isFund ? "Direct plans, all categories." : "Penny stocks and corporate-action distortions left out." };
   }
 
   function card(title, links, shareKey) {
@@ -60,7 +131,7 @@
       b.addEventListener("click", function () { show(l[0], true); });
       nav.appendChild(b);
     });
-    if (shareKey) nav.appendChild(shareBtn(shareKey));
+    if (shareKey) nav.appendChild(shareBtn(SPECS[shareKey]));
     head.appendChild(nav);
     c.appendChild(head);
     return c;
@@ -74,7 +145,7 @@
     b.setAttribute("aria-label", "Open " + title);
     var head = mk("div", "dt-head");
     var acts = mk("span", "dt-acts");
-    acts.append(shareBtn(key), mk("span", "dt-open", "Open →"));
+    acts.append(shareBtn(SPECS[key]), mk("span", "dt-open", "Open →"));
     head.append(mk("span", "dt-title", icon + "  " + title), acts);
     var big = mk("div", "dt-big");
     big.appendChild(mk("strong", null, bigValue));
@@ -94,7 +165,7 @@
 
   // Returns at a glance: every benchmark across the same horizons, short to long
   function returnsCard() {
-    var c = card("Returns at a glance", [["indices", "Indices"], ["metals", "Gold & silver"]], "indices");
+    var c = card("Returns at a glance", [["indices", "Indices"], ["metals", "Gold & silver"]], "returns");
     var wrap = mk("div", "table-wrap");
     var tb = mk("table", "dash-table");
     var th = mk("thead");
@@ -126,7 +197,7 @@
   // Best direct-plan funds and best Nifty 500 stocks, each in a card of its own so they are not confused
   function topsCard(kind) {
     var isFund = kind === "fund";
-    var c = card(isFund ? "Best mutual funds" : "Best stocks", [[isFund ? "mf" : "equities", isFund ? "All funds" : "All stocks"]], isFund ? "mf" : "equities");
+    var c = card(isFund ? "Best mutual funds" : "Best stocks", [[isFund ? "mf" : "equities", isFund ? "All funds" : "All stocks"]], isFund ? "funds" : "stocks");
     c.classList.add("tops-card");
     var view = window.KYF_MARKET_VIEW;
     var wrap = mk("div", "table-wrap");

@@ -24,5 +24,7 @@ await p.goto(base + "/portfolio.html"); await p.waitForTimeout(1200);
 ok(!(await p.locator(".horizon-control").isVisible()) && !(await p.locator(".view-switch-control").isVisible()), "empty portfolio hides horizon and view controls");
 await p.goto(base + "/index.html");
 ok((await p.locator(".value-steps li").count()) === 4, "four value steps");
-ok((await p.locator("#dimensions, #journey, .final, .pyramid").count()) === 0, "old long sections are gone");
+ok((await p.locator(".hero-art .pyramid").count()) === 1 && /Portfolio/.test(await p.locator(".hero-art .pyramid").innerHTML()), "pyramid is back, labelled Portfolio");
+ok((await p.locator(".file-pill").innerText()).includes(".kyf"), "compact one-file pill under the pyramid");
+ok((await p.locator("#dimensions, #journey, .final").count()) === 0, "old long sections are gone");
 await b.close(); srv.close(); process.exit(fails ? 1 : 0);

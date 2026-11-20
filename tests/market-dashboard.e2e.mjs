@@ -22,8 +22,11 @@ ok(/Nifty 50/i.test(tilesText) && /Smallcap/i.test(tilesText) && /Gold/i.test(ti
 ok((await p.locator(".dash-table.tops tbody tr").count()) === 8, "four periods each for funds and stocks");
 ok(/Sansera/i.test(tilesText) || (await p.locator(".tops-card .pick").count()) === 8, "funds and stocks are in separate cards");
 ok(await p.locator(".dash-share").count() === 6, "every overview card has a Share button");
-await p.click(".dash-share[data-share=metals]");
-ok(await p.locator("#shareModal.open").count() === 1 && /Precious/.test(await p.locator("#shareModalTitle").innerText()), "Share opens the existing share card for that area");
+await p.locator(".dash-tile[data-open=metals] .dash-share").click();
+await p.waitForTimeout(400);
+ok(await p.locator("#shareModal.open").count() === 1 && /Gold & silver/.test(await p.locator("#shareModalTitle").innerText()), "Share opens a summary card for that tile");
+ok(/1 month/.test(await p.locator("#shareTextPreview").inputValue()) && /1 year/.test(await p.locator("#shareTextPreview").inputValue()), "the post text carries every period");
+ok((await p.locator("#shareImgPreview").getAttribute("src") || "").startsWith("data:image/png"), "a card image is drawn");
 await p.click("#closeShareModalBtn");
 ok(await p.locator("#sectionNavToolbar").isVisible() && await p.locator("#dashOverview").isVisible(), "sharing leaves you on the overview");
 await p.click(".dc-link[data-open=mf]");

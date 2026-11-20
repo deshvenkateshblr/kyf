@@ -1281,7 +1281,5 @@ main.wrap > .section-wrap { margin: 18px auto 8px; }
 .dash-table thead th.num { font-size: 11px; }
 
 .dt-acts { display: inline-flex; align-items: center; gap: 10px; }
-.dash-share { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 3px 11px; font: inherit; font-size: 12px; font-weight: 700; color: var(--teal-deep, #17594f); cursor: pointer; }
-.dash-share:hover { border-color: var(--teal); background: var(--teal-soft, #e3f0ec); }
-.dash-share::before { content: "↗ "; }
+.dash-share { margin-left: 0; }
 .dash-tile { cursor: pointer; }
