@@ -736,8 +736,10 @@ test("Imports Chase positions CSV for family member with USD valuation and INR c
   const voogPrice = engine.lookupUsByTicker("VOOG")?.closePrice || 80.43;
   assert.ok(Math.abs(voog.currentValueUSD / 10 - voogPrice) < 0.1, `USD value is 10 shares at about the file or live price: ${voog.currentValueUSD}`);
   assert.strictEqual(voog.investedValueUSD, 750, "USD cost basis $750");
-  assert.ok(voog.currentValue > 70000, `INR value converted: ${voog.currentValue}`);
-  assert.ok(voog.investedValue > 65000, `INR invested converted: ${voog.investedValue}`);
+  const fx = engine.getUsdInr().rate;
+  assert.ok(fx > 0, "USD/INR FX rate must be positive");
+  assert.strictEqual(voog.currentValue, Math.round(voog.currentValueUSD * fx), `INR value converted: ${voog.currentValue}`);
+  assert.strictEqual(voog.investedValue, Math.round(voog.investedValueUSD * fx), `INR invested converted: ${voog.investedValue}`);
 
   const qqqm = holdings.find(h => h.instrumentMeta.ticker === "QQQM");
   assert.ok(qqqm, "Found QQQM");
