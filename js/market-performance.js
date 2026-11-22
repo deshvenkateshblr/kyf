@@ -1217,7 +1217,7 @@
             `• ${cityKey}: ${citySummary.hpi_index || "—"} HPI (${cYoy} YoY) | Carpet: ${cPrice}\n` +
             `• 5Y Annualized CAGR: ${cCagr5} (vs National: ${nat.hpi_cagr_5y != null ? nat.hpi_cagr_5y.toFixed(2) : "4.83"}%)\n` +
             `• 8Y Total Appreciation: ${c8yStr} (2018–2026 spliced)\n\n` +
-            `More at vividnova.com/kyf/market-performance.html`;
+            `More at vividnova.com/kyf/market-performance.html • @vividalerts`;
         }
 
         if (sectionKey === "macro") {
@@ -1228,7 +1228,7 @@
             `• EPF (Tax-Free): ${m.epfRate}% (+${spread}% real spread)\n` +
             `• PPF / SSY: ${m.ppfRate}% / ${m.ssyRate}%\n` +
             `• SBI 1Y FD / Arbitrage: ${m.sbiFd1Yr}% / ${m.arbitrageFundAvg}%\n\n` +
-            `More at vividnova.com/kyf/market-performance.html`;
+            `More at vividnova.com/kyf/market-performance.html • @vividalerts`;
         }
 
         if (sectionKey === "metals") {
@@ -1241,7 +1241,7 @@
             `• Gold 24K: ₹${formatNumber(pm.gold24kPerGram, 0)}/g (${gSign}${gRet.toFixed(2)}% via GOLDBEES)\n` +
             `• Gold 22K: ₹${formatNumber(pm.gold22kPerGram, 0)}/g\n` +
             `• Silver 999: ₹${formatNumber(pm.silverPerKg, 0)}/kg (${sSign}${sRet.toFixed(2)}% via SILVERBEES)\n\n` +
-            `More at vividnova.com/kyf/market-performance.html`;
+            `More at vividnova.com/kyf/market-performance.html • @vividalerts`;
         }
 
         if (sectionKey === "indices") {
@@ -1261,7 +1261,7 @@
           });
           return `📊 Market Indices & Valuations (${meta.short} • ${asOf}):\n` +
             lines.join("\n") + "\n\n" +
-            `More at vividnova.com/kyf/market-performance.html`;
+            `More at vividnova.com/kyf/market-performance.html • @vividalerts`;
         }
 
         if (sectionKey === "mf") {
@@ -1286,7 +1286,7 @@
           const catStr = mfCategory === "all" ? "All" : mfCategory;
           return `🌱 Top Mutual Funds [${catStr}] (${meta.short} • ${asOf}):\n` +
             lines.join("\n") + "\n\n" +
-            `More at vividnova.com/kyf/market-performance.html`;
+            `More at vividnova.com/kyf/market-performance.html • @vividalerts`;
         }
 
         if (sectionKey === "equities") {
@@ -1308,10 +1308,10 @@
           const typeStr = equityIsGainers ? "Top Gainers" : "Top Decliners";
           return `📈 Top NSE Equities — ${typeStr} (${meta.short} • ${asOf}):\n` +
             lines.join("\n") + "\n\n" +
-            `More at vividnova.com/kyf/market-performance.html`;
+            `More at vividnova.com/kyf/market-performance.html • @vividalerts`;
         }
 
-        return "Empirical market review on vividnova.com/kyf/market-performance.html";
+        return "Empirical market review on vividnova.com/kyf/market-performance.html • @vividalerts";
       }
 
       function drawCanvasRoundedRect(ctx, x, y, width, height, radius) {
@@ -1870,7 +1870,9 @@
 
         ctx.fillStyle = "#8fe0cd";
         ctx.font = "bold 13px 'SF Mono', Cascadia Code, monospace";
-        ctx.fillText("@KnowYourFinance", width - 48 - 140, height - 36);
+        ctx.textAlign = "right";
+        ctx.fillText("@vividalerts", width - 48, height - 36);
+        ctx.textAlign = "left";
 
         // Convert canvas to blob & data URL
         canvas.toBlob(function (blob) {
@@ -2004,7 +2006,10 @@
         ctx.fillStyle = "#8ea89d"; ctx.font = "13px " + F; ctx.fillText(spec.footnote || "", 48, fy);
         ctx.fillStyle = "#8ea89d"; ctx.font = "12px " + F;
         ctx.fillText("🛡️ Verified empirical data • vividnova.com/kyf", 48, height - 36);
-        ctx.fillStyle = "#8fe0cd"; ctx.font = "bold 13px " + M; ctx.fillText("@KnowYourFinance", width - 48 - 140, height - 36);
+        ctx.fillStyle = "#8fe0cd"; ctx.font = "bold 13px " + M;
+        ctx.textAlign = "right";
+        ctx.fillText("@vividalerts", width - 48, height - 36);
+        ctx.textAlign = "left";
 
         canvas.toBlob(function (blob) { callback({ canvas, blob, dataUrl: canvas.toDataURL("image/png") }); }, "image/png");
       }
@@ -2012,7 +2017,7 @@
       function openSummaryShare(spec) {
         currentShareSection = spec.key;
         currentShareFileName = `KYF-summary-${spec.key}.png`;
-        currentShareText = spec.title + " (" + getFormattedAsOf() + "):\n" + spec.text + "\n\nMore at vividnova.com/kyf/market-performance.html";
+        currentShareText = spec.title + " (" + getFormattedAsOf() + "):\n" + spec.text + "\n\nMore at vividnova.com/kyf/market-performance.html • @vividalerts";
         const modal = document.getElementById("shareModal");
         const titleEl = document.getElementById("shareModalTitle");
         const subEl = document.getElementById("shareModalSubtitle");
